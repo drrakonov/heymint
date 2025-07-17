@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #10B981;
+  --color-background: #17191C;
+  --color-surface: #1E2023;
+  --color-accent: #34D399;
+  --color-danger: #F43F5E;
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #94A3B8;
+  --color-border: #334155;
+}
+
+/*
+| Role                 | Color     | Description                                          |
+| -------------------- | --------- | ---------------------------------------------------- |
+| **Primary**          | `#10B981` | Minty green (emerald) for buttons, links, highlights |
+| **Background**       | `#0F172A` | Very dark slate — deep, cool base background         |
+| **Surface / Card**   | `#1E293B` | Dark slate — for cards, modals, navbars              |
+| **Accent**           | `#34D399` | Soft green — for hover effects, subtle highlights    |
+| **Danger**           | `#F43F5E` | Rose — for error messages, warnings                  |
+| **Text (Primary)**   | `#F8FAFC` | Light slate — for main text (very readable on dark)  |
+| **Text (Secondary)** | `#94A3B8` | Subtle slate — for muted/secondary text              |
+| **Border**           | `#334155` | Slate — for dividers and outlines                    |
+
+*/
