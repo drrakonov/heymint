@@ -10,7 +10,7 @@ export const generateAccessToken = (userId: string) => {
     }
 
     return jwt.sign(
-      { data: userId },
+      { userId },
       JWT_ACCESS_SECRET,
       { expiresIn: JWT_ACCESS_EXPIRES_IN }
     );
@@ -31,7 +31,7 @@ export const generateRefreshToken = (userId: string) => {
     }
 
     return jwt.sign(
-      { data: userId },
+      { userId },
       JWT_REFRESH_SECRET,
       { expiresIn: JWT_REFRESH_EXPIRES_IN }
     );

@@ -6,13 +6,14 @@ import {
   signup,
 } from "../controllers/auth.controller";
 import asyncHandler from 'express-async-handler'
+import { authenticate, validateAuth } from "../middlewares/auth.middleware";
 
 const router = express.Router();
 
 
-router.post("/signup", asyncHandler(signup));
-router.post("/login", asyncHandler(login));
-router.post("/refresh", asyncHandler(refresh));
-router.post("/logout", asyncHandler(logout));
+router.post("/signup", validateAuth, asyncHandler(signup));
+router.post("/login", validateAuth, asyncHandler(login));
+router.post("/refresh", authenticate, asyncHandler(refresh));
+router.post("/logout", authenticate, asyncHandler(logout));
 
 export default router;

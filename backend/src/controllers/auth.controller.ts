@@ -109,6 +109,21 @@ export const refresh = async (req: Request, res: Response): Promise<any> => {
         }
 
         const accessToken = generateAccessToken(decoded.userId);
+        const newRefreshToken = generateRefreshToken(decoded.userId);
+        try {
+            await prisma.refreshToken.delete({ where: { token } });
+            await prisma.refreshToken.create({
+                data: {
+                    token: newRefreshToken,
+                    userId: decoded.userId,
+                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                },
+            });
+        } catch (err) {
+            res.status(500).json({ message: "Error modifying refresh token" })
+        }
+
+        setRefreshToken(res, newRefreshToken);
         res.status(200).json({ accessToken, message: "token refreshed..." })
 
     } catch (err) {
