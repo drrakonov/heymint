@@ -1,6 +1,11 @@
 import { useState } from "react";
 
-export default function PasswordInput() {
+type PasswordInputProps = {
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+export default function PasswordInput({value, onChange}: PasswordInputProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -11,6 +16,8 @@ export default function PasswordInput() {
           type={showPassword ? "text" : "password"}
           className="w-full px-2 py-2 bg-surface focus:border-2 rounded-sm border-border focus:outline-none"
           placeholder="Password"
+          value={value}
+          onChange={onChange}
         />
 
         <button

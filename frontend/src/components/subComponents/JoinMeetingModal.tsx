@@ -28,7 +28,7 @@ export default function JoinMeetingModal() {
   };
 
   return (
-    <div className=" min-h-screen flex items-center justify-center p-4 text-[var(--color-text-primary)]">
+    <div className=" pt-10 md:pt-45 flex items-center justify-center p-4 text-[var(--color-text-primary)]">
       <Card className="w-full max-w-2xl bg-[var(--color-surface-1)] ring-1 ring-[var(--color-surface-2)]">
         <CardHeader>
           <CardTitle className="text-center text-2xl font-bold">

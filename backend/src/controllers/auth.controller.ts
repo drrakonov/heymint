@@ -54,7 +54,6 @@ export const signup = async (req: Request, res: Response): Promise<any> => {
 
     setRefreshToken(res, refreshToken);
     res.status(201).json({ accessToken, message: "You are signed in" });
-
 }
 
 

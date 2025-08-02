@@ -16,38 +16,47 @@ import Help from './components/Help'
 import Settings from './components/Settings'
 import AddMeetingModal from './components/subComponents/AddMeetingModal'
 import JoinMeetingModal from './components/subComponents/JoinMeetingModal'
-
+import { AuthProvider } from './context/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
+import AuthRedirect from './components/AuthRedirect'
 function App() {
-
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path='/' element={<HeroLayout />}>
-          <Route index element={<Landing />} />
-        </Route>
+      <AuthProvider> 
+        <Routes>
 
-        <Route path='/auth' element={<Auth />}>
-          <Route index element={<Navigate to="login" replace />} />
-          <Route path='login' element={<Login />} />
-          <Route path='signup' element={<Signup />} />
-        </Route>
+         
+          <Route path='/' element={<HeroLayout />}>
+            <Route index element={<Landing />} />
+          </Route>
 
-        {/* Dashboard Routes */}
-        <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path='profile' element={<Profile />} />
-          <Route path="meetings" element={<Meetings />} />
-          <Route path="bookings" element={<Bookings />} />
-          <Route path="payments" element={<Payments />} />
-          <Route path='settings' element={<Settings />} />
-          <Route path='help' element={<Help />} />
-          <Route path='addmeeting' element={<AddMeetingModal />} />
-          <Route path='joinmeeting' element={<JoinMeetingModal />} />
-        </Route>
+        
+          <Route path='/auth' element={
+            <AuthRedirect><Auth /></AuthRedirect>
+          }>
+            <Route index element={<Navigate to="login" replace />} />
+            <Route path='login' element={<Login />} />
+            <Route path='signup' element={<Signup />} />
+          </Route>
 
-      </Routes>
+          <Route path='/dashboard' element={
+            <ProtectedRoute><DashboardLayout /></ProtectedRoute>
+          }>
+            <Route index element={<Dashboard />} />
+            <Route path='profile' element={<Profile />} />
+            <Route path='meetings' element={<Meetings />} />
+            <Route path='bookings' element={<Bookings />} />
+            <Route path='payments' element={<Payments />} />
+            <Route path='settings' element={<Settings />} />
+            <Route path='help' element={<Help />} />
+            <Route path='addmeeting' element={<AddMeetingModal />} />
+            <Route path='joinmeeting' element={<JoinMeetingModal />} />
+          </Route>
+
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
-  )
+  );
 }
 
 export default App
