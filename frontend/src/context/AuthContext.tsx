@@ -1,10 +1,9 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import axios from "axios";
+import api from "../lib/axios";
 
-// Define the types for AuthContext
 type AuthContextType = {
   accessToken: string | null;
-  user: any; // you can define a User type instead of any
+  user: any;
   signup: (email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -12,7 +11,6 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Provider component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(
     () => localStorage.getItem("accessToken")
@@ -26,26 +24,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      const res = await axios.post(
-        "http://localhost:3000/api/auth/signup",
-        {
-          email,
-          password
-        },
-        {
-          withCredentials: true
-        }
-      );
-
-      const { accessToken, message } = res.data;
+      const res = await api.post("/api/auth/signup", { email, password });
+      const { accessToken } = res.data;
       setAccessToken(accessToken);
       localStorage.setItem("accessToken", accessToken);
+
+      // Set default Authorization for future requests
+      api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
     } catch (err) {
       console.error(err);
-      alert("Something went wrong");
+      alert("Signup failed");
     }
   };
-
 
   const login = async (email: string, password: string) => {
     if (!email || !password) {
@@ -54,43 +44,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      const res = await axios.post(
-        "http://localhost:3000/api/auth/login",
-        {
-          email,
-          password
-        }, {
-          withCredentials: true
-        }
-      );
-
-      const { accessToken, message } = res.data;
+      const res = await api.post("/api/auth/login", { email, password });
+      const { accessToken } = res.data;
       setAccessToken(accessToken);
       localStorage.setItem("accessToken", accessToken);
-    }catch(err) {
+
+      api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+    } catch (err) {
       console.error(err);
-      alert("Something went wrong");
+      alert("Login failed");
     }
-  }
-
-  const logout = async () => {
-    const token = localStorage.getItem("accessToken");
-
-    await axios.post(
-      "http://localhost:3000/api/auth/logout",
-      {},
-      {
-        withCredentials: true,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    setAccessToken(null);
-    localStorage.removeItem("accessToken");
   };
 
+  const logout = async () => {
+    try {
+      await api.post("/api/auth/logout");
+    } catch (err) {
+      console.error("Logout error", err);
+    } finally {
+      setAccessToken(null);
+      localStorage.removeItem("accessToken");
+      delete api.defaults.headers.common["Authorization"];
+    }
+  };
 
   return (
     <AuthContext.Provider value={{ accessToken, signup, user, logout, login }}>
@@ -101,8 +77,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };

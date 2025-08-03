@@ -11,5 +11,5 @@ const router = express_1.default.Router();
 router.post("/signup", auth_middleware_1.validateAuth, (0, express_async_handler_1.default)(auth_controller_1.signup));
 router.post("/login", auth_middleware_1.validateAuth, (0, express_async_handler_1.default)(auth_controller_1.login));
 router.post("/refresh", auth_middleware_1.authenticate, (0, express_async_handler_1.default)(auth_controller_1.refresh));
-router.post("/logout", auth_middleware_1.authenticate, (0, express_async_handler_1.default)(auth_controller_1.logout));
+router.post("/logout", (0, express_async_handler_1.default)(auth_controller_1.logout));
 exports.default = router;
