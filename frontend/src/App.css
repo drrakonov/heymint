@@ -1,0 +1,28 @@
+/* Scrollbar for WebKit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1E2023; /* dark track background */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #34D399; /* --color-accent */
+  border-radius: 10px;
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.3); /* subtle green glow */
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #29B184; /* --color-accent-hover */
+  box-shadow: 0 0 8px rgba(41, 177, 132, 0.5); /* slightly stronger glow on hover */
+}
+
+/* Firefox support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #34D399 #1E2023; /* thumb | track */
+}

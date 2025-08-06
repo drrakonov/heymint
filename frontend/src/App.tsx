@@ -5,20 +5,21 @@ import Auth from './components/Auth'
 import Login from './components/Login'
 import Signup from './components/Signup'
 import Landing from './components/Landing'
-import Dashboard from './components/Dashboard'
+import Dashboard from './components/dashboard/Dashboard'
 import HeroLayout from './components/HeroLayout'
-import DashboardLayout from './components/DashboardLayout'
-import Payments from './components/Payments'
-import Bookings from './components/Bookings'
-import Meetings from './components/Meetings'
-import Profile from './components/Profile'
-import Help from './components/Help'
-import Settings from './components/Settings'
-import AddMeetingModal from './components/subComponents/AddMeetingModal'
-import JoinMeetingModal from './components/subComponents/JoinMeetingModal'
+import Payments from './components/dashboard/Payments'
+import Bookings from './components/dashboard/Bookings'
+import Help from './components/dashboard/Help'
+import Settings from './components/dashboard/Settings'
+import AddMeetingModal from './components/dashboard/AddMeetingModal'
+import JoinMeetingModal from './components/dashboard/JoinMeetingModal'
 import { AuthProvider } from './context/AuthContext'
-import ProtectedRoute from './components/ProtectedRoute'
-import AuthRedirect from './components/AuthRedirect'
+import AuthRedirect from './components/helpers/AuthRedirect'
+import DashboardLayout from './components/dashboard/DashboardLayout'
+import ProtectedRoute from './components/helpers/ProtectedRoute'
+import Profile from './components/dashboard/Profile'
+import Meetings from './components/dashboard/Meetings'
+import Profileupdate from './components/subComponents/Profileupdate'
 function App() {
   return (
     <BrowserRouter>
@@ -51,6 +52,7 @@ function App() {
             <Route path='help' element={<Help />} />
             <Route path='addmeeting' element={<AddMeetingModal />} />
             <Route path='joinmeeting' element={<JoinMeetingModal />} />
+            <Route path='profile-update' element={<Profileupdate />} />
           </Route>
 
         </Routes>

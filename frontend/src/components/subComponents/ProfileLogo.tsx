@@ -1,43 +1,26 @@
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuSeparator,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
+import { useAvatarStore } from "@/store/avatarStore";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import { avatarList } from "@/lib/constants"
 
-//add logout logic here
 
 const ProfileLogo = () => {
-    const navigate = useNavigate();
-    const { logout } = useAuth();
+  const navigate = useNavigate();
+  const { activeAvatarIndex } = useAvatarStore();
+  const avatarSrc = avatarList[activeAvatarIndex];
 
-    const handleLogOut = async () => {
-      await logout();
-      navigate("/auth");
-    }
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="focus:outline-none">
-          <Avatar>
-            <AvatarImage src="https://github.com/shadcn.png" />
-            <AvatarFallback>CN</AvatarFallback>
-          </Avatar>
-        </button>
-      </DropdownMenuTrigger>
-
-      <DropdownMenuContent className="w-20 md:w-35 bg-cardbg text-text-primary" align="end">
-        
-        <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>Profile</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>Settings</DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-text-primary mx-1" />
-        <DropdownMenuItem onClick={handleLogOut} className="text-red-600 font-bold">Logout</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <button
+      className="focus:outline-none rounded-full transition-shadow hover:shadow-md p-1"
+      onClick={() => navigate("/dashboard/profile")}
+      aria-label="View Profile"
+      type="button"
+    >
+      <Avatar className="bg-cardbg">
+        <AvatarImage src={avatarSrc} />
+        <AvatarFallback>CN</AvatarFallback>
+      </Avatar>
+    </button>
   );
 };
 

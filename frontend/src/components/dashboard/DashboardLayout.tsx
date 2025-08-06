@@ -1,8 +1,8 @@
-import Sidebar, { SidebarItems } from "./subComponents/Sidebar";
 import { CalendarClock, ClipboardList, CreditCard, LayoutDashboard, LifeBuoy, Settings, User } from "lucide-react";
 import { Outlet } from "react-router-dom";
-import DashNav from "./subComponents/DashNav";
 import { useSidebarStore } from "@/store/sidebarStore";
+import DashNav from "./DashNav";
+import Sidebar, { SidebarItems } from "../subComponents/Sidebar";
 
 const DashboardLayout = () => {
   const { expanded } = useSidebarStore();

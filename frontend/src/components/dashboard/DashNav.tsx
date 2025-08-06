@@ -1,8 +1,8 @@
 import appLogo from "@/assets/heyMintLogo.png"
-import ProfileLogo from "./ProfileLogo"
-import { GreenButton } from "./Greenbutton"
 import { LogIn, Plus } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { GreenButton } from "../subComponents/Greenbutton";
+import ProfileLogo from "../subComponents/ProfileLogo";
 
 
 const DashNav = () => {
@@ -32,9 +32,9 @@ const DashNav = () => {
                     onClick={() => handleAddMeetingOpen()}
                         variant="primary"
                         label={<span className="flex text-sm items-center justify-center gap-0.5">
-                            <Plus size={20} />
+                            <Plus className="text-black" size={20} />
                             <span
-                                className="hidden sm:block">
+                                className="hidden sm:block text-black font-bold/30 tracking-tighter">
                                 Create Meeting
                             </span>
                         </span>}
