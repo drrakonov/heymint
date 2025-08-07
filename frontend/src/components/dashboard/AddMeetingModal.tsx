@@ -43,7 +43,7 @@ export default function CreateMeeting() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-full">
       <div className="mx-auto max-w-2xl pt-10 space-y-6 p-4 text-[var(--color-text-primary)]">
         <Card className="bg-[var(--color-surface-1)] ring-1 ring-[var(--color-surface-2)]">
           <CardHeader>

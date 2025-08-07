@@ -20,7 +20,7 @@ const Profile = () => {
         navigate("/dashboard/profile-update");
     }
     return (
-        <div className="min-h-screen pt-10 px-2 sm:p-4 md:px-10">
+        <div className="min-h-full pt-10 px-2 sm:p-4 md:px-10">
             <div className="flex items-center justify-between p-4">
                 <div className="flex gap-6 items-center px-3">
                     <button className="h-8 w-8 p-2 bg-cardbg rounded flex justify-center items-center cursor-pointer hover:bg-cardbg/50"

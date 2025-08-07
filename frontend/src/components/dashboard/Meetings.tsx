@@ -48,6 +48,7 @@ export function MeetingCard({
                         {/* Always show description under host on small, only show two lines */}
                         <p className="text-sm mt-2 text-[#8C8D98] line-clamp-2">{description}</p>
                     </div>
+                    
                     {/* On md+: badge/price on the right; on mobile, put below title/host */}
                     <div className="flex flex-row md:flex-col gap-1 items-center mt-2 md:mt-0">
                         <Badge
@@ -68,7 +69,8 @@ export function MeetingCard({
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="py-3">
+            <hr className="my-4 border-t border-surface-2" />
+            <CardContent className="py-2">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-[#6EE7B7]">
                     {isInstant ? (
                         <>
