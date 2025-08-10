@@ -6,7 +6,7 @@ import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from ".
 
 
 
-const setRefreshToken = (res: Response, token: string) => {
+export const setRefreshToken = (res: Response, token: string) => {
     res.cookie(process.env.COOKIE_NAME || "refreshToken", token, {
         httpOnly: true,
         secure: process.env.COOKIE_SECURE === "true",

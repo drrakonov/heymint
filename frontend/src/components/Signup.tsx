@@ -7,18 +7,21 @@ import PasswordInput from "./subComponents/PasswordInput"
 import { SubHeading } from "./subComponents/SubHeading"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
+import { Button } from "./ui/button"
+import google from '@/assets/google.svg'
 
 const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { signup } = useAuth();
+  const { signup, handleGoogleAuth } = useAuth();
 
   const handleSignup = async () => {
     await signup(email, password);
     navigate("/dashboard");
   };
 
+  
 
 
   return <div className="bg-background h-screen flex justify-center">
@@ -33,13 +36,19 @@ const Signup = () => {
           type="email"
         />
         <PasswordInput
-         value={password}
-         onChange={(e) => setPassword(e.target.value)}
-         />
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
         <div className="pt-4">
           <AuthBotton onClick={handleSignup} label={"Signup to heyMint"} />
         </div>
         <BottomWarning label={"Already have an account?"} buttonText={"Log in"} to={"/auth"} />
+        <Button className="w-full bg-cardbg hover:bg-cardbg/50"
+          onClick={handleGoogleAuth}
+        >
+          <img src={google} alt="google-logo" className="w-4 md:w-6" />
+          <span className="text-sm md:text-md">Continue with Google</span>
+        </Button>
       </div>
     </div>
   </div>

@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import api from "../lib/axios";
+import { useAuthStore } from "@/store/authStore";
+import { useUserStore } from "@/store/userStore";
 
 type AuthContextType = {
   accessToken: string | null;
@@ -7,15 +9,33 @@ type AuthContextType = {
   signup: (email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  handleGoogleAuth: () => Promise<void>;
+  getUserInfo: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [accessToken, setAccessToken] = useState<string | null>(
-    () => localStorage.getItem("accessToken")
-  );
-  const [user, setUser] = useState<any>(null);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const setAccessToken = useAuthStore((state) => state.setAccessToken);
+  const { user, clearUser, setUser } = useUserStore();
+
+  const { } = useAuthStore()
+
+  const getUserInfo = async () => {
+    try {
+      const res = await api.get("/api/user/me");
+      const userData = res.data;
+
+      if (!userData) {
+        alert("User not found");
+        return;
+      }
+      setUser(userData);
+    } catch (err) {
+      console.error("Error fetching user info:", err);
+    }
+  };
 
   const signup = async (email: string, password: string) => {
     if (!email || !password) {
@@ -31,6 +51,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Set default Authorization for future requests
       api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+      getUserInfo();
+      
     } catch (err) {
       console.error(err);
       alert("Signup failed");
@@ -50,11 +72,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem("accessToken", accessToken);
 
       api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+      getUserInfo();
     } catch (err) {
       console.error(err);
       alert("Login failed");
     }
   };
+
+  const googleOAuth = async () => {
+    try {
+      window.location.href = "http://localhost:3000/api/auth/google"
+    } catch (err) {
+      console.log(err);
+      alert("Failed to sign-in with google")
+    }
+  }
+
+  const handleGoogleAuth = async () => {
+    await googleOAuth();
+  
+  }
+
 
   const logout = async () => {
     try {
@@ -63,13 +101,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Logout error", err);
     } finally {
       setAccessToken(null);
+      clearUser();
       localStorage.removeItem("accessToken");
       delete api.defaults.headers.common["Authorization"];
     }
   };
 
   return (
-    <AuthContext.Provider value={{ accessToken, signup, user, logout, login }}>
+    <AuthContext.Provider value={{ accessToken, signup, user, logout, login, handleGoogleAuth, getUserInfo }}>
       {children}
     </AuthContext.Provider>
   );

@@ -3,9 +3,40 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { useAvatarStore } from "@/store/avatarStore";
 import { avatarList } from "@/lib/constants"
+import { useUserStore } from "@/store/userStore";
+import api from "@/lib/axios";
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 const Profileupdate = () => {
     const { activeAvatarIndex, setActiveAvatar } = useAvatarStore();
+    const [newName, setNewName] = useState("");
+    const { user } = useUserStore();
+    const { getUserInfo } = useAuth();
+    const navigate = useNavigate();
+
+    const handleUpdateUser = async () => {
+        try {
+            const email = user?.email;
+            if(!email || newName === "") {
+                alert("Failed to update profile");
+                return;
+            }
+
+            const res = await api.post("api/user/update-user", { newName, email });
+            if(res.data.success) {
+                getUserInfo();
+                alert(res.data.message);
+                navigate("/dashboard/profile");
+            }else {
+                alert("Something went wrong")
+            }
+        }catch(err) {
+            console.error("profile updation failed: ", err);
+            alert("Failed to update profile")
+        }
+    } 
 
     return (
         <div className="min-h-screen flex flex-col items-center pt-10 md:pt-35 gap-6 p-10">
@@ -54,8 +85,9 @@ const Profileupdate = () => {
             <div className="w-full max-w-md space-y-2">
                 <span className="text-text-primary text-lg block text-center">Username</span>
                 <input
+                onChange={(e) => setNewName(e.target.value)}
                     type="text"
-                    className="w-full px-3 py-2 bg-cardbg focus:border-2 focus:border-accent-hover rounded-lg border-border border-2 focus:outline-none placeholder-text-secondary"
+                    className="w-full px-3 py-2 bg-cardbg text-text-primary focus:border-2 focus:border-accent-hover rounded-lg border-border border-2 focus:outline-none placeholder-text-secondary"
                     placeholder="your-username"
                 />
                 <Button className="font-medium w-full">Update Profile</Button>

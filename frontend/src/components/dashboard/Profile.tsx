@@ -5,10 +5,12 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useAvatarStore } from "@/store/avatarStore";
 import { avatarList } from "@/lib/constants";
+import { useUserStore } from "@/store/userStore";
 
 const Profile = () => {
     const { logout } = useAuth();
     const navigate = useNavigate();
+    const { user } = useUserStore();
     const { activeAvatarIndex } = useAvatarStore();
       const avatarSrc = avatarList[activeAvatarIndex];
 
@@ -56,10 +58,10 @@ const Profile = () => {
                     </Avatar>
                     <div className="space-y-1 truncate max-w-full">
                         <div className="text-text-primary text-lg sm:text-2xl md:text-3xl font-medium truncate">
-                            Abhay Pratap Singh
+                            {user?.name || "Unknown"}
                         </div>
                         <span className="text-text-primary text-lg font-light truncate">
-                            admin@gmail.com
+                            {user?.email || "Unknown@gmail.com"}
                         </span>
                     </div>
                 </div>

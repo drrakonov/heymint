@@ -1,5 +1,5 @@
 import { Response, Request, NextFunction } from "express"
-import jwt from 'jsonwebtoken'
+import jwt, { JwtPayload } from 'jsonwebtoken'
 import { z } from "zod"
 
 
@@ -8,11 +8,30 @@ const authSchema = z.object({
     password: z.string().min(6, "Password must be atleast 6 characters")
 });
 
+const updateProfile = z.object({
+    username: z.string()
+        .max(10, "Username must be less than 10 characters")
+        .min(3, "Username must be atleast 3 characters"),
+        email: z.string().email(),
+})
+
 export const validateAuth = (req: Request, res: Response, next: NextFunction): any => {
     try {
         authSchema.parse(req.body);
         next();
-    }catch(err) {
+    } catch (err) {
+        if (typeof err === "object" && err !== null && "errors" in err && Array.isArray((err as any).errors)) {
+            return res.status(400).json({ message: (err as any).errors[0].message });
+        }
+        return res.status(400).json({ message: "Validation error" });
+    }
+}
+
+export const validateUpdateProfile = (req: Request, res: Response, next: NextFunction): any => {
+    try {
+        updateProfile.parse(req.body);
+        next();
+    } catch (err) {
         if (typeof err === "object" && err !== null && "errors" in err && Array.isArray((err as any).errors)) {
             return res.status(400).json({ message: (err as any).errors[0].message });
         }
@@ -29,13 +48,11 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): a
     const token = auth.split(" ")[1];
     try {
 
-        const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as {
-            userId: string
-        };
-        (req as any).userId = decoded.userId;
+        const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as JwtPayload
+        req.user = { id: decoded.userId };
         next();
 
-    }catch(err) {
+    } catch (err) {
         res.status(401).json({ message: "Invalid token" })
     }
 

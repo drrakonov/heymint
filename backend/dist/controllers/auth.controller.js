@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logout = exports.refresh = exports.login = exports.signup = void 0;
+exports.logout = exports.refresh = exports.login = exports.signup = exports.setRefreshToken = void 0;
 const client_1 = require("@prisma/client");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jwt_1 = require("../utils/jwt");
@@ -24,6 +24,7 @@ const setRefreshToken = (res, token) => {
         maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 };
+exports.setRefreshToken = setRefreshToken;
 const prisma = new client_1.PrismaClient();
 const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = req.body;
@@ -51,7 +52,7 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
     });
-    setRefreshToken(res, refreshToken);
+    (0, exports.setRefreshToken)(res, refreshToken);
     res.status(201).json({ accessToken, message: "You are signed in" });
 });
 exports.signup = signup;
@@ -79,7 +80,7 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
     });
-    setRefreshToken(res, refreshToken);
+    (0, exports.setRefreshToken)(res, refreshToken);
     res.status(200).json({ accessToken, message: "You are loggedin" });
 });
 exports.login = login;
@@ -110,7 +111,7 @@ const refresh = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         catch (err) {
             res.status(500).json({ message: "Error modifying refresh token" });
         }
-        setRefreshToken(res, newRefreshToken);
+        (0, exports.setRefreshToken)(res, newRefreshToken);
         res.status(200).json({ accessToken, message: "token refreshed..." });
     }
     catch (err) {
