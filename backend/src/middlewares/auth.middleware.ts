@@ -9,10 +9,11 @@ const authSchema = z.object({
 });
 
 const updateProfile = z.object({
-    username: z.string()
-        .max(10, "Username must be less than 10 characters")
+    newName: z.string()
+        .max(20, "Username must be less than 10 characters")
         .min(3, "Username must be atleast 3 characters"),
-        email: z.string().email(),
+    id: z.string().uuid("Invalid user ID")
+
 })
 
 export const validateAuth = (req: Request, res: Response, next: NextFunction): any => {
@@ -55,5 +56,4 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): a
     } catch (err) {
         res.status(401).json({ message: "Invalid token" })
     }
-
 }

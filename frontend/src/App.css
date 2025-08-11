@@ -26,3 +26,9 @@
   scrollbar-width: thin;
   scrollbar-color: #34D399 #1E2023; /* thumb | track */
 }
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

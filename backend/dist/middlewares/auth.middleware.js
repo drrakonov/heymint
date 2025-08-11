@@ -11,10 +11,10 @@ const authSchema = zod_1.z.object({
     password: zod_1.z.string().min(6, "Password must be atleast 6 characters")
 });
 const updateProfile = zod_1.z.object({
-    username: zod_1.z.string()
-        .max(10, "Username must be less than 10 characters")
+    newName: zod_1.z.string()
+        .max(20, "Username must be less than 10 characters")
         .min(3, "Username must be atleast 3 characters"),
-    email: zod_1.z.string().email(),
+    id: zod_1.z.string().uuid("Invalid user ID")
 });
 const validateAuth = (req, res, next) => {
     try {

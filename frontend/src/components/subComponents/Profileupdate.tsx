@@ -5,7 +5,6 @@ import { useAvatarStore } from "@/store/avatarStore";
 import { avatarList } from "@/lib/constants"
 import { useUserStore } from "@/store/userStore";
 import api from "@/lib/axios";
-import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
@@ -13,20 +12,19 @@ const Profileupdate = () => {
     const { activeAvatarIndex, setActiveAvatar } = useAvatarStore();
     const [newName, setNewName] = useState("");
     const { user } = useUserStore();
-    const { getUserInfo } = useAuth();
     const navigate = useNavigate();
 
     const handleUpdateUser = async () => {
         try {
-            const email = user?.email;
-            if(!email || newName === "") {
+            const id = user?.id;
+            if(!id || newName === "") {
                 alert("Failed to update profile");
                 return;
             }
 
-            const res = await api.post("api/user/update-user", { newName, email });
+            const res = await api.post("/api/user/update-user", { newName, id });
             if(res.data.success) {
-                getUserInfo();
+                user.name = newName;
                 alert(res.data.message);
                 navigate("/dashboard/profile");
             }else {
@@ -90,7 +88,7 @@ const Profileupdate = () => {
                     className="w-full px-3 py-2 bg-cardbg text-text-primary focus:border-2 focus:border-accent-hover rounded-lg border-border border-2 focus:outline-none placeholder-text-secondary"
                     placeholder="your-username"
                 />
-                <Button className="font-medium w-full">Update Profile</Button>
+                <Button onClick={handleUpdateUser} className="font-medium w-full">Update Profile</Button>
             </div>
         </div>
     );

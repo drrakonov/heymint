@@ -23,7 +23,7 @@ const router = express_1.default.Router();
 const prisma = new client_1.PrismaClient();
 router.post("/signup", auth_middleware_1.validateAuth, (0, express_async_handler_1.default)(auth_controller_1.signup));
 router.post("/login", auth_middleware_1.validateAuth, (0, express_async_handler_1.default)(auth_controller_1.login));
-router.post("/refresh", auth_middleware_1.authenticate, (0, express_async_handler_1.default)(auth_controller_1.refresh));
+router.post("/refresh", (0, express_async_handler_1.default)(auth_controller_1.refresh));
 router.post("/logout", auth_middleware_1.authenticate, (0, express_async_handler_1.default)(auth_controller_1.logout));
 router.get('/google', passport_1.default.authenticate('google', { scope: ['profile', 'email'] }));
 router.get('/google/callback', passport_1.default.authenticate('google', { session: false, failureRedirect: "/auth/login" }), (req, res) => __awaiter(void 0, void 0, void 0, function* () {

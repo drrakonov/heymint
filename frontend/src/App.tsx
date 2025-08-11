@@ -20,18 +20,20 @@ import ProtectedRoute from './components/helpers/ProtectedRoute'
 import Profile from './components/dashboard/Profile'
 import Meetings from './components/dashboard/Meetings'
 import Profileupdate from './components/subComponents/Profileupdate'
+
 function App() {
+  
   return (
     <BrowserRouter>
-      <AuthProvider> 
+      <AuthProvider>
         <Routes>
 
-         
+
           <Route path='/' element={<HeroLayout />}>
             <Route index element={<Landing />} />
           </Route>
 
-        
+
           <Route path='/auth' element={
             <AuthRedirect><Auth /></AuthRedirect>
           }>

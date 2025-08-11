@@ -107,6 +107,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+
+
   return (
     <AuthContext.Provider value={{ accessToken, signup, user, logout, login, handleGoogleAuth, getUserInfo }}>
       {children}

@@ -16,7 +16,7 @@ const getUserInfo = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     try {
         const user = yield prisma.user.findUnique({
             where: { id: req.user.id },
-            select: { name: true, email: true, provider: true },
+            select: { name: true, email: true, provider: true, id: true },
         });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -30,18 +30,18 @@ const getUserInfo = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 exports.getUserInfo = getUserInfo;
 const updateUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { newName, email } = req.body;
-        if (!newName)
-            return req.status(400).json({ success: false, message: "All fields are required" });
+        const { newName, id } = req.body;
+        if (!newName || !id)
+            return res.status(400).json({ success: false, message: "All fields are required" });
         const user = yield prisma.user.update({
             where: {
-                email,
+                id,
             },
             data: {
                 name: newName
-            }
+            },
         });
-        return req.status(205).json({ seccess: true, message: "Profile updated successfully" });
+        return res.status(200).json({ success: true, message: "Profile updated successfully" });
     }
     catch (err) {
         return res.status(500).json({ success: false, message: "Internal server error" });
