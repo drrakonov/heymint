@@ -13,7 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export default function CreateMeeting() {
   const [meetingTitle, setMeetingTitle] = useState("")
   const [description, setDescription] = useState("")
+  const [meetingPassword, setMeetingPassword] = useState("");
   const [isScheduled, setIsScheduled] = useState(false)
+  const [isProtected, setIsProtected] = useState(false);
   const [isPaid, setIsPaid] = useState(false)
   const [meetingDate, setMeetingDate] = useState("")
   const [startTime, setStartTime] = useState("")
@@ -78,6 +80,38 @@ export default function CreateMeeting() {
               </div>
             </div>
 
+            {/* ---------- isPROTECTED FIELDS ---------- */}
+
+            <div className="flex gap-1">
+              <div>
+                <Label className="text-sm font-medium">
+                  Protect
+                </Label>
+              </div>
+              <Switch
+                checked={isProtected}
+                onCheckedChange={setIsProtected}
+                className="data-[state=checked]:bg-[var(--color-accent)] data-[state=unchecked]:bg-gray-600"
+              />
+            </div>
+
+
+            {/* ---------- isPROTECTED FIELDS ---------- */}
+
+            {isProtected && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  Passowrd <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  value={meetingPassword}
+                  onChange={(e) => setMeetingPassword(e.target.value)}
+                  placeholder="Set meeting password"
+                  className="w-full border border-[var(--color-surface-2)] bg-[var(--color-surface-2)] placeholder:text-[var(--color-text-secondary)] focus:ring-2 focus:ring-[var(--color-accent)]"
+                />
+              </div>
+            )}
+
             {/* ---------- SCHEDULE TOGGLE ---------- */}
             <div className="flex items-center justify-between rounded-lg bg-[var(--color-surface-2)] p-4">
               <div>
@@ -94,6 +128,7 @@ export default function CreateMeeting() {
                 className="data-[state=checked]:bg-[var(--color-accent)] data-[state=unchecked]:bg-gray-600"
               />
             </div>
+
 
             {/* ---------- SCHEDULED FIELDS ---------- */}
             {isScheduled && (

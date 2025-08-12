@@ -2,6 +2,7 @@
 const Loader = ({ size = 40, color = "#4F46E5" }) => {
   return (
     <div
+    className="flex items-center justify-center"
       style={{
         width: size,
         height: size,

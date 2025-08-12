@@ -8,6 +8,7 @@ const express_1 = __importDefault(require("express"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const user_routes_1 = __importDefault(require("./routes/user.routes"));
+const meeting_routes_1 = __importDefault(require("./routes/meeting.routes"));
 const cors_1 = __importDefault(require("cors"));
 const passport_controller_1 = __importDefault(require("./controllers/passport.controller"));
 const app = (0, express_1.default)();
@@ -26,6 +27,7 @@ app.get('/', (req, res) => {
 });
 app.use("/api/auth", auth_routes_1.default);
 app.use("/api/user", user_routes_1.default);
+app.use("/api/meeting", meeting_routes_1.default);
 app.use((err, req, res, next) => {
     console.error("🔥 Error:", err.stack || err);
     res.status(err.statusCode || 500).json({

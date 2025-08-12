@@ -103,7 +103,7 @@ export function MeetingCard({
                     size="sm"
                     variant={isInstant ? "default" : "outline"}
                 >
-                    {isInstant ? "Join Now" : "Join Meeting"}
+                    {isInstant ? "Buy Now" : "Join Meeting"}
                 </Button>
             </CardFooter>
         </Card>

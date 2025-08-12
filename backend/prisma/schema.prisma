@@ -41,6 +41,8 @@ model Meeting {
   id           String            @id @default(uuid())
   title        String
   desc         String
+  password     String?
+  isProtected  Boolean
   createdBy    User              @relation("createdMeetings", fields: [createdById], references: [id])
   createdById  String
   createdAt    DateTime          @default(now())

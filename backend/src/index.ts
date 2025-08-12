@@ -3,6 +3,7 @@ import express, { Response, Request, NextFunction } from 'express'
 import cookieParser from 'cookie-parser';
 import authRoutes from "./routes/auth.routes"
 import userRoutes from './routes/user.routes'
+import meetingRoutes from './routes/meeting.routes'
 import cors from 'cors'
 import passport from './controllers/passport.controller';
 
@@ -28,6 +29,7 @@ app.get('/', (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/meeting", meetingRoutes);
 
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
