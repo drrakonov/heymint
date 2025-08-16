@@ -20,9 +20,10 @@ import ProtectedRoute from './components/helpers/ProtectedRoute'
 import Profile from './components/dashboard/Profile'
 import Meetings from './components/dashboard/Meetings'
 import Profileupdate from './components/subComponents/Profileupdate'
+import StreamVideoProvider from './providers/StreamClientProvider'
 
 function App() {
-  
+
   return (
     <BrowserRouter>
       <AuthProvider>
@@ -43,7 +44,11 @@ function App() {
           </Route>
 
           <Route path='/dashboard' element={
-            <ProtectedRoute><DashboardLayout /></ProtectedRoute>
+            <ProtectedRoute>
+              <StreamVideoProvider>
+                <DashboardLayout />
+              </StreamVideoProvider>
+            </ProtectedRoute>
           }>
             <Route index element={<Dashboard />} />
             <Route path='profile' element={<Profile />} />
