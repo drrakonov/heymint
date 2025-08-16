@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 import api from "../lib/axios";
 import { useAuthStore } from "@/store/authStore";
 import { useUserStore } from "@/store/userStore";
@@ -10,8 +10,16 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   handleGoogleAuth: () => Promise<void>;
-  getUserInfo: () => Promise<void>;
 };
+
+type User = {
+  id: string,
+  name: string,
+  email: string,
+  provider: string,
+  streamToken: string,
+  apiKey: string
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -20,7 +28,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const setAccessToken = useAuthStore((state) => state.setAccessToken);
   const { user, clearUser, setUser } = useUserStore();
 
-  const { } = useAuthStore()
 
   const getUserInfo = async () => {
     try {
@@ -31,7 +38,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         alert("User not found");
         return;
       }
-      setUser(userData);
+      const tokenRes = await api.post("/api/meeting/token", { userId: userData.id, name: userData.name });
+      const tokenAndAPIkey = tokenRes.data
+
+      const UserGot: User = {
+        name: userData.name,
+        id: userData.id,
+        email: userData.email,
+        provider: userData.provider,
+        streamToken: tokenAndAPIkey.token,
+        apiKey: tokenAndAPIkey.apiKey
+      }
+
+      
+      setUser(UserGot);
     } catch (err) {
       console.error("Error fetching user info:", err);
     }
@@ -49,9 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setAccessToken(accessToken);
       localStorage.setItem("accessToken", accessToken);
 
-      // Set default Authorization for future requests
       api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
-      getUserInfo();
       
     } catch (err) {
       console.error(err);
@@ -72,7 +90,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem("accessToken", accessToken);
 
       api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
-      getUserInfo();
     } catch (err) {
       console.error(err);
       alert("Login failed");
@@ -108,9 +125,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
 
+  useEffect(() => {
+    getUserInfo().catch((err) => {
+      console.error("Failed to get user info", err);
+    })
+  }, [])
+
 
   return (
-    <AuthContext.Provider value={{ accessToken, signup, user, logout, login, handleGoogleAuth, getUserInfo }}>
+    <AuthContext.Provider value={{ accessToken, signup, user, logout, login, handleGoogleAuth }}>
       {children}
     </AuthContext.Provider>
   );

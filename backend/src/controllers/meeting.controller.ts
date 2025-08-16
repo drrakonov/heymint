@@ -23,13 +23,13 @@ export const createGetStreamToken = async (req: Request, res: Response): Promise
         await client.upsertUsers([newUser]);
         const validity = 60 * 60;
 
-        const token = client.generateCallToken({
+        const token = client.generateUserToken({
             user_id: userId,
-            call_cids: [], // Provide an array of call IDs as required, empty if none
             validity_in_seconds: validity
         });
 
-        res.status(200).json({ success: true, message: "Token generated successfully", token })
+        const apiKey = getStreamApiKey;
+        res.status(200).json({ success: true, message: "Token generated successfully", token, apiKey })
 
     }catch(err) {
         return res.status(500).json({ success: false, message: "get stream token generation failed" })

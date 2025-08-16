@@ -4,7 +4,9 @@ type User = {
     id: string,
     name: string,
     email: string,
-    provider: string
+    provider: string,
+    apiKey: string,
+    streamToken: string,
 } | null;
 
 interface UserState {

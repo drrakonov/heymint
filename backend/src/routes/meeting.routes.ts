@@ -6,6 +6,6 @@ import { authenticate } from '../middlewares/auth.middleware';
 const router = express.Router();
 
 
-router.get("/token", authenticate, expressAsyncHandler(createGetStreamToken));
+router.post("/token", authenticate, expressAsyncHandler(createGetStreamToken));
 
 export default router;
