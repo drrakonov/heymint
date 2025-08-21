@@ -21,12 +21,16 @@ import Profile from './components/dashboard/Profile'
 import Meetings from './components/dashboard/Meetings'
 import Profileupdate from './components/subComponents/Profileupdate'
 import StreamVideoProvider from './providers/StreamClientProvider'
-
+import MeetingShower from './components/meeting/MeetingShower'
+import "@stream-io/video-react-sdk/dist/css/styles.css";
+import { Toaster } from 'react-hot-toast'
 function App() {
 
   return (
     <BrowserRouter>
+    <Toaster position="top-center" toastOptions={{duration: 3000}} />
       <AuthProvider>
+        <StreamVideoProvider>
         <Routes>
 
 
@@ -45,9 +49,8 @@ function App() {
 
           <Route path='/dashboard' element={
             <ProtectedRoute>
-              <StreamVideoProvider>
+              
                 <DashboardLayout />
-              </StreamVideoProvider>
             </ProtectedRoute>
           }>
             <Route index element={<Dashboard />} />
@@ -62,7 +65,10 @@ function App() {
             <Route path='profile-update' element={<Profileupdate />} />
           </Route>
 
+          <Route path='/meeting/:id' element={<MeetingShower />} />
+
         </Routes>
+        </StreamVideoProvider>
       </AuthProvider>
     </BrowserRouter>
   );

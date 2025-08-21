@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, type ReactNode } from "react";
 import api from "../lib/axios";
 import { useAuthStore } from "@/store/authStore";
 import { useUserStore } from "@/store/userStore";
+import toast from 'react-hot-toast';
 
 type AuthContextType = {
   accessToken: string | null;
@@ -35,7 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userData = res.data;
 
       if (!userData) {
-        alert("User not found");
+        toast.error("User not found");
         return;
       }
       const tokenRes = await api.post("/api/meeting/token", { userId: userData.id, name: userData.name });
@@ -59,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signup = async (email: string, password: string) => {
     if (!email || !password) {
-      alert("Please fill all the entries");
+      toast.error("Please fill all the entries");
       return;
     }
 
@@ -73,13 +74,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
     } catch (err) {
       console.error(err);
-      alert("Signup failed");
+      toast.error("Signup failed");
     }
   };
 
   const login = async (email: string, password: string) => {
     if (!email || !password) {
-      alert("Please fill all the entries");
+      toast.error("Please fill all the entries");
       return;
     }
 
@@ -92,7 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
     } catch (err) {
       console.error(err);
-      alert("Login failed");
+      toast.error("Login failed");
     }
   };
 
@@ -101,7 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       window.location.href = "http://localhost:3000/api/auth/google"
     } catch (err) {
       console.log(err);
-      alert("Failed to sign-in with google")
+      toast.error("Failed to sign-in with google")
     }
   }
 

@@ -7,6 +7,7 @@ import { useUserStore } from "@/store/userStore";
 import api from "@/lib/axios";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import toast from 'react-hot-toast'
 
 const Profileupdate = () => {
     const { activeAvatarIndex, setActiveAvatar } = useAvatarStore();
@@ -18,21 +19,21 @@ const Profileupdate = () => {
         try {
             const id = user?.id;
             if(!id || newName === "") {
-                alert("Failed to update profile");
+                toast.success("Failed to update profile")
                 return;
             }
 
             const res = await api.post("/api/user/update-user", { newName, id });
             if(res.data.success) {
                 user.name = newName;
-                alert(res.data.message);
+                toast.success(res.data.message);
                 navigate("/dashboard/profile");
             }else {
-                alert("Something went wrong")
+                toast.error("Something went wrong")
             }
         }catch(err) {
             console.error("profile updation failed: ", err);
-            alert("Failed to update profile")
+            toast.error("Failed to update profile")
         }
     } 
 

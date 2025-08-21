@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useUserStore } from "@/store/userStore"
+import { Call, useStreamVideoClient } from "@stream-io/video-react-sdk"
+import { useNavigate } from "react-router-dom"
 
 
 
@@ -27,8 +30,6 @@ export default function CreateMeeting() {
   const [isCreating, setIsCreating] = useState(false)
 
   /* --- helpers (left empty) --- */
-  const generateMeetingCode = () => { }
-  const handleCreateMeeting = async () => { }
   const copyMeetingCode = async () => { }
   const resetForm = () => {
     setMeetingTitle("")
@@ -43,6 +44,58 @@ export default function CreateMeeting() {
     setCurrency("USD")
     setMeetingCode("")
   }
+
+  const { user } = useUserStore();
+  const client = useStreamVideoClient();
+  const [startAtValue, setStartAtValue] = useState({
+    dateTime: new Date(),
+    description: '',
+    link: ''
+  });
+  const [callDetails, setCallDetails] = useState<Call>();
+  const navigate = useNavigate();
+
+
+
+
+  const handleCreateQuickMeeting = async () => {
+    if (!user || !client) return;
+
+    try {
+      if(!startAtValue.dateTime) return;
+      
+      const id = crypto.randomUUID();
+      const call = client.call("default", id);
+
+      setIsCreating(true);
+
+      if(!call) throw new Error("Failed to create call");
+      const startsAt = startAtValue.dateTime.toISOString() || 
+      new Date(Date.now()).toISOString();
+
+      const description = startAtValue.description || 'Instant meeting';
+
+      await call.getOrCreate({
+        data: {
+          starts_at: startsAt,
+          custom: {
+            description
+          }
+        }
+      })
+      setCallDetails(call);
+      setIsCreating(false);
+      if(!startAtValue.description) {
+        navigate(`/meeting/${call.id}`);
+      }
+
+    }catch(err) {
+      console.error("Failed to create meeting", err);
+    }
+
+  }
+
+
 
   return (
     <div className="min-h-full">
@@ -258,7 +311,7 @@ export default function CreateMeeting() {
 
             {/* ---------- CREATE BUTTON ---------- */}
             <Button
-              onClick={handleCreateMeeting}
+              onClick={handleCreateQuickMeeting}
               disabled={isCreating}
               className="h-12 w-full bg-[var(--color-accent)] text-[var(--color-surface)] font-medium hover:bg-[var(--color-accent-hover)] active:bg-[var(--color-accent-active)]"
             >
