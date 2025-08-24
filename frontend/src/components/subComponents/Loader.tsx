@@ -1,21 +1,55 @@
+import { motion } from 'motion/react';
+
 // Loader.jsx
-const Loader = ({ size = 40, color = "#4F46E5" }) => {
+const Loader = () => {
   return (
-    <div
-    className="flex items-center justify-center"
-      style={{
-        width: size,
-        height: size,
-        border: `${size / 8}px solid #e5e7eb`, // Tailwind gray-200 equivalent
-        borderTop: `${size / 8}px solid ${color}`,
-        borderRadius: "50%",
-        animation: "spin 1s linear infinite",
-      }}
-    />
+    <motion.div className='h-screen w-full bg-background flex justify-center items-center gap-2'>
+            <motion.span
+                initial={{
+                    y: 0
+                }}
+                animate={{
+                    y: [0, 10, 0]
+                }}
+                transition={{
+                    duration: 1,
+                    repeat: Infinity,
+                    repeatType: 'loop',
+                    delay: 0
+                }}
+                className='p-2 md:p-4 bg-accent rounded-full'></motion.span>
+            <motion.span
+                initial={{
+                    y: 0
+                }}
+                animate={{
+                    y: [0, 10, 0]
+                }}
+                transition={{
+                    duration: 1,
+                    repeat: Infinity,
+                    repeatType: 'loop',
+                    delay: 0.2
+                }}
+                className='p-2 md:p-4 bg-accent rounded-full'></motion.span>
+            <motion.span
+                initial={{
+                    y: 0
+                }}
+                animate={{
+                    y: [0, 10, 0]
+                }}
+                transition={{
+                    duration: 1,
+                    repeat: Infinity,
+                    repeatType: 'loop',
+                    delay: 0.4
+                }}
+                className='p-2 md:p-4 bg-accent rounded-full'></motion.span>
+        </motion.div>
   );
 };
 
 export default Loader;
 
-// CSS (global.css or in index.css)
 
