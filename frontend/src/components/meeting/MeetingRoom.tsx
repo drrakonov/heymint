@@ -3,7 +3,7 @@ import { CallControls, CallingState, CallParticipantsList, CallStatsButton, Pagi
 import { useState } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { LayoutList, Users } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import EndCallButton from "./EndCallButton";
 import Loader from "../subComponents/Loader";
 
@@ -14,7 +14,8 @@ type CallLayoutType = 'grid' | 'speaker-left' | 'speaker-right'
 const MeetingRoom = () => {
     const [layout, setLayout] = useState<CallLayoutType>('speaker-left')
     const [showParticipants, setShowParticipants] = useState(false)
-    const { isPersonalRoom } = useParams();
+    const [searchParams] = useSearchParams();
+    const isPersonalRoom  = !!searchParams.get("personal");
     const { useCallCallingState } = useCallStateHooks();
     const callingState = useCallCallingState();
 
@@ -42,7 +43,7 @@ const MeetingRoom = () => {
                         <CallParticipantsList onClose={() => setShowParticipants(false)} />
                 </div>
             </div>
-            <div className="fixed bottom-0 flex w-full items-center justify-center gap-5">
+            <div className="fixed bottom-0 flex w-full items-center justify-center gap-5 flex-wrap">
                     <CallControls />
                     <DropdownMenu>
                         <div className="flex items-center">

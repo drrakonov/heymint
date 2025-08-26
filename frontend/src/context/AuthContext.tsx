@@ -127,10 +127,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
   useEffect(() => {
-    getUserInfo().catch((err) => {
-      console.error("Failed to get user info", err);
-    })
-  }, [])
+    (async () => {
+      try {
+        await api.post("/api/auth/refresh");
+        await getUserInfo();
+      } catch(err) {
+        console.error("Startup auth failed", err);
+        clearUser();
+      }
+    })();
+  }, []);
 
 
   return (

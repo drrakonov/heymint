@@ -9,8 +9,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createGetStreamToken = void 0;
+exports.handleMeetingSetup = exports.createGetStreamToken = void 0;
 const node_sdk_1 = require("@stream-io/node-sdk");
+const client_1 = require("@prisma/client");
+const prisma = new client_1.PrismaClient();
 const getStreamApiKey = process.env.STREAM_API_KEY;
 const getStreamApiSecret = process.env.STREAM_SECRET_KEY;
 const client = new node_sdk_1.StreamClient(getStreamApiKey, getStreamApiSecret);
@@ -39,3 +41,27 @@ const createGetStreamToken = (req, res) => __awaiter(void 0, void 0, void 0, fun
     }
 });
 exports.createGetStreamToken = createGetStreamToken;
+const handleMeetingSetup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { title, description, isScheduled, isPaid, price, startingTime, createdBy, isProtected, password, meetingCode } = req.body;
+        yield prisma.meeting.create({
+            data: {
+                title: title,
+                desc: description,
+                password: isProtected ? password : null,
+                isProtected: isProtected,
+                createdById: createdBy,
+                startingTime: isScheduled ? startingTime : new Date(),
+                price: isPaid ? price : 0,
+                isPaid: isPaid,
+                meetingCode: meetingCode
+            }
+        });
+        return res.status(201).json({ success: true, message: "meeting details stored" });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ success: false, message: "meeting setup failed" });
+    }
+});
+exports.handleMeetingSetup = handleMeetingSetup;

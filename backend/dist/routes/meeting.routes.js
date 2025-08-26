@@ -9,4 +9,5 @@ const meeting_controller_1 = require("../controllers/meeting.controller");
 const auth_middleware_1 = require("../middlewares/auth.middleware");
 const router = express_1.default.Router();
 router.post("/token", auth_middleware_1.authenticate, (0, express_async_handler_1.default)(meeting_controller_1.createGetStreamToken));
+router.post("/setup-meeting", auth_middleware_1.validateMeetingInput, auth_middleware_1.authenticate, (0, express_async_handler_1.default)(meeting_controller_1.handleMeetingSetup));
 exports.default = router;

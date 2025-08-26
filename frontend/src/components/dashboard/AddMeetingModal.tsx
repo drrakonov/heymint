@@ -1,79 +1,125 @@
 import { useState } from "react"
-import { Calendar, Clock, Copy, DollarSign } from "lucide-react"
+import { Calendar, Copy, DollarSign } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useUserStore } from "@/store/userStore"
 import { Call, useStreamVideoClient } from "@stream-io/video-react-sdk"
 import { useNavigate } from "react-router-dom"
+import api from "@/lib/axios"
+import toast from "react-hot-toast"
 
+type MeetingType = "quick-meeting" | "scheduled-meeting" | "paid-meeting";
 
 
 export default function CreateMeeting() {
   const [meetingTitle, setMeetingTitle] = useState("")
-  const [description, setDescription] = useState("")
+  const [meetingDescription, setDescription] = useState("")
   const [meetingPassword, setMeetingPassword] = useState("");
   const [isScheduled, setIsScheduled] = useState(false)
   const [isProtected, setIsProtected] = useState(false);
   const [isPaid, setIsPaid] = useState(false)
   const [meetingDate, setMeetingDate] = useState("")
-  const [startTime, setStartTime] = useState("")
-  const [endTime, setEndTime] = useState("")
-  const [duration, setDuration] = useState("")
-  const [price, setPrice] = useState("")
-  const [currency, setCurrency] = useState("USD")
+  const [price, setPrice] = useState(0.0)
   const [meetingCode, setMeetingCode] = useState("")
   const [isCreating, setIsCreating] = useState(false)
+  const [meetingType, setMeetingType] = useState<MeetingType>("quick-meeting");
+  const [isCreated, setIsCreated] = useState(false);
 
   /* --- helpers (left empty) --- */
   const copyMeetingCode = async () => { }
   const resetForm = () => {
     setMeetingTitle("")
     setDescription("")
+    setMeetingPassword("")
     setIsScheduled(false)
     setIsPaid(false)
+    setIsProtected(false)
     setMeetingDate("")
-    setStartTime("")
-    setEndTime("")
-    setDuration("")
-    setPrice("")
-    setCurrency("USD")
+    setPrice(0.0)
     setMeetingCode("")
+    setMeetingType("quick-meeting");
   }
 
   const { user } = useUserStore();
   const client = useStreamVideoClient();
   const [startAtValue, setStartAtValue] = useState({
     dateTime: new Date(),
-    description: '',
+    description: meetingType,
     link: ''
   });
   const [callDetails, setCallDetails] = useState<Call>();
   const navigate = useNavigate();
 
 
+  const createMeetingCode = () => {
+    const code = crypto.randomUUID();
+    return code;
+  }
+
+  const setUpMeeting = async () => {
+    if (!user) return;
+    try {
+
+      const code = createMeetingCode();
+      setMeetingCode(code);
+
+      if(meetingType === "quick-meeting") {
+        const now = new Date();
+        setMeetingDate(now.toISOString().slice(0, 16));
+      }
+
+      const res = await api.post("api/meeting/setup-meeting", {
+        title: meetingTitle,
+        description: meetingDescription,
+        isScheduled: isScheduled,
+        isPaid: isPaid,
+        isProtected: isProtected,
+        price: price,
+        createdBy: user.id,
+        password: meetingPassword,
+        startingTime: meetingDate,
+        meetingCode: meetingCode
+      })
+
+      if(!res.data.success) {
+        toast.error(res.data.message);
+        return;
+      }
+
+      if(meetingType === "quick-meeting") {
+        await handleCreateMeeting(code);
+        return;
+      }
+      setIsCreated(true);
+
+    } catch (err) {
+      console.error("Failed to setup meeting", err);
+    }
+  }
 
 
-  const handleCreateQuickMeeting = async () => {
-    if (!user || !client) return;
+
+
+
+  const handleCreateMeeting = async (id: string) => {
+    if (!user || !client || !id) return;
 
     try {
-      if(!startAtValue.dateTime) return;
-      
-      const id = crypto.randomUUID();
+      if (!startAtValue.dateTime) return;
+
       const call = client.call("default", id);
 
       setIsCreating(true);
 
-      if(!call) throw new Error("Failed to create call");
-      const startsAt = startAtValue.dateTime.toISOString() || 
-      new Date(Date.now()).toISOString();
+      if (!call) throw new Error("Failed to create call");
+      const startsAt = startAtValue.dateTime.toISOString() ||
+        new Date(Date.now()).toISOString();
 
-      const description = startAtValue.description || 'Instant meeting';
+      const description = startAtValue.description || 'quick-meeting';
 
       await call.getOrCreate({
         data: {
@@ -85,11 +131,11 @@ export default function CreateMeeting() {
       })
       setCallDetails(call);
       setIsCreating(false);
-      if(!startAtValue.description) {
+      if (startAtValue.description === "quick-meeting") {
         navigate(`/meeting/${call.id}`);
       }
 
-    }catch(err) {
+    } catch (err) {
       console.error("Failed to create meeting", err);
     }
 
@@ -125,7 +171,7 @@ export default function CreateMeeting() {
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Description</Label>
                 <Textarea
-                  value={description}
+                  value={meetingDescription}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Enter meeting description (optional)"
                   className="w-full min-h-[100px] resize-none border border-[var(--color-surface-2)] bg-[var(--color-surface-2)] placeholder:text-[var(--color-text-secondary)] focus:ring-2 focus:ring-[var(--color-accent)]"
@@ -198,51 +244,14 @@ export default function CreateMeeting() {
                       Date <span className="text-red-500">*</span>
                     </Label>
                     <Input
-                      type="date"
+                      type="datetime-local"
                       value={meetingDate}
                       onChange={(e) => setMeetingDate(e.target.value)}
                       className="border border-[var(--color-surface-2)] bg-[var(--color-surface-2)] focus:ring-2 focus:ring-[var(--color-accent)]"
                     />
                   </div>
 
-                  {/* Duration */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Duration (minutes)</Label>
-                    <Input
-                      type="number"
-                      placeholder="60"
-                      value={duration}
-                      onChange={(e) => setDuration(e.target.value)}
-                      className="border border-[var(--color-surface-2)] bg-[var(--color-surface-2)] focus:ring-2 focus:ring-[var(--color-accent)]"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  {/* Start */}
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2 text-sm font-medium">
-                      <Clock className="h-4 w-4" />
-                      Start Time <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      type="time"
-                      value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                      className="border border-[var(--color-surface-2)] bg-[var(--color-surface-2)] focus:ring-2 focus:ring-[var(--color-accent)]"
-                    />
-                  </div>
-
-                  {/* End */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">End Time</Label>
-                    <Input
-                      type="time"
-                      value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                      className="border border-[var(--color-surface-2)] bg-[var(--color-surface-2)] focus:ring-2 focus:ring-[var(--color-accent)]"
-                    />
-                  </div>
                 </div>
 
                 {/* ---------- PAID TOGGLE ---------- */}
@@ -281,28 +290,11 @@ export default function CreateMeeting() {
                           step="0.01"
                           placeholder="0.00"
                           value={price}
-                          onChange={(e) => setPrice(e.target.value)}
+                          onChange={(e) => setPrice(parseFloat(e.target.value))}
                           className="border border-[var(--color-surface-2)] bg-[var(--color-surface-2)] focus:ring-2 focus:ring-[var(--color-accent)]"
                         />
                       </div>
 
-                      {/* Currency */}
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Currency</Label>
-                        <Select value={currency} onValueChange={setCurrency}>
-                          <SelectTrigger className="border border-[var(--color-surface-2)] bg-[var(--color-surface-2)] focus:ring-2 focus:ring-[var(--color-accent)]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-[var(--color-surface-1)] text-[var(--color-text-primary)]">
-                            <SelectItem value="USD">USD ($)</SelectItem>
-                            <SelectItem value="EUR">EUR (€)</SelectItem>
-                            <SelectItem value="GBP">GBP (£)</SelectItem>
-                            <SelectItem value="JPY">JPY (¥)</SelectItem>
-                            <SelectItem value="CAD">CAD (C$)</SelectItem>
-                            <SelectItem value="AUD">AUD (A$)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
                     </div>
                   </div>
                 )}
@@ -311,7 +303,7 @@ export default function CreateMeeting() {
 
             {/* ---------- CREATE BUTTON ---------- */}
             <Button
-              onClick={handleCreateQuickMeeting}
+              onClick={setUpMeeting}
               disabled={isCreating}
               className="h-12 w-full bg-[var(--color-accent)] text-[var(--color-surface)] font-medium hover:bg-[var(--color-accent-hover)] active:bg-[var(--color-accent-active)]"
             >
@@ -319,7 +311,7 @@ export default function CreateMeeting() {
             </Button>
 
             {/* ---------- SUCCESS MESSAGE ---------- */}
-            {meetingCode && (
+            {isCreated && (
               <div className="space-y-4 rounded-lg border border-green-600/40 bg-green-600/10 p-4">
                 <div className="space-y-2 text-center">
                   <h3 className="font-semibold text-green-400">

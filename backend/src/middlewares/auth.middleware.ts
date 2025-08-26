@@ -1,6 +1,7 @@
 import { Response, Request, NextFunction } from "express"
 import jwt, { JwtPayload } from 'jsonwebtoken'
 import { z } from "zod"
+import { meetingInputType } from "../utils/Types";
 
 
 const authSchema = z.object({
@@ -15,6 +16,15 @@ const updateProfile = z.object({
     id: z.string().uuid("Invalid user ID")
 
 })
+
+export const validateMeetingInput = (req: Request, res: Response, next: NextFunction): any => {
+    try {
+        meetingInputType.parse(req.body);
+        next();
+    }catch(err) {
+        return res.status(400).json({ success: false, message: "Validation error" })
+    }
+}
 
 export const validateAuth = (req: Request, res: Response, next: NextFunction): any => {
     try {

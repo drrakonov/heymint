@@ -46,6 +46,7 @@ model Meeting {
   createdBy    User              @relation("createdMeetings", fields: [createdById], references: [id])
   createdById  String
   createdAt    DateTime          @default(now())
+  meetingCode  String
   price        Float
   isPaid       Boolean
   startingTime DateTime

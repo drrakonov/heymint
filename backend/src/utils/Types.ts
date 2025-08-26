@@ -1,0 +1,14 @@
+import { z } from 'zod';
+
+export const meetingInputType = z.object({
+    title: z.string().min(2, "title must contain atleast two characters").max(500, "title can have only 500 characters maximum"),
+    description: z.string().max(100, "description can have only 1000 characters maximum"),
+    isScheduled: z.boolean(),
+    isPaid: z.boolean(),
+    isProtected: z.boolean(),
+    startingTime: z.coerce.date(),
+    price: z.number(),
+    createdBy: z.uuid(),
+    password: z.string().max(30),
+    meetingCode: z.string()
+});

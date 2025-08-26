@@ -3,9 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.authenticate = exports.validateUpdateProfile = exports.validateAuth = void 0;
+exports.authenticate = exports.validateUpdateProfile = exports.validateAuth = exports.validateMeetingInput = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const zod_1 = require("zod");
+const Types_1 = require("../utils/Types");
 const authSchema = zod_1.z.object({
     email: zod_1.z.string().email(),
     password: zod_1.z.string().min(6, "Password must be atleast 6 characters")
@@ -16,6 +17,16 @@ const updateProfile = zod_1.z.object({
         .min(3, "Username must be atleast 3 characters"),
     id: zod_1.z.string().uuid("Invalid user ID")
 });
+const validateMeetingInput = (req, res, next) => {
+    try {
+        Types_1.meetingInputType.parse(req.body);
+        next();
+    }
+    catch (err) {
+        return res.status(400).json({ success: false, message: "Validation error" });
+    }
+};
+exports.validateMeetingInput = validateMeetingInput;
 const validateAuth = (req, res, next) => {
     try {
         authSchema.parse(req.body);
