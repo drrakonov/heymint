@@ -12,3 +12,15 @@ export const meetingInputType = z.object({
     password: z.string().max(30),
     meetingCode: z.string()
 });
+
+export type Meeting = {
+    title: string
+    hostName: string
+    description: string
+    type: "Free" | "Paid"
+    isProtected: boolean
+    price?: number
+    meetingTime?: string
+    isInstant?: boolean
+    participantCount?: number
+}

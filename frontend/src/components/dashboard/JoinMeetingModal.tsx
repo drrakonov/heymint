@@ -4,6 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
+import { useStreamVideoClient } from "@stream-io/video-react-sdk";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 export default function JoinMeetingModal() {
   const [meetingId, setMeetingId] = useState("");
@@ -11,15 +14,18 @@ export default function JoinMeetingModal() {
   const [isJoining, setIsJoining] = useState(false);
 
   const isFormValid = meetingId.trim() !== "" && name.trim() !== "";
+  const client = useStreamVideoClient();
+  const navigate = useNavigate();
 
   const handleJoinMeeting = async () => {
     if (!isFormValid || isJoining) return;
 
     try {
+      if(!client) toast.error("unable to join this call");
       setIsJoining(true);
-      // TODO: implement join logic
-      console.log("Joining:", meetingId, name);
-      await new Promise((res) => setTimeout(res, 1000));
+      navigate(`/meeting/${meetingId}`);
+      
+
     } catch (error) {
       console.error("Join failed", error);
     } finally {

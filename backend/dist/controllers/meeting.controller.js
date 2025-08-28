@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleMeetingSetup = exports.createGetStreamToken = void 0;
+exports.deleteMeeting = exports.getAllMeetings = exports.handleMeetingSetup = exports.createGetStreamToken = void 0;
 const node_sdk_1 = require("@stream-io/node-sdk");
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
@@ -37,6 +37,7 @@ const createGetStreamToken = (req, res) => __awaiter(void 0, void 0, void 0, fun
         res.status(200).json({ success: true, message: "Token generated successfully", token, apiKey });
     }
     catch (err) {
+        console.log(err);
         return res.status(500).json({ success: false, message: "get stream token generation failed" });
     }
 });
@@ -52,6 +53,7 @@ const handleMeetingSetup = (req, res) => __awaiter(void 0, void 0, void 0, funct
                 isProtected: isProtected,
                 createdById: createdBy,
                 startingTime: isScheduled ? startingTime : new Date(),
+                isScheduled: isScheduled,
                 price: isPaid ? price : 0,
                 isPaid: isPaid,
                 meetingCode: meetingCode
@@ -60,8 +62,63 @@ const handleMeetingSetup = (req, res) => __awaiter(void 0, void 0, void 0, funct
         return res.status(201).json({ success: true, message: "meeting details stored" });
     }
     catch (err) {
-        console.log(err);
         return res.status(500).json({ success: false, message: "meeting setup failed" });
     }
 });
 exports.handleMeetingSetup = handleMeetingSetup;
+const getAllMeetings = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const meeting = yield prisma.meeting.findMany({
+            select: {
+                title: true,
+                desc: true,
+                isPaid: true,
+                isProtected: true,
+                password: true,
+                createdAt: true,
+                startingTime: true,
+                isScheduled: true,
+                price: true,
+                createdBy: {
+                    select: {
+                        name: true
+                    }
+                },
+            },
+        });
+        const meetings = meeting.map(m => ({
+            title: m.title,
+            description: m.desc,
+            type: m.isPaid ? "Paid" : "Free",
+            hostName: m.createdBy.name,
+            price: m.price,
+            meetingTime: String(m.startingTime),
+            isProtected: m.isProtected,
+            isInstant: m.isScheduled ? false : true,
+        }));
+        res.status(201).json({ success: true, message: "Fetched all the meetings", meetings });
+    }
+    catch (err) {
+        return res.status(500).json({ success: false, message: "failed to get all the meetings" });
+    }
+});
+exports.getAllMeetings = getAllMeetings;
+const deleteMeeting = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { meetingCode, userId } = req.body;
+        if (!meetingCode || !userId)
+            throw new Error("missing meetingCode or userID");
+        yield prisma.meeting.delete({
+            where: {
+                createdById: userId,
+                meetingCode: meetingCode,
+            }
+        });
+        res.status(200).json({ success: true, message: "Meeting deleted" });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).json({ success: false, message: "Failed to delete meeting" });
+    }
+});
+exports.deleteMeeting = deleteMeeting;

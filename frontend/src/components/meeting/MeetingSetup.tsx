@@ -10,7 +10,6 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
 
     const call = useCall();
 
-    //fix the navigation part to the [meeting rooom]
 
     if (!call) {
         throw new Error("useCall must be in streamCall componenet");

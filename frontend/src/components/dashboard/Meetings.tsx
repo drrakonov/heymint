@@ -1,5 +1,5 @@
 import { Calendar, Clock, Filter, Search, SortAsc, Users, Video } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -7,6 +7,8 @@ import { MeetingStats } from "../subComponents/MeetingStats";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { EmptyState } from "../subComponents/EmptyStateMeeting";
+import api from "@/lib/axios";
+import Loader from "../subComponents/Loader";
 
 
 interface MeetingCardProps {
@@ -19,6 +21,7 @@ interface MeetingCardProps {
     isInstant?: boolean
     participantCount?: number
 }
+
 
 
 export function MeetingCard({
@@ -48,7 +51,7 @@ export function MeetingCard({
                         {/* Always show description under host on small, only show two lines */}
                         <p className="text-sm mt-2 text-[#8C8D98] line-clamp-2">{description}</p>
                     </div>
-                    
+
                     {/* On md+: badge/price on the right; on mobile, put below title/host */}
                     <div className="flex flex-row md:flex-col gap-1 items-center mt-2 md:mt-0">
                         <Badge
@@ -103,7 +106,7 @@ export function MeetingCard({
                     size="sm"
                     variant={isInstant ? "default" : "outline"}
                 >
-                    {isInstant ? "Buy Now" : "Join Meeting"}
+                    {isInstant ? "Join Meeting" : "Buy Now"}
                 </Button>
             </CardFooter>
         </Card>
@@ -117,54 +120,20 @@ type Meeting = {
     description: string
     type: "Free" | "Paid"
     price?: number
+    isProtected: boolean
     meetingTime?: string
     isInstant?: boolean
-    participantCount?: number
 }
 
 // 2. Use the Meeting type for the meetings array
-const meetings: Meeting[] = [
-    {
-        title: "Weekly Team Standup",
-        hostName: "Sarah Johnson",
-        description: "Quick sync on project progress, blockers, and upcoming priorities for the week.",
-        type: "Free",
-        meetingTime: "Aug 5, 2025 · 5:30 PM",
-        participantCount: 8,
-    },
-    {
-        title: "Product Strategy Workshop",
-        hostName: "Michael Chen",
-        description: "Deep dive into Q3 product roadmap, feature prioritization, and market analysis.",
-        type: "Paid",
-        price: 299,
-        meetingTime: "Aug 6, 2025 · 2:00 PM",
-        participantCount: 15,
-    },
-    {
-        title: "Quick Design Review",
-        hostName: "Emma Wilson",
-        description: "Review latest UI mockups and gather feedback on the new dashboard design.",
-        type: "Free",
-        isInstant: true,
-        participantCount: 4,
-    },
-    {
-        title: "Advanced React Masterclass",
-        hostName: "David Kumar",
-        description: "Learn advanced React patterns, performance optimization, and modern development practices.",
-        type: "Paid",
-        price: 1299,
-        isInstant: true,
-        participantCount: 25,
-    },
-]
+let meetings: Meeting[] = []
 
 
 const Meetings = () => {
     const [searchQuery, setSearchQuery] = useState<string>("")
     const [filterType, setFilterType] = useState<"all" | "free" | "paid" | "instant">("all")
     const [sortBy, setSortBy] = useState<"title" | "time" | "participants">("title")
+    const [isLoading, setIsLoading] = useState(false);
 
     const filteredAndSortedMeetings = useMemo<Meeting[]>(() => {
         const filtered = meetings.filter((meeting) => {
@@ -187,8 +156,6 @@ const Meetings = () => {
             switch (sortBy) {
                 case "title":
                     return a.title.localeCompare(b.title)
-                case "participants":
-                    return (b.participantCount || 0) - (a.participantCount || 0)
                 case "time":
                     if (a.isInstant && !b.isInstant) return -1
                     if (!a.isInstant && b.isInstant) return 1
@@ -199,7 +166,7 @@ const Meetings = () => {
         })
 
         return filtered
-    }, [searchQuery, filterType, sortBy])
+    }, [searchQuery, filterType, sortBy, meetings])
 
     const stats = useMemo(() => ({
         totalMeetings: meetings.length,
@@ -212,12 +179,32 @@ const Meetings = () => {
         setFilterType("all")
     }
 
+    useEffect(() => {
+        const getAllMeetings = async () => {
+            try {
+                setIsLoading(true);
+                const res = await api.get("/api/meeting/get-meetings");
+
+                if (res.data.success) {
+                   meetings = res.data.meetings;
+                }
+                setIsLoading(false);
+            } catch (err) {
+                console.error("Failed to get the meetings", err);
+            }
+        }
+
+        getAllMeetings();
+    }, [])
+
+    if(isLoading) return <Loader />
+
     return (
         <div className="pt-6 min-h-screen pl-5 pr-5 md:pl-10 md:pr-10">
             <div className="max-w-6xl mx-auto">
                 <h1 className="text-3xl text-text-primary font-bold text-foreground mb-2">Upcoming Meetings</h1>
                 <p className="text-muted-foreground text-text-secondary mb-8">Join your scheduled meetings or start an instant session</p>
-                 <MeetingStats {...stats} />
+                <MeetingStats {...stats} />
 
                 <div className="bg-cardbg rounded-xl border-surface-2 border-2 p-6 mb-8">
                     <div className="flex flex-col lg:flex-row gap-4">

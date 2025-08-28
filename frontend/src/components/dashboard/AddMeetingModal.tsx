@@ -12,7 +12,7 @@ import { useNavigate } from "react-router-dom"
 import api from "@/lib/axios"
 import toast from "react-hot-toast"
 
-type MeetingType = "quick-meeting" | "scheduled-meeting" | "paid-meeting";
+type MeetingType = "quick-meeting" | "scheduled-meeting";
 
 
 export default function CreateMeeting() {
@@ -66,6 +66,7 @@ export default function CreateMeeting() {
 
       const code = createMeetingCode();
       setMeetingCode(code);
+      if(isScheduled) setMeetingType("scheduled-meeting");
 
       if(meetingType === "quick-meeting") {
         const now = new Date();
@@ -81,8 +82,8 @@ export default function CreateMeeting() {
         price: price,
         createdBy: user.id,
         password: meetingPassword,
-        startingTime: meetingDate,
-        meetingCode: meetingCode
+        startingTime: new Date(meetingDate),
+        meetingCode: code
       })
 
       if(!res.data.success) {
