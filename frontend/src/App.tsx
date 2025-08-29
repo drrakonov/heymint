@@ -1,4 +1,3 @@
-
 import { Route, BrowserRouter, Routes, Navigate } from 'react-router-dom'
 import './App.css'
 import Auth from './components/Auth'
@@ -39,8 +38,9 @@ function App() {
           </Route>
 
 
+          <Route path="/auth/callback" element={<AuthRedirect />} />
           <Route path='/auth' element={
-            <AuthRedirect><Auth /></AuthRedirect>
+            <Auth />
           }>
             <Route index element={<Navigate to="login" replace />} />
             <Route path='login' element={<Login />} />

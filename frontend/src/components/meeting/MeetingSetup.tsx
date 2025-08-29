@@ -1,19 +1,64 @@
 import { DeviceSettings, useCall, VideoPreview } from "@stream-io/video-react-sdk";
 import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
+import toast from "react-hot-toast";
+import api from "@/lib/axios";
+import { useUserStore } from "@/store/userStore";
+import { useParams } from "react-router-dom";
+import PasswordInput from "../subComponents/PasswordInput";
 
 const MeetingSetup = ({ setIsSetUpComplete }: {
     setIsSetUpComplete: (value: boolean) => void
 }) => {
     const [isMicToggleOn, setIsMicToggleOn] = useState(false);
     const [isCamToggleOn, setIsCamToggleOn] = useState(false);
+    const [isMeetingProtected, setIsMeetingProtected] = useState(false);
+    const [password, setPassword] = useState("");
 
     const call = useCall();
+    const { user } = useUserStore();
+    const { meetingCode } = useParams();
 
 
     if (!call) {
         throw new Error("useCall must be in streamCall componenet");
     }
+
+    const handleProtectedMeetingAndValidate = async () => {
+        try {
+            const res = await api.get("/api/meeting/get-isProtected", {
+                params: {
+                    userId: user?.id,
+                    meetingCode
+                }
+            })
+
+            if (!res.data.success) throw new Error(res.data.message);
+            return res.data.isProtected;
+        } catch (err) {
+            toast.error("Failed to join");
+            console.error("Failed to validate the meeting", err);
+        }
+    }
+
+    const handleJoinMeeting = async () => {
+        try {
+            call.join();
+            setIsSetUpComplete(true);
+
+        } catch (err) {
+            toast.error("Failed to join")
+            console.error("Failed to join the meeting", err);
+        }
+
+    }
+
+    useEffect(() => {
+        async () => {
+            const isProtected = await handleProtectedMeetingAndValidate();
+            setIsMeetingProtected(isProtected);
+        }
+    }, [])
 
     useEffect(() => {
         if (isCamToggleOn) {
@@ -59,14 +104,17 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
                     </label>
                     <DeviceSettings />
                 </div>
-                <Button
-                    onClick={() => {
-                        call.join();
-                        setIsSetUpComplete(true);
-                    }}
-                >
-                    Join Meeting
-                </ Button>
+                {isMeetingProtected ? (
+                    <PasswordInput value={password}
+                        onChange={(e) => setPassword(e.target.value)} />
+                ) : (
+                    <Button
+                        onClick={handleJoinMeeting}
+                    >
+                        Join Meeting
+                    </ Button>
+                )}
+
             </div>
         </div>
     )

@@ -11,6 +11,7 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   handleGoogleAuth: () => Promise<void>;
+  setAccessToken: (token: string) => void;
 };
 
 type User = {
@@ -29,6 +30,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const setAccessToken = useAuthStore((state) => state.setAccessToken);
   const { user, clearUser, setUser } = useUserStore();
 
+  useEffect(() => {
+    if (accessToken) {
+      api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+      getUserInfo();
+    } else {
+      delete api.defaults.headers.common["Authorization"];
+      clearUser();
+    }
+  }, [accessToken]);
 
   const getUserInfo = async () => {
     try {
@@ -129,7 +139,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     (async () => {
       try {
-        await api.post("/api/auth/refresh");
+        // await api.post("/api/auth/refresh");
         await getUserInfo();
       } catch(err) {
         console.error("Startup auth failed", err);
@@ -140,7 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
   return (
-    <AuthContext.Provider value={{ accessToken, signup, user, logout, login, handleGoogleAuth }}>
+    <AuthContext.Provider value={{ accessToken, signup, user, logout, login, handleGoogleAuth, setAccessToken }}>
       {children}
     </AuthContext.Provider>
   );

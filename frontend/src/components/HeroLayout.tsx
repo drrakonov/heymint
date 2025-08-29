@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate } from "react-router-dom"
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom"
 import appLogo from "../assets/heyMintLogo.png"
 import { GreenButton } from "./subComponents/Greenbutton";
 import GithubLogo from '../assets/github.svg';
@@ -12,18 +12,21 @@ import { useAuthStore } from "@/store/authStore";
 const HeroLayout = () => {
     const setAccessToken = useAuthStore((state) => state.setAccessToken)
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const accessToken = params.get("access");
-    //console.log("accessToken", accessToken);
-    if (accessToken && !localStorage.getItem("accessToken")) {
-      setAccessToken(accessToken);
-      const cleanedUrl = window.location.pathname + window.location.hash;
-      window.history.replaceState({}, document.title, cleanedUrl);
-      navigate("/dashboard");
-    }
-  }, []);
+        const params = new URLSearchParams(location.search);
+        const accessToken = params.get("access");
+        //console.log("accessToken", accessToken);
+        if (accessToken) {
+            setAccessToken(accessToken);
+            localStorage.setItem("accessToken", accessToken);
+            // Remove ?access=... from URL
+            const cleanedUrl = window.location.pathname + window.location.hash;
+            window.history.replaceState({}, document.title, cleanedUrl);
+            navigate("/dashboard");
+        }
+    }, [location, setAccessToken, navigate]);
 
     return (
         <div className="min-h-screen flex flex-col">

@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteMeeting = exports.getAllMeetings = exports.handleMeetingSetup = exports.createGetStreamToken = void 0;
+exports.isProtectedMeetingValidation = exports.deleteMeeting = exports.getAllMeetings = exports.handleMeetingSetup = exports.createGetStreamToken = void 0;
 const node_sdk_1 = require("@stream-io/node-sdk");
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
@@ -122,3 +122,26 @@ const deleteMeeting = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.deleteMeeting = deleteMeeting;
+const isProtectedMeetingValidation = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { meetingCode, userId } = req.body;
+        if (!meetingCode || !userId) {
+            throw new Error("meetingCode or userId is missing");
+        }
+        const meeting = yield prisma.meeting.findUnique({
+            select: {
+                isProtected: true
+            },
+            where: {
+                meetingCode: meetingCode,
+                createdById: userId
+            }
+        });
+        const isProtected = meeting === null || meeting === void 0 ? void 0 : meeting.isProtected;
+        res.status(201).json({ success: true, isProtected });
+    }
+    catch (err) {
+        res.status(500).json({ success: false, message: "Failed to validate meeting" });
+    }
+});
+exports.isProtectedMeetingValidation = isProtectedMeetingValidation;

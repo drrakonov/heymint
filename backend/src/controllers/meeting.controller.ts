@@ -142,3 +142,28 @@ export const deleteMeeting = async (req: Request, res: Response): Promise<any> =
         res.status(500).json({ success: false, message: "Failed to delete meeting" })
     }
 }
+
+
+export const isProtectedMeetingValidation = async (req: Request, res: Response): Promise<any> => {
+    try {
+        const { meetingCode, userId } = req.body;
+
+        if(!meetingCode || !userId) {
+            throw new Error("meetingCode or userId is missing");
+        }
+
+        const meeting = await prisma.meeting.findUnique({
+            select: {
+                isProtected: true
+            },
+            where: {
+                meetingCode: meetingCode,
+                createdById: userId
+            }
+        })
+        const isProtected = meeting?.isProtected;
+        res.status(201).json({ success: true, isProtected });
+    }catch(err) {
+        res.status(500).json({ success: false, message: "Failed to validate meeting" });
+    }
+}

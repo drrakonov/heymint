@@ -1,13 +1,26 @@
 // components/AuthRedirect.tsx
+import { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Navigate } from "react-router-dom";
 
-const AuthRedirect = ({ children }: { children: React.ReactNode }) => {
-  const { accessToken } = useAuth();
+const AuthRedirect = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { setAccessToken } = useAuth();
 
-  if (accessToken) return <Navigate to="/dashboard" />;
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const access = params.get("access");
+    if (access) {
+      setAccessToken(access);
+      localStorage.setItem("accessToken", access);
+      navigate("/dashboard", { replace: true });
+    } else {
+      navigate("/auth/login", { replace: true });
+    }
+  }, [location, setAccessToken, navigate]);
 
-  return <>{children}</>;
+  return null;
 };
 
 export default AuthRedirect;

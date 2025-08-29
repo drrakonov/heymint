@@ -71,7 +71,10 @@ async function refreshAccessToken() {
     onRefreshed(newToken);
   } catch (err) {
     console.error("Refresh token failed", err);
-    window.location.href = "/login";
+    localStorage.removeItem("accessToken"); // <-- Remove token!
+    if (window.location.pathname !== "/auth") {
+      window.location.href = "/auth/login";
+    }
   } finally {
     isRefreshing = false;
   }
@@ -118,8 +121,19 @@ api.interceptors.response.use(
 // -----------------------------
 const token = localStorage.getItem("accessToken");
 if (token) {
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  scheduleTokenRefresh(token);
+  try {
+    const decoded = jwtDecode<JwtPayload>(token);
+    const expiresAt = decoded.exp * 1000;
+    const now = Date.now();
+    if (expiresAt > now) {
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      scheduleTokenRefresh(token);
+    } else {
+      localStorage.removeItem("accessToken");
+    }
+  } catch (err) {
+    localStorage.removeItem("accessToken");
+  }
 }
 
 export default api;

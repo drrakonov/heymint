@@ -12,4 +12,5 @@ router.post("/token", auth_middleware_1.authenticate, (0, express_async_handler_
 router.post("/setup-meeting", auth_middleware_1.validateMeetingInput, auth_middleware_1.authenticate, (0, express_async_handler_1.default)(meeting_controller_1.handleMeetingSetup));
 router.get("/get-meetings", auth_middleware_1.authenticate, (0, express_async_handler_1.default)(meeting_controller_1.getAllMeetings));
 router.post("/delete-meeting", auth_middleware_1.authenticate, (0, express_async_handler_1.default)(meeting_controller_1.deleteMeeting));
+router.get("/get-isProtected", auth_middleware_1.authenticate, (0, express_async_handler_1.default)(meeting_controller_1.isProtectedMeetingValidation));
 exports.default = router;
