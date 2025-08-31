@@ -32,11 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (accessToken) {
-      api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
       getUserInfo();
-    } else {
-      delete api.defaults.headers.common["Authorization"];
-      clearUser();
     }
   }, [accessToken]);
 
@@ -78,8 +74,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const res = await api.post("/api/auth/signup", { email, password });
       const { accessToken } = res.data;
       setAccessToken(accessToken);
-      localStorage.setItem("accessToken", accessToken);
-
       api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
       
     } catch (err) {

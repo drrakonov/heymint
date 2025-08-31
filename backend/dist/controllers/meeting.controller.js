@@ -124,7 +124,10 @@ const deleteMeeting = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 exports.deleteMeeting = deleteMeeting;
 const isProtectedMeetingValidation = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { meetingCode, userId } = req.body;
+        const meetingCode = req.query.meetingCode;
+        const userId = req.query.userId;
+        console.log("meetingCode: ", meetingCode);
+        console.log("userId: ", userId);
         if (!meetingCode || !userId) {
             throw new Error("meetingCode or userId is missing");
         }
@@ -141,6 +144,7 @@ const isProtectedMeetingValidation = (req, res) => __awaiter(void 0, void 0, voi
         res.status(201).json({ success: true, isProtected });
     }
     catch (err) {
+        console.log(err);
         res.status(500).json({ success: false, message: "Failed to validate meeting" });
     }
 });

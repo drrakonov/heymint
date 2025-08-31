@@ -50,13 +50,13 @@ const HeroLayout = () => {
                         <GreenButton
                             variant="ghost"
                             label="Log In"
-                            to="/auth"
+                            to="/dashboard"
                             className="font-bold"
                         />
                         <GreenButton
                             variant="primary"
                             label="Get Started"
-                            to="/auth"
+                            to="/dashboard"
                             className="font-bold"
                         />
                     </div>

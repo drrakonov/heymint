@@ -146,7 +146,8 @@ export const deleteMeeting = async (req: Request, res: Response): Promise<any> =
 
 export const isProtectedMeetingValidation = async (req: Request, res: Response): Promise<any> => {
     try {
-        const { meetingCode, userId } = req.body;
+        const meetingCode = req.query.meetingCode as string;
+        const userId = req.query.userId as string;
 
         if(!meetingCode || !userId) {
             throw new Error("meetingCode or userId is missing");
@@ -167,3 +168,4 @@ export const isProtectedMeetingValidation = async (req: Request, res: Response):
         res.status(500).json({ success: false, message: "Failed to validate meeting" });
     }
 }
+

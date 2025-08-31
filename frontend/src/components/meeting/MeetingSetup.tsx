@@ -17,7 +17,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
 
     const call = useCall();
     const { user } = useUserStore();
-    const { meetingCode } = useParams();
+    const { id } = useParams();
 
 
     if (!call) {
@@ -26,10 +26,15 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
 
     const handleProtectedMeetingAndValidate = async () => {
         try {
+
+            if (!user || !id) {
+                toast.error("User not found");
+                return;
+            }
             const res = await api.get("/api/meeting/get-isProtected", {
                 params: {
                     userId: user?.id,
-                    meetingCode
+                    meetingCode: id
                 }
             })
 
@@ -43,8 +48,17 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
 
     const handleJoinMeeting = async () => {
         try {
-            call.join();
-            setIsSetUpComplete(true);
+            if (isMeetingProtected) {
+                if(password.length < 2) {
+                    toast.error("Enter valid password");
+                    return;
+                }
+                
+
+            } else {
+                call.join();
+                setIsSetUpComplete(true);
+            }
 
         } catch (err) {
             toast.error("Failed to join")
@@ -54,10 +68,12 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
     }
 
     useEffect(() => {
-        async () => {
+        const checkIsProtected = async () => {
             const isProtected = await handleProtectedMeetingAndValidate();
+            console.log(isProtected);
             setIsMeetingProtected(isProtected);
         }
+        checkIsProtected();
     }, [])
 
     useEffect(() => {
@@ -82,7 +98,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
         <div className="flex bg-background h-screen w-full flex-col items-center justify-center gap-3 text-text-primary">
             <div className="flex flex-col items-center justify-center ml-30 mr-30">
                 <h1 className="text-2xl sm:text-4xl font-bold mb-5 sm:mb-10">Setup</h1>
-                <div className="relative w-[300px] sm:w-[400px] md:w-[600px] h-[300px] sm:h-[400px] md:h-[500px]">
+                <div className="relative w-[300px] sm:w-[400px] md:w-[500px] h-[300px] sm:h-[400px] md:h-[400px]">
                     <VideoPreview className="absolute inset-0 !w-full !h-full object-cover" />
                 </div>
                 <div className="flex space-x-2 h-14">
@@ -102,19 +118,22 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
                             onChange={(e) => setIsCamToggleOn(e.target.checked)}
                         />
                     </label>
-                    <DeviceSettings />
+                    <div className="rounded-2xl flex items-center"><DeviceSettings /></div>
                 </div>
-                {isMeetingProtected ? (
-                    <PasswordInput value={password}
-                        onChange={(e) => setPassword(e.target.value)} />
-                ) : (
+                <div className="flex flex-col justify-center gap-2">
+                    {isMeetingProtected ? (
+                        <PasswordInput value={password}
+                            onChange={(e) => setPassword(e.target.value)} />
+                    ) : (
+                        <></>
+                    )}
                     <Button
                         onClick={handleJoinMeeting}
                     >
                         Join Meeting
                     </ Button>
-                )}
 
+                </div>
             </div>
         </div>
     )
