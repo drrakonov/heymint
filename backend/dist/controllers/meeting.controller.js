@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isProtectedMeetingValidation = exports.deleteMeeting = exports.getAllMeetings = exports.handleMeetingSetup = exports.createGetStreamToken = void 0;
+exports.validateProtectedPassword = exports.isProtectedMeetingValidation = exports.deleteMeeting = exports.getAllMeetings = exports.handleMeetingSetup = exports.createGetStreamToken = void 0;
 const node_sdk_1 = require("@stream-io/node-sdk");
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
@@ -126,26 +126,54 @@ const isProtectedMeetingValidation = (req, res) => __awaiter(void 0, void 0, voi
     try {
         const meetingCode = req.query.meetingCode;
         const userId = req.query.userId;
-        console.log("meetingCode: ", meetingCode);
-        console.log("userId: ", userId);
-        if (!meetingCode || !userId) {
+        if (!meetingCode) {
             throw new Error("meetingCode or userId is missing");
         }
         const meeting = yield prisma.meeting.findUnique({
             select: {
-                isProtected: true
+                isProtected: true,
+                createdById: true
             },
             where: {
                 meetingCode: meetingCode,
-                createdById: userId
             }
         });
-        const isProtected = meeting === null || meeting === void 0 ? void 0 : meeting.isProtected;
+        let isProtected = meeting === null || meeting === void 0 ? void 0 : meeting.isProtected;
+        if (userId === (meeting === null || meeting === void 0 ? void 0 : meeting.createdById))
+            isProtected = false;
         res.status(201).json({ success: true, isProtected });
     }
     catch (err) {
-        console.log(err);
         res.status(500).json({ success: false, message: "Failed to validate meeting" });
     }
 });
 exports.isProtectedMeetingValidation = isProtectedMeetingValidation;
+const validateProtectedPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { meetingPassword, meetingCode } = req.body;
+        if (!meetingCode || !meetingCode) {
+            return res.status(400).json({ success: false, message: "meetingCode, meetingPassword or userId is missing" });
+        }
+        const meeting = yield prisma.meeting.findUnique({
+            select: {
+                password: true
+            },
+            where: {
+                meetingCode: meetingCode,
+            }
+        });
+        if (!meeting) {
+            throw new Error("Failed to fetch the meeting details");
+        }
+        if (meeting.password === meetingPassword) {
+            res.status(200).json({ success: true, message: "Password is correct", isMatched: true });
+        }
+        else {
+            res.status(401).json({ success: true, message: "Password is incorrect", isMatched: false });
+        }
+    }
+    catch (err) {
+        return res.status(500).json({ success: false, message: "Failed to validate the protected meeting" });
+    }
+});
+exports.validateProtectedPassword = validateProtectedPassword;

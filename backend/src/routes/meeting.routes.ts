@@ -1,6 +1,6 @@
 import express from 'express';
 import expressAsyncHandler from 'express-async-handler';
-import { createGetStreamToken, deleteMeeting, getAllMeetings, handleMeetingSetup, isProtectedMeetingValidation } from '../controllers/meeting.controller';
+import { createGetStreamToken, deleteMeeting, getAllMeetings, handleMeetingSetup, isProtectedMeetingValidation, validateProtectedPassword } from '../controllers/meeting.controller';
 import { authenticate, validateMeetingInput } from '../middlewares/auth.middleware';
 
 const router = express.Router();
@@ -11,5 +11,6 @@ router.post("/setup-meeting", validateMeetingInput, authenticate, expressAsyncHa
 router.get("/get-meetings", authenticate, expressAsyncHandler(getAllMeetings));
 router.post("/delete-meeting", authenticate, expressAsyncHandler(deleteMeeting));
 router.get("/get-isProtected", authenticate, expressAsyncHandler(isProtectedMeetingValidation));
+router.post("/get-meeting-validation", authenticate, expressAsyncHandler(validateProtectedPassword));
 
 export default router;

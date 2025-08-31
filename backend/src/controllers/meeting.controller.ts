@@ -149,23 +149,53 @@ export const isProtectedMeetingValidation = async (req: Request, res: Response):
         const meetingCode = req.query.meetingCode as string;
         const userId = req.query.userId as string;
 
-        if(!meetingCode || !userId) {
+        if(!meetingCode) {
             throw new Error("meetingCode or userId is missing");
         }
 
         const meeting = await prisma.meeting.findUnique({
             select: {
-                isProtected: true
+                isProtected: true,
+                createdById: true
             },
             where: {
                 meetingCode: meetingCode,
-                createdById: userId
             }
         })
-        const isProtected = meeting?.isProtected;
+        let isProtected = meeting?.isProtected;
+        if(userId === meeting?.createdById) isProtected = false;
         res.status(201).json({ success: true, isProtected });
     }catch(err) {
         res.status(500).json({ success: false, message: "Failed to validate meeting" });
     }
 }
 
+export const validateProtectedPassword = async (req: Request, res: Response):Promise<any> => {
+    try {
+        const  { meetingPassword, meetingCode } = req.body;
+        if(!meetingCode || !meetingCode) {
+            return res.status(400).json({ success: false, message: "meetingCode, meetingPassword or userId is missing" });
+        }
+
+        const meeting = await prisma.meeting.findUnique({
+            select: {
+                password: true
+            },
+            where: {
+                meetingCode: meetingCode,
+            }
+        });
+
+        if(!meeting) {
+            throw new Error("Failed to fetch the meeting details");
+        }
+
+        if(meeting.password === meetingPassword) {
+            res.status(200).json({ success: true, message: "Password is correct", isMatched: true });
+        }else {
+            res.status(401).json({ success: true, message: "Password is incorrect", isMatched: false });
+        }
+    }catch(err) {
+        return res.status(500).json({ success: false, message: "Failed to validate the protected meeting" })
+    }
+}

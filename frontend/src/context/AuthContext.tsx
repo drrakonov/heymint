@@ -130,18 +130,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
 
-  useEffect(() => {
-    (async () => {
-      try {
-        // await api.post("/api/auth/refresh");
-        await getUserInfo();
-      } catch(err) {
-        console.error("Startup auth failed", err);
-        clearUser();
-      }
-    })();
-  }, []);
-
 
   return (
     <AuthContext.Provider value={{ accessToken, signup, user, logout, login, handleGoogleAuth, setAccessToken }}>

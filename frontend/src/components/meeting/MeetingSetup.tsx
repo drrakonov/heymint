@@ -4,7 +4,7 @@ import { Button } from "../ui/button";
 import toast from "react-hot-toast";
 import api from "@/lib/axios";
 import { useUserStore } from "@/store/userStore";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import PasswordInput from "../subComponents/PasswordInput";
 
 const MeetingSetup = ({ setIsSetUpComplete }: {
@@ -12,12 +12,13 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
 }) => {
     const [isMicToggleOn, setIsMicToggleOn] = useState(false);
     const [isCamToggleOn, setIsCamToggleOn] = useState(false);
-    const [isMeetingProtected, setIsMeetingProtected] = useState(false);
+    const [isMeetingProtected, setIsMeetingProtected] = useState(true);
     const [password, setPassword] = useState("");
 
     const call = useCall();
     const { user } = useUserStore();
     const { id } = useParams();
+    const navigate = useNavigate();
 
 
     if (!call) {
@@ -33,8 +34,8 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
             }
             const res = await api.get("/api/meeting/get-isProtected", {
                 params: {
-                    userId: user?.id,
-                    meetingCode: id
+                    meetingCode: id,
+                    userId: user.id
                 }
             })
 
@@ -47,13 +48,36 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
     }
 
     const handleJoinMeeting = async () => {
+        if(!user) {
+            toast.error("User not found");
+            return;
+        }
         try {
             if (isMeetingProtected) {
                 if(password.length < 2) {
                     toast.error("Enter valid password");
                     return;
                 }
-                
+                const res = await api.post("/api/meeting/get-meeting-validation", {
+                    meetingPassword: password,
+                    meetingCode: id,
+                })
+
+                if(res.data.success) {
+                    if(res.data.isMatched) {
+                        call.join();
+                        setIsSetUpComplete(true);
+                        return;
+                    }else {
+                        toast.error("Enter valid password");
+                        return;
+                    }
+
+                }else {
+                    toast.error("Failed to join");
+                    navigate("/dashboard");
+                    return;
+                }  
 
             } else {
                 call.join();
@@ -70,7 +94,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
     useEffect(() => {
         const checkIsProtected = async () => {
             const isProtected = await handleProtectedMeetingAndValidate();
-            console.log(isProtected);
+            
             setIsMeetingProtected(isProtected);
         }
         checkIsProtected();
