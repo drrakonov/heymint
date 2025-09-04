@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 const getStreamApiKey = process.env.STREAM_API_KEY!;
 const getStreamApiSecret = process.env.STREAM_SECRET_KEY!;
 
-const client = new StreamClient(getStreamApiKey, getStreamApiSecret);
+const client = new StreamClient(getStreamApiKey, getStreamApiSecret, { timeout: 5000 });
 
 export const createGetStreamToken = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -100,6 +100,8 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
                         name: true
                     }
                 },
+                createdById: true,
+                meetingCode: true
             },
         });
 
@@ -112,6 +114,8 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
             meetingTime: String(m.startingTime),
             isProtected: m.isProtected,
             isInstant: m.isScheduled ? false : true,
+            meetingCode: m.meetingCode,
+            createdById: m.createdById
         }))
 
 

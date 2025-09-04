@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Calendar, Copy, DollarSign } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -55,6 +55,15 @@ export default function CreateMeeting() {
   const navigate = useNavigate();
 
 
+  useEffect(() => {
+    if(isScheduled) {
+      setMeetingType("scheduled-meeting");
+    }else {
+      setMeetingType("quick-meeting");
+    }
+  }, [isScheduled]);
+
+
   const createMeetingCode = () => {
     const code = crypto.randomUUID();
     return code;
@@ -66,9 +75,8 @@ export default function CreateMeeting() {
 
       const code = createMeetingCode();
       setMeetingCode(code);
-      if(isScheduled) setMeetingType("scheduled-meeting");
 
-      if(meetingType === "quick-meeting") {
+      if(meetingType === "quick-meeting" || meetingDate === "") {
         const now = new Date();
         setMeetingDate(now.toISOString().slice(0, 16));
       }

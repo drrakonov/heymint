@@ -15,7 +15,7 @@ const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 const getStreamApiKey = process.env.STREAM_API_KEY;
 const getStreamApiSecret = process.env.STREAM_SECRET_KEY;
-const client = new node_sdk_1.StreamClient(getStreamApiKey, getStreamApiSecret);
+const client = new node_sdk_1.StreamClient(getStreamApiKey, getStreamApiSecret, { timeout: 5000 });
 const createGetStreamToken = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { userId, name } = req.body;
@@ -84,6 +84,8 @@ const getAllMeetings = (req, res) => __awaiter(void 0, void 0, void 0, function*
                         name: true
                     }
                 },
+                createdById: true,
+                meetingCode: true
             },
         });
         const meetings = meeting.map(m => ({
@@ -95,6 +97,8 @@ const getAllMeetings = (req, res) => __awaiter(void 0, void 0, void 0, function*
             meetingTime: String(m.startingTime),
             isProtected: m.isProtected,
             isInstant: m.isScheduled ? false : true,
+            meetingCode: m.meetingCode,
+            createdById: m.createdById
         }));
         res.status(201).json({ success: true, message: "Fetched all the meetings", meetings });
     }

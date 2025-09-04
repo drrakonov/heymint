@@ -9,6 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { EmptyState } from "../subComponents/EmptyStateMeeting";
 import api from "@/lib/axios";
 import Loader from "../subComponents/Loader";
+import { useStreamVideoClient } from "@stream-io/video-react-sdk";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+import { useUserStore } from "@/store/userStore";
 
 
 interface MeetingCardProps {
@@ -20,6 +24,8 @@ interface MeetingCardProps {
     meetingTime?: string
     isInstant?: boolean
     participantCount?: number
+    meetingCode: string
+    createdById: string
 }
 
 
@@ -33,7 +39,71 @@ export function MeetingCard({
     meetingTime,
     isInstant = false,
     participantCount,
+    meetingCode,
+    createdById
 }: MeetingCardProps) {
+
+    const navigate = useNavigate();
+    const client = useStreamVideoClient();
+    const { user } = useUserStore();
+    const [isJoining, setIsJoining] = useState(false);
+    const [startsAtValue, setStartsAtValue] = useState({
+        dateTime: new Date(),
+        description: "scheduled-meeting",
+        link: ''
+    });
+
+
+    const handleJoinMeeting = async () => {
+        try {
+            if (!client || !user) {
+                toast.error("Failed to join");
+                return;
+            }
+
+            const call = client.call("default", meetingCode);
+            if(!call) throw new Error("Failed to create call");
+
+            if(user.id === createdById) {
+                setIsJoining(true);
+                const startsAt = startsAtValue.dateTime.toISOString() || 
+                new Date(Date.now()).toISOString();
+
+                //const description = startsAtValue.description || "scheduled-meeting"
+
+                await call.getOrCreate({
+                    data: {
+                        starts_at: startsAt,
+                        custom: {
+                            description: "scheduled-meeting"
+                        }
+                    }
+                })
+                setIsJoining(false);
+
+                navigate(`/meeting/${call.id}`);
+                return;
+            }
+
+            try {
+                const callDetails = await call.get();
+                navigate(`/meeting/${call.id}`);
+            }catch(err) {
+                toast.error("Meeting not available yet. Wait for the host to start.")
+            }
+
+            // if(callDetails)  navigate(`/meeting/${call.id}`);
+        } catch (err) {
+            if (typeof err === "object" && err !== null && "code" in err && (err as any).code === 16) {
+                toast.error("Meeting not available yet. Wait for the host to start.");
+            } else {
+                console.error("Failed to join the meeting", err);
+                toast.error("Unable to join meeting");
+            }
+        }
+    }
+
+
     return (
         <Card className="w-full max-w-5xl bg-cardbg border-surface-2 shadow-md hover:shadow-lg transition-shadow duration-200
          sm:p-6 p-3 rounded-xl">
@@ -105,8 +175,9 @@ export function MeetingCard({
                             : "bg-accent-hover hover:bg-accent/60 text-black font-bold border border-[#393B40]"}`}
                     size="sm"
                     variant={isInstant ? "default" : "outline"}
+                    onClick={handleJoinMeeting}
                 >
-                    {isInstant ? "Join Meeting" : "Buy Now"}
+                    {isInstant ? "Join Meeting" : "Join"}
                 </Button>
             </CardFooter>
         </Card>
@@ -123,6 +194,8 @@ type Meeting = {
     isProtected: boolean
     meetingTime?: string
     isInstant?: boolean
+    meetingCode: string
+    createdById: string
 }
 
 // 2. Use the Meeting type for the meetings array
@@ -186,7 +259,7 @@ const Meetings = () => {
                 const res = await api.get("/api/meeting/get-meetings");
 
                 if (res.data.success) {
-                   meetings = res.data.meetings;
+                    meetings = res.data.meetings;
                 }
                 setIsLoading(false);
             } catch (err) {
@@ -197,7 +270,7 @@ const Meetings = () => {
         getAllMeetings();
     }, [])
 
-    if(isLoading) return <Loader />
+    if (isLoading) return <Loader />
 
     return (
         <div className="pt-6 min-h-screen pl-5 pr-5 md:pl-10 md:pr-10">
