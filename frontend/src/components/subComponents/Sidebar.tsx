@@ -26,7 +26,7 @@ const Sidebar = ({ children }: { children: ReactNode }) => {
 
   return (
     <aside className="h-screen">
-      <nav className="h-full flex flex-col bg-surface border-r shadow-sm">
+      <nav className="h-full flex flex-col bg-surface border-r border-gray-200/5 shadow-sm">
         <div className={`p-4 pb-2 flex items-center transition-all ${expanded ? "justify-end" : "justify-center"}`}>
           <button onClick={() => toggleExpanded()}>
             {expanded ?

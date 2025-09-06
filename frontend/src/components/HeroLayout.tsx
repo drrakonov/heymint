@@ -46,12 +46,12 @@ const HeroLayout = () => {
                         <Link to={"/"} className="hover:text-text-secondary" >Testimonial</Link>
 
                     </div>
-                    <div className="hidden sm:flex space-x-4">
+                    <div className="flex space-x-4">
                         <GreenButton
                             variant="ghost"
                             label="Log In"
                             to="/dashboard"
-                            className="font-bold"
+                            className="hidden sm:block font-bold"
                         />
                         <GreenButton
                             variant="primary"
