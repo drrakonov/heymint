@@ -70,7 +70,10 @@ export default function CreateMeeting() {
   }
 
   const setUpMeeting = async () => {
-    if (!user) return;
+    if (!user || !client) {
+      toast.error("Failed to setup meeting")
+      return;
+    }
     try {
 
       const code = createMeetingCode();
