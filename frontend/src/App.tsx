@@ -23,6 +23,7 @@ import StreamVideoProvider from './providers/StreamClientProvider'
 import MeetingShower from './components/meeting/MeetingShower'
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import { Toaster } from 'react-hot-toast'
+import Errorpage from './components/Errorpage'
 function App() {
 
   return (
@@ -36,6 +37,7 @@ function App() {
           <Route path='/' element={<HeroLayout />}>
             <Route index element={<Landing />} />
           </Route>
+          <Route path='*' element={<Errorpage />} />
 
 
           <Route path="/auth/callback" element={<AuthRedirect />} />

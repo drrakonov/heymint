@@ -10,6 +10,7 @@ const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
       setVideoClient(null);
       return;
     }
+    console.log(user);
     const client = new StreamVideoClient({
       apiKey: user.apiKey,
       token: user.streamToken,

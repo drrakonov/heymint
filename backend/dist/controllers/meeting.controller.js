@@ -15,7 +15,7 @@ const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 const getStreamApiKey = process.env.STREAM_API_KEY;
 const getStreamApiSecret = process.env.STREAM_SECRET_KEY;
-const client = new node_sdk_1.StreamClient(getStreamApiKey, getStreamApiSecret, { timeout: 5000 });
+const client = new node_sdk_1.StreamClient(getStreamApiKey, getStreamApiSecret, { timeout: 15000 });
 const createGetStreamToken = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { userId, name } = req.body;

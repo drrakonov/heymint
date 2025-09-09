@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 const getStreamApiKey = process.env.STREAM_API_KEY!;
 const getStreamApiSecret = process.env.STREAM_SECRET_KEY!;
 
-const client = new StreamClient(getStreamApiKey, getStreamApiSecret, { timeout: 5000 });
+const client = new StreamClient(getStreamApiKey, getStreamApiSecret, { timeout: 15000 });
 
 export const createGetStreamToken = async (req: Request, res: Response): Promise<any> => {
     try {
