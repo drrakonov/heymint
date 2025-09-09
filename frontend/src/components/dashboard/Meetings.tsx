@@ -1,4 +1,4 @@
-import { Calendar, Clock, Filter, Search, SortAsc, Users, Video } from "lucide-react";
+import { Calendar, Clock, Filter, Search, SortAsc, Trash2, Users, Video } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -26,6 +26,7 @@ interface MeetingCardProps {
     participantCount?: number
     meetingCode: string
     createdById: string
+    setMeetings: React.Dispatch<React.SetStateAction<Meeting[]>>;
 }
 
 
@@ -40,7 +41,8 @@ export function MeetingCard({
     isInstant = false,
     participantCount,
     meetingCode,
-    createdById
+    createdById,
+    setMeetings
 }: MeetingCardProps) {
 
     const navigate = useNavigate();
@@ -62,12 +64,12 @@ export function MeetingCard({
             }
 
             const call = client.call("default", meetingCode);
-            if(!call) throw new Error("Failed to create call");
+            if (!call) throw new Error("Failed to create call");
 
-            if(user.id === createdById) {
+            if (user.id === createdById) {
                 setIsJoining(true);
-                const startsAt = startsAtValue.dateTime.toISOString() || 
-                new Date(Date.now()).toISOString();
+                const startsAt = startsAtValue.dateTime.toISOString() ||
+                    new Date(Date.now()).toISOString();
 
                 //const description = startsAtValue.description || "scheduled-meeting"
 
@@ -88,7 +90,7 @@ export function MeetingCard({
             try {
                 const callDetails = await call.get();
                 navigate(`/meeting/${call.id}`);
-            }catch(err) {
+            } catch (err) {
                 toast.error("Meeting not available yet. Wait for the host to start.")
             }
 
@@ -103,13 +105,52 @@ export function MeetingCard({
         }
     }
 
+    const handleDeleteMeeting = async () => {
+        if (!user) {
+            toast.error("Failed to delete!");
+            return
+        }
+        try {
+            if (user.id !== createdById) {
+                return;
+            }
+            const res = await api.post("/api/meeting/delete-meeting", {
+                userId: user.id,
+                meetingCode: meetingCode,
+            })
+
+            if (!res.data.success) {
+                toast.error("Failed to delete the call record");
+            } else {
+                toast.success("meeting deleted")
+                setMeetings(prev => prev.filter(m => m.meetingCode !== meetingCode));
+            }
+        } catch (err) {
+            toast.error("Failed to delete!")
+            console.error("Failed to delete the meeting", err);
+        }
+    }
+
+    const formatMeetingTime = (dateString: string | undefined) => {
+        if (!dateString) return "-";
+        const date = new Date(dateString);
+        return date.toLocaleString("en-IN", {
+            weekday: "short",
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true
+        });
+    }
 
     return (
         <Card className="w-full max-w-5xl bg-cardbg border-surface-2 shadow-md hover:shadow-lg transition-shadow duration-200
-         sm:p-6 p-3 rounded-xl">
+        p-3 rounded-xl">
             <CardHeader className="pb-3">
                 {/* On small screens: column, on md+: row */}
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-1">
                     <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-lg leading-tight text-[#F4F4F5] truncate">
                             {title}
@@ -123,26 +164,37 @@ export function MeetingCard({
                     </div>
 
                     {/* On md+: badge/price on the right; on mobile, put below title/host */}
-                    <div className="flex flex-row md:flex-col gap-1 items-center mt-2 md:mt-0">
-                        <Badge
-                            variant={type === "Free" ? "secondary" : "default"}
-                            className={
-                                type === "Paid"
-                                    ? "bg-accent-hover text-black border-none"
-                                    : "bg-[#33353B] border border-[#474B52] text-[#F4F4F5]"
-                            }
-                        >
-                            {type}
-                        </Badge>
-                        {type === "Paid" && price && (
-                            <Badge variant="outline" className="text-xs font-medium text-[#F4F4F5] border-[#6EE7B7] bg-transparent ml-2 md:ml-0">
-                                ₹{price}
+                    <div className="flex gap-2">
+                        <div className="flex flex-row md:flex-col gap-1 items-center mt-2 md:mt-0">
+                            <Badge
+                                variant={type === "Free" ? "secondary" : "default"}
+                                className={
+                                    type === "Paid"
+                                        ? "hidden bg-accent-hover text-black border-none"
+                                        : "bg-[#33353B] border border-[#474B52] text-[#F4F4F5]"
+                                }
+                            >
+                                {type}
                             </Badge>
-                        )}
+                            {type === "Paid" && price && (
+                                <Badge variant="outline" className="text-xs font-medium text-[#F4F4F5] border-[#6EE7B7] bg-transparent ml-2 md:ml-0">
+                                    ₹{price}
+                                </Badge>
+                            )}
+                        </div>
+                        {user?.id === createdById ?
+                            <button
+                                onClick={handleDeleteMeeting}
+                                className="text-danger/70 hover:text-danger/50 cursor-pointer">
+                                <Trash2 size={20} />
+                            </button>
+                            :
+                            null
+                        }
                     </div>
                 </div>
             </CardHeader>
-            <hr className="my-4 border-t border-surface-2" />
+            <hr className="my-4 border-t border-surface-2 hidden sm:block" />
             <CardContent className="py-2">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-[#6EE7B7]">
                     {isInstant ? (
@@ -155,8 +207,8 @@ export function MeetingCard({
                     ) : (
                         <>
                             <span className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4 text-[#A1A1AA]" />
-                                <span className="text-[#A1A1AA]">{meetingTime}</span>
+                                <Calendar size={25} className="text-[#A1A1AA]" />
+                                <span className="align-baselinec text-[#A1A1AA]">{formatMeetingTime(meetingTime)}</span>
                             </span>
                         </>
                     )}
@@ -172,12 +224,17 @@ export function MeetingCard({
                 <Button
                     className={`ml-auto w-full sm:w-auto mt-2 sm:mt-0
                     ${isInstant ? "bg-accent-hover hover:bg-accent/60 text-black font-bold"
-                            : "bg-accent-hover hover:bg-accent/60 text-black font-bold border border-[#393B40]"}`}
+                            : "bg-accent-hover hover:bg-accent/60 text-black tracking-wider font-bold border border-[#393B40]"}`}
                     size="sm"
                     variant={isInstant ? "default" : "outline"}
                     onClick={handleJoinMeeting}
                 >
-                    {isInstant ? "Join Meeting" : "Join"}
+                    {user?.id === createdById
+                        ? "start"
+                        : isInstant
+                            ? "Join Meeting"
+                            : "Join"
+                    }
                 </Button>
             </CardFooter>
         </Card>
@@ -198,8 +255,6 @@ type Meeting = {
     createdById: string
 }
 
-// 2. Use the Meeting type for the meetings array
-let meetings: Meeting[] = []
 
 
 const Meetings = () => {
@@ -207,6 +262,7 @@ const Meetings = () => {
     const [filterType, setFilterType] = useState<"all" | "free" | "paid" | "instant">("all")
     const [sortBy, setSortBy] = useState<"title" | "time" | "participants">("title")
     const [isLoading, setIsLoading] = useState(false);
+    const [meetings, setMeetings] = useState<Meeting[]>([]);
 
     const filteredAndSortedMeetings = useMemo<Meeting[]>(() => {
         const filtered = meetings.filter((meeting) => {
@@ -259,7 +315,7 @@ const Meetings = () => {
                 const res = await api.get("/api/meeting/get-meetings");
 
                 if (res.data.success) {
-                    meetings = res.data.meetings;
+                    setMeetings(res.data.meetings);
                 }
                 setIsLoading(false);
             } catch (err) {
@@ -338,7 +394,7 @@ const Meetings = () => {
                 {filteredAndSortedMeetings.length > 0 ? (
                     <div className="space-y-6 pb-20">
                         {filteredAndSortedMeetings.map((meeting, index) => (
-                            <MeetingCard key={index} {...meeting} />
+                            <MeetingCard key={index} {...meeting} setMeetings={setMeetings} />
                         ))}
                     </div>
                 ) : (

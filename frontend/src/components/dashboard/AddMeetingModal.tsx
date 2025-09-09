@@ -23,7 +23,7 @@ export default function CreateMeeting() {
   const [isProtected, setIsProtected] = useState(false);
   const [isPaid, setIsPaid] = useState(false)
   const [meetingDate, setMeetingDate] = useState("")
-  const [price, setPrice] = useState(0.0)
+  const [price, setPrice] = useState(10)
   const [meetingCode, setMeetingCode] = useState("")
   const [isCreating, setIsCreating] = useState(false)
   const [meetingType, setMeetingType] = useState<MeetingType>("quick-meeting");
@@ -106,6 +106,7 @@ export default function CreateMeeting() {
         await handleCreateMeeting(code);
         return;
       }
+      toast.success("meeting created successfully!")
       setIsCreated(true);
 
     } catch (err) {
