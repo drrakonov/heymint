@@ -4,9 +4,14 @@ import { z } from "zod"
 import { meetingInputType } from "../utils/Types";
 
 
-const authSchema = z.object({
+const authSignInSchema = z.object({
     email: z.string().email(),
-    password: z.string().min(6, "Password must be atleast 6 characters")
+    password: z.string().min(6, "Password must be atleast 6 characters"),
+    otp: z.string().max(6)
+});
+const authLoginSchema = z.object({
+    email: z.string().email(),
+    password: z.string().min(6, "Password must be atleast 6 characters"),
 });
 
 const updateProfile = z.object({
@@ -26,9 +31,20 @@ export const validateMeetingInput = (req: Request, res: Response, next: NextFunc
     }
 }
 
-export const validateAuth = (req: Request, res: Response, next: NextFunction): any => {
+export const validateSignupAuth = (req: Request, res: Response, next: NextFunction): any => {
     try {
-        authSchema.parse(req.body);
+        authSignInSchema.parse(req.body);
+        next();
+    } catch (err) {
+        if (typeof err === "object" && err !== null && "errors" in err && Array.isArray((err as any).errors)) {
+            return res.status(400).json({ message: (err as any).errors[0].message });
+        }
+        return res.status(400).json({ message: "Validation error" });
+    }
+}
+export const validateLoginAuth = (req: Request, res: Response, next: NextFunction): any => {
+    try {
+        authLoginSchema.parse(req.body);
         next();
     } catch (err) {
         if (typeof err === "object" && err !== null && "errors" in err && Array.isArray((err as any).errors)) {

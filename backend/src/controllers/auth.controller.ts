@@ -2,6 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express"
 import bcrypt from 'bcrypt'
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../utils/jwt";
+import { generateOtp, verifyOtp } from "../utils/otp";
+import { sendOtpEmail } from "../utils/email";
 
 
 
@@ -18,12 +20,48 @@ export const setRefreshToken = (res: Response, token: string) => {
 
 
 
+
 const prisma = new PrismaClient();
 
-export const signup = async (req: Request, res: Response): Promise<any> => {
-    const { email, password } = req.body;
 
-    if (!email || !password) {
+export const setupOtp = async (req: Request, res: Response): Promise<any> => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: "Email is required" });
+
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + 3 * 60 * 1000);
+
+    try {
+        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (existingUser) {
+            return res.status(409).json({
+                message: "User already exists"
+            })
+        }
+        await prisma.otp.deleteMany({ where: { email } });
+        const OTPSent = await sendOtpEmail(email, otp);
+        if(OTPSent.error) {
+            console.log(OTPSent.error);
+            return res.status(401).json({ success: false, message: "Failed to sent otp" });
+        }
+        await prisma.otp.create({
+            data: {
+                email,
+                code: otp,
+                expiresAt
+            }
+        });
+        return res.status(200).json({ success: true, message: "OTP sent" });
+    } catch (err) {
+        console.log(err);
+        return res.status(404).json({ success: false, message: "Failed to send otp" });
+    }
+}
+
+export const signup = async (req: Request, res: Response): Promise<any> => {
+    const { email, password, otp } = req.body;
+
+    if (!email || !password || !otp) {
         return res.status(400).json({
             message: "All fields are required"
         });
@@ -36,9 +74,14 @@ export const signup = async (req: Request, res: Response): Promise<any> => {
         })
     }
 
+    const isOtpVerified = verifyOtp(email, otp);
+    if(!isOtpVerified) {
+        return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-        data: { name: "user", email, password: hashedPassword }
+        data: { name: "User", email, password: hashedPassword }
     })
 
     const accessToken = generateAccessToken(user.id);

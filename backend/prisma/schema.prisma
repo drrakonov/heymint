@@ -71,6 +71,14 @@ model RefreshToken {
   @@index([userId])
 }
 
+model Otp {
+  id        String   @id @default(uuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
 enum Provider {
   local
   google

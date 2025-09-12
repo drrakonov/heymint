@@ -12,10 +12,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logout = exports.refresh = exports.login = exports.signup = exports.setRefreshToken = void 0;
+exports.logout = exports.refresh = exports.login = exports.signup = exports.setupOtp = exports.setRefreshToken = void 0;
 const client_1 = require("@prisma/client");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jwt_1 = require("../utils/jwt");
+const otp_1 = require("../utils/otp");
+const email_1 = require("../utils/email");
 const setRefreshToken = (res, token) => {
     res.cookie(process.env.COOKIE_NAME || "refreshToken", token, {
         httpOnly: true,
@@ -26,9 +28,43 @@ const setRefreshToken = (res, token) => {
 };
 exports.setRefreshToken = setRefreshToken;
 const prisma = new client_1.PrismaClient();
+const setupOtp = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email } = req.body;
+    if (!email)
+        return res.status(400).json({ success: false, message: "Email is required" });
+    const otp = (0, otp_1.generateOtp)();
+    const expiresAt = new Date(Date.now() + 3 * 60 * 1000);
+    try {
+        const existingUser = yield prisma.user.findUnique({ where: { email } });
+        if (existingUser) {
+            return res.status(409).json({
+                message: "User already exists"
+            });
+        }
+        yield prisma.otp.deleteMany({ where: { email } });
+        const OTPSent = yield (0, email_1.sendOtpEmail)(email, otp);
+        if (OTPSent.error) {
+            console.log(OTPSent.error);
+            return res.status(401).json({ success: false, message: "Failed to sent otp" });
+        }
+        yield prisma.otp.create({
+            data: {
+                email,
+                code: otp,
+                expiresAt
+            }
+        });
+        return res.status(200).json({ success: true, message: "OTP sent" });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(404).json({ success: false, message: "Failed to send otp" });
+    }
+});
+exports.setupOtp = setupOtp;
 const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, password } = req.body;
-    if (!email || !password) {
+    const { email, password, otp } = req.body;
+    if (!email || !password || !otp) {
         return res.status(400).json({
             message: "All fields are required"
         });
@@ -39,9 +75,13 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             message: "User already exists"
         });
     }
+    const isOtpVerified = (0, otp_1.verifyOtp)(email, otp);
+    if (!isOtpVerified) {
+        return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
     const hashedPassword = yield bcrypt_1.default.hash(password, 10);
     const user = yield prisma.user.create({
-        data: { name: "user", email, password: hashedPassword }
+        data: { name: "User", email, password: hashedPassword }
     });
     const accessToken = (0, jwt_1.generateAccessToken)(user.id);
     const refreshToken = (0, jwt_1.generateRefreshToken)(user.id);

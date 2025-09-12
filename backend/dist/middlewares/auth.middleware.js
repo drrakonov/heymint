@@ -3,13 +3,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.authenticate = exports.validateUpdateProfile = exports.validateAuth = exports.validateMeetingInput = void 0;
+exports.authenticate = exports.validateUpdateProfile = exports.validateLoginAuth = exports.validateSignupAuth = exports.validateMeetingInput = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const zod_1 = require("zod");
 const Types_1 = require("../utils/Types");
-const authSchema = zod_1.z.object({
+const authSignInSchema = zod_1.z.object({
     email: zod_1.z.string().email(),
-    password: zod_1.z.string().min(6, "Password must be atleast 6 characters")
+    password: zod_1.z.string().min(6, "Password must be atleast 6 characters"),
+    otp: zod_1.z.string().max(6)
+});
+const authLoginSchema = zod_1.z.object({
+    email: zod_1.z.string().email(),
+    password: zod_1.z.string().min(6, "Password must be atleast 6 characters"),
 });
 const updateProfile = zod_1.z.object({
     newName: zod_1.z.string()
@@ -27,9 +32,9 @@ const validateMeetingInput = (req, res, next) => {
     }
 };
 exports.validateMeetingInput = validateMeetingInput;
-const validateAuth = (req, res, next) => {
+const validateSignupAuth = (req, res, next) => {
     try {
-        authSchema.parse(req.body);
+        authSignInSchema.parse(req.body);
         next();
     }
     catch (err) {
@@ -39,7 +44,20 @@ const validateAuth = (req, res, next) => {
         return res.status(400).json({ message: "Validation error" });
     }
 };
-exports.validateAuth = validateAuth;
+exports.validateSignupAuth = validateSignupAuth;
+const validateLoginAuth = (req, res, next) => {
+    try {
+        authLoginSchema.parse(req.body);
+        next();
+    }
+    catch (err) {
+        if (typeof err === "object" && err !== null && "errors" in err && Array.isArray(err.errors)) {
+            return res.status(400).json({ message: err.errors[0].message });
+        }
+        return res.status(400).json({ message: "Validation error" });
+    }
+};
+exports.validateLoginAuth = validateLoginAuth;
 const validateUpdateProfile = (req, res, next) => {
     try {
         updateProfile.parse(req.body);

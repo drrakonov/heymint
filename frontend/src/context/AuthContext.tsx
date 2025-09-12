@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 type AuthContextType = {
   accessToken: string | null;
   user: any;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, otp: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   handleGoogleAuth: () => Promise<void>;
@@ -64,14 +64,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signup = async (email: string, password: string) => {
+  const signup = async (email: string, password: string, otp: string) => {
     if (!email || !password) {
       toast.error("Please fill all the entries");
       return;
     }
 
     try {
-      const res = await api.post("/api/auth/signup", { email, password });
+      const res = await api.post("/api/auth/signup", { email, password, otp });
       const { accessToken } = res.data;
       setAccessToken(accessToken);
       api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
