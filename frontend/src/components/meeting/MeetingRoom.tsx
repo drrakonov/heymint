@@ -1,11 +1,12 @@
 import { cn } from "@/lib/utils";
-import { CallControls, CallingState, CallParticipantsList, CallStatsButton, PaginatedGridLayout, SpeakerLayout, useCall, useCallStateHooks } from "@stream-io/video-react-sdk";
+import { CallControls, CallingState, CallParticipantsList, CallStatsButton, PaginatedGridLayout, SpeakerLayout, useCallStateHooks } from "@stream-io/video-react-sdk";
 import { useState } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { LayoutList, Users } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import EndCallButton from "./EndCallButton";
 import Loader from "../subComponents/Loader";
+import { CustomCallControls } from "./CustomCallControls";
 
 
 
@@ -19,6 +20,7 @@ const MeetingRoom = () => {
     const isPersonalRoom  = !!searchParams.get("personal");
     const { useCallCallingState } = useCallStateHooks();
     const callingState = useCallCallingState();
+    const navigate = useNavigate();
 
     if(callingState !== CallingState.JOINED) return <Loader />
 
@@ -33,6 +35,9 @@ const MeetingRoom = () => {
         }
     }
 
+    const handleOnLeave = () => {
+        navigate("/dashboard");
+    }
     
 
     return (
@@ -47,7 +52,8 @@ const MeetingRoom = () => {
                 </div>
             </div>
             <div className="fixed bottom-0 flex w-full items-center justify-center gap-5 flex-wrap">
-                    <CallControls />
+                    <CustomCallControls onLeave={handleOnLeave} />
+                    {/* <CallControls /> */}
                     <DropdownMenu>
                         <div className="flex items-center">
                             <DropdownMenuTrigger className="cursor-pointer rounded-2xl p-2 hover:bg-slate-700/70">
