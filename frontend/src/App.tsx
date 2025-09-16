@@ -9,7 +9,6 @@ import HeroLayout from './components/HeroLayout'
 import Payments from './components/dashboard/Payments'
 import Bookings from './components/dashboard/Bookings'
 import Help from './components/dashboard/Help'
-import Settings from './components/dashboard/Settings'
 import AddMeetingModal from './components/dashboard/AddMeetingModal'
 import JoinMeetingModal from './components/dashboard/JoinMeetingModal'
 import { AuthProvider } from './context/AuthContext'
@@ -59,7 +58,6 @@ function App() {
             <Route path='meetings' element={<Meetings />} />
             <Route path='bookings' element={<Bookings />} />
             <Route path='payments' element={<Payments />} />
-            <Route path='settings' element={<Settings />} />
             <Route path='help' element={<Help />} />
             <Route path='addmeeting' element={<AddMeetingModal />} />
             <Route path='joinmeeting' element={<JoinMeetingModal />} />

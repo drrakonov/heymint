@@ -12,13 +12,14 @@ import { authenticate, validateLoginAuth, validateSignupAuth,  } from "../middle
 import passport from "passport";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt";
 import { PrismaClient } from "@prisma/client"
+import limiter from "../middlewares/ratelimiter.middleware";
 
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 router.post("/signup", validateSignupAuth, asyncHandler(signup));
-router.post("/send-otp", asyncHandler(setupOtp));
+router.post("/send-otp",limiter, asyncHandler(setupOtp));
 router.post("/login", validateLoginAuth, asyncHandler(login));
 router.post("/refresh", asyncHandler(refresh));
 router.post("/logout", authenticate, asyncHandler(logout));

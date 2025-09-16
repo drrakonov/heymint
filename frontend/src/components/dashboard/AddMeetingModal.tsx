@@ -15,160 +15,83 @@ import toast from "react-hot-toast"
 type MeetingType = "quick-meeting" | "scheduled-meeting";
 
 
-export default function CreateMeeting() {
-  const [meetingTitle, setMeetingTitle] = useState("")
-  const [meetingDescription, setDescription] = useState("")
-  const [meetingPassword, setMeetingPassword] = useState("");
-  const [isScheduled, setIsScheduled] = useState(false)
-  const [isProtected, setIsProtected] = useState(false);
-  const [isPaid, setIsPaid] = useState(false)
-  const [meetingDate, setMeetingDate] = useState("")
-  const [price, setPrice] = useState(10)
-  const [meetingCode, setMeetingCode] = useState("")
-  const [isCreating, setIsCreating] = useState(false)
-  const [meetingType, setMeetingType] = useState<MeetingType>("quick-meeting");
-  const [isCreated, setIsCreated] = useState(false);
-
-  /* --- helpers (left empty) --- */
-  const copyMeetingCode = async () => { }
-  const resetForm = () => {
-    setMeetingTitle("")
-    setDescription("")
-    setMeetingPassword("")
-    setIsScheduled(false)
-    setIsPaid(false)
-    setIsProtected(false)
-    setMeetingDate("")
-    setPrice(0.0)
-    setMeetingCode("")
-    setMeetingType("quick-meeting");
-  }
-
-  const { user } = useUserStore();
-  const client = useStreamVideoClient();
-  const [startAtValue, setStartAtValue] = useState({
-    dateTime: new Date(),
-    description: meetingType,
-    link: ''
-  });
-  const [callDetails, setCallDetails] = useState<Call>();
-  const navigate = useNavigate();
+interface MeetingFormProps {
+  meetingTitle: string;
+  setMeetingTitle: (v: string) => void;
+  meetingDescription: string;
+  setDescription: (v: string) => void;
+  isProtected: boolean;
+  setIsProtected: (v: boolean) => void;
+  meetingPassword: string;
+  setMeetingPassword: (v: string) => void;
+  isScheduled: boolean;
+  setIsScheduled: (v: boolean) => void;
+  meetingDate: string;
+  setMeetingDate: (v: string) => void;
+  isPaid: boolean;
+  setIsPaid: (v: boolean) => void;
+  price: number;
+  setPrice: (v: number) => void;
+  setUpMeeting: () => void;
+  isCreating: boolean;
+}
 
 
-  useEffect(() => {
-    if(isScheduled) {
-      setMeetingType("scheduled-meeting");
-    }else {
-      setMeetingType("quick-meeting");
-    }
-  }, [isScheduled]);
-
-
-  const createMeetingCode = () => {
-    const code = crypto.randomUUID();
-    return code;
-  }
-
-  const setUpMeeting = async () => {
-    if (!user || !client) {
-      toast.error("Failed to setup meeting")
-      return;
-    }
-    try {
-
-      const code = createMeetingCode();
-      setMeetingCode(code);
-
-      if(meetingType === "quick-meeting" || meetingDate === "") {
-        const now = new Date();
-        setMeetingDate(now.toISOString().slice(0, 16));
-      }
-
-      const res = await api.post("api/meeting/setup-meeting", {
-        title: meetingTitle,
-        description: meetingDescription,
-        isScheduled: isScheduled,
-        isPaid: isPaid,
-        isProtected: isProtected,
-        price: price,
-        createdBy: user.id,
-        password: meetingPassword,
-        startingTime: new Date(meetingDate),
-        meetingCode: code
-      })
-
-      if(!res.data.success) {
-        toast.error(res.data.message);
-        return;
-      }
-
-      if(meetingType === "quick-meeting") {
-        await handleCreateMeeting(code);
-        return;
-      }
-      toast.success("meeting created successfully!")
-      setIsCreated(true);
-
-    } catch (err) {
-      console.error("Failed to setup meeting", err);
-    }
-  }
-
-
-
-
-
-  const handleCreateMeeting = async (id: string) => {
-    if (!user || !client || !id) return;
-
-    try {
-      if (!startAtValue.dateTime) return;
-
-      const call = client.call("default", id);
-
-      setIsCreating(true);
-
-      if (!call) throw new Error("Failed to create call");
-      const startsAt = startAtValue.dateTime.toISOString() ||
-        new Date(Date.now()).toISOString();
-
-      const description = startAtValue.description || 'quick-meeting';
-
-      await call.getOrCreate({
-        data: {
-          starts_at: startsAt,
-          custom: {
-            description
-          }
-        }
-      })
-      setCallDetails(call);
-      setIsCreating(false);
-      if (startAtValue.description === "quick-meeting") {
-        navigate(`/meeting/${call.id}`);
-      }
-
-    } catch (err) {
-      console.error("Failed to create meeting", err);
-    }
-
-  }
-
-
-
+const MeetingCreated = ({meetingCode, copyMeetingCode}: {meetingCode: string, copyMeetingCode: () => void}) => {
   return (
-    <div className="min-h-full">
-      <div className="mx-auto max-w-2xl pt-10 space-y-6 p-4 text-[var(--color-text-primary)]">
-        <Card className="bg-[var(--color-surface-1)] ring-1 ring-[var(--color-surface-2)]">
-          <CardHeader>
-            <CardTitle className="text-center text-2xl font-bold">
-              Create Meeting
-            </CardTitle>
-          </CardHeader>
+    <div className="space-y-4 rounded-lg border border-green-600/40 bg-green-600/10 p-4">
+                <div className="space-y-2 text-center">
+                  <h3 className="font-semibold text-green-400">
+                    Meeting Created Successfully!
+                  </h3>
+                  <p className="text-sm text-green-300">
+                    Share this code with attendees:
+                  </p>
+                </div>
 
-          <CardContent className="space-y-6">
-            {/* ---------- BASIC INFO ---------- */}
-            <div className="space-y-4">
+                <div className="flex items-center justify-center gap-3 rounded-lg border border-green-600/40 bg-[var(--color-surface-2)] p-3">
+                  <code className="font-mono text-lg font-bold tracking-wider text-green-300">
+                    {meetingCode}
+                  </code>
+                  <Button
+                    onClick={copyMeetingCode}
+                    variant="outline"
+                    size="sm"
+                    className="border-green-500 text-green-300 hover:bg-green-600/20"
+                  >
+                    <Copy className="mr-1 h-4 w-4" />
+                    Copy Code
+                  </Button>
+                </div>
+
+              </div>
+  )
+}
+
+
+const MeetingForm = ({
+  meetingTitle,
+  setMeetingTitle,
+  meetingDescription,
+  setDescription,
+  isProtected,
+  setIsProtected,
+  meetingPassword,
+  setMeetingPassword,
+  isScheduled,
+  setIsScheduled,
+  meetingDate,
+  setMeetingDate,
+  isPaid,
+  setIsPaid,
+  price,
+  setPrice,
+  setUpMeeting,
+  isCreating,
+}: MeetingFormProps) => {
+  return (
+    <>
+    <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">
                   Meeting Title <span className="text-red-500">*</span>
@@ -322,46 +245,195 @@ export default function CreateMeeting() {
             >
               {isCreating ? "Creating Meeting..." : "Create Meeting"}
             </Button>
+    </>
+  )
+}
 
-            {/* ---------- SUCCESS MESSAGE ---------- */}
-            {isCreated && (
-              <div className="space-y-4 rounded-lg border border-green-600/40 bg-green-600/10 p-4">
-                <div className="space-y-2 text-center">
-                  <h3 className="font-semibold text-green-400">
-                    Meeting Created Successfully!
-                  </h3>
-                  <p className="text-sm text-green-300">
-                    Share this code with attendees:
-                  </p>
-                </div>
 
-                <div className="flex items-center justify-center gap-3 rounded-lg border border-green-600/40 bg-[var(--color-surface-2)] p-3">
-                  <code className="font-mono text-lg font-bold tracking-wider text-green-300">
-                    {meetingCode}
-                  </code>
-                  <Button
-                    onClick={copyMeetingCode}
-                    variant="outline"
-                    size="sm"
-                    className="border-green-500 text-green-300 hover:bg-green-600/20"
-                  >
-                    <Copy className="mr-1 h-4 w-4" />
-                    Copy Code
-                  </Button>
-                </div>
+export default function CreateMeeting() {
+  const [meetingTitle, setMeetingTitle] = useState("")
+  const [meetingDescription, setDescription] = useState("")
+  const [meetingPassword, setMeetingPassword] = useState("");
+  const [isScheduled, setIsScheduled] = useState(false)
+  const [isProtected, setIsProtected] = useState(false);
+  const [isPaid, setIsPaid] = useState(false)
+  const [meetingDate, setMeetingDate] = useState("")
+  const [price, setPrice] = useState(10)
+  const [meetingCode, setMeetingCode] = useState("")
+  const [isCreating, setIsCreating] = useState(false)
+  const [meetingType, setMeetingType] = useState<MeetingType>("quick-meeting");
+  const [isCreated, setIsCreated] = useState(false);
 
-                <div className="text-center">
-                  <Button
-                    onClick={resetForm}
-                    variant="ghost"
-                    size="sm"
-                    className="text-green-300 hover:bg-green-600/20"
-                  >
-                    Create Another Meeting
-                  </Button>
-                </div>
-              </div>
-            )}
+
+ const copyMeetingCode = async () => { 
+    try {
+      await navigator.clipboard.writeText(meetingCode);
+      toast.success("Code copied to clipboard!")
+    }catch(err) {
+      console.log("Failed to copy code in clipboard");
+    }
+  }
+  const resetForm = () => {
+    setMeetingTitle("")
+    setDescription("")
+    setMeetingPassword("")
+    setIsScheduled(false)
+    setIsPaid(false)
+    setIsProtected(false)
+    setMeetingDate("")
+    setPrice(0.0)
+    setMeetingCode("")
+    setMeetingType("quick-meeting");
+  }
+
+  const { user } = useUserStore();
+  const client = useStreamVideoClient();
+  const [startAtValue, setStartAtValue] = useState({
+    dateTime: new Date(),
+    description: meetingType,
+    link: ''
+  });
+  const [callDetails, setCallDetails] = useState<Call>();
+  const navigate = useNavigate();
+
+
+  useEffect(() => {
+    if(isScheduled) {
+      setMeetingType("scheduled-meeting");
+    }else {
+      setMeetingType("quick-meeting");
+    }
+  }, [isScheduled]);
+
+
+  const createMeetingCode = () => {
+    const code = crypto.randomUUID();
+    return code;
+  }
+
+  const setUpMeeting = async () => {
+    if (!user || !client) {
+      toast.error("Failed to setup meeting")
+      return;
+    }
+    try {
+
+      const code = createMeetingCode();
+      setMeetingCode(code);
+
+      if(meetingType === "quick-meeting" || meetingDate === "") {
+        const now = new Date();
+        setMeetingDate(now.toISOString().slice(0, 16));
+      }
+
+      const res = await api.post("api/meeting/setup-meeting", {
+        title: meetingTitle,
+        description: meetingDescription,
+        isScheduled: isScheduled,
+        isPaid: isPaid,
+        isProtected: isProtected,
+        price: price,
+        createdBy: user.id,
+        password: meetingPassword,
+        startingTime: new Date(meetingDate),
+        meetingCode: code
+      })
+
+      if(!res.data.success) {
+        toast.error(res.data.message);
+        return;
+      }
+
+      if(meetingType === "quick-meeting") {
+        await handleCreateMeeting(code);
+        return;
+      }
+      toast.success("meeting created successfully!")
+      setIsCreated(true);
+
+    } catch (err) {
+      console.error("Failed to setup meeting", err);
+    }
+  }
+
+
+
+
+
+  const handleCreateMeeting = async (id: string) => {
+    if (!user || !client || !id) return;
+
+    try {
+      if (!startAtValue.dateTime) return;
+
+      const call = client.call("default", id);
+
+      setIsCreating(true);
+
+      if (!call) throw new Error("Failed to create call");
+      const startsAt = startAtValue.dateTime.toISOString() ||
+        new Date(Date.now()).toISOString();
+
+      const description = startAtValue.description || 'quick-meeting';
+
+      await call.getOrCreate({
+        data: {
+          starts_at: startsAt,
+          custom: {
+            description
+          }
+        }
+      })
+      setCallDetails(call);
+      setIsCreating(false);
+      if (startAtValue.description === "quick-meeting") {
+        navigate(`/meeting/${call.id}`);
+      }
+
+    } catch (err) {
+      console.error("Failed to create meeting", err);
+    }
+
+  }
+
+
+
+  return (
+    <div className="min-h-full">
+      <div className="mx-auto max-w-2xl pt-10 space-y-6 p-4 text-[var(--color-text-primary)]">
+        <Card className="bg-[var(--color-surface-1)] ring-1 ring-[var(--color-surface-2)]">
+          <CardHeader>
+            <CardTitle className="text-center text-2xl font-bold">
+              Create Meeting
+            </CardTitle>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            {/* ---------- BASIC INFO ---------- */}
+            {isCreated ? 
+            <MeetingCreated meetingCode={meetingCode} copyMeetingCode={copyMeetingCode} /> 
+              : 
+            <MeetingForm
+                meetingTitle={meetingTitle}
+                setMeetingTitle={setMeetingTitle}
+                meetingDescription={meetingDescription}
+                setDescription={setDescription}
+                isProtected={isProtected}
+                setIsProtected={setIsProtected}
+                meetingPassword={meetingPassword}
+                setMeetingPassword={setMeetingPassword}
+                isScheduled={isScheduled}
+                setIsScheduled={setIsScheduled}
+                meetingDate={meetingDate}
+                setMeetingDate={setMeetingDate}
+                isPaid={isPaid}
+                setIsPaid={setIsPaid}
+                price={price}
+                setPrice={setPrice}
+                setUpMeeting={setUpMeeting}
+                isCreating={isCreating}
+              />
+            }
           </CardContent>
         </Card>
       </div>
