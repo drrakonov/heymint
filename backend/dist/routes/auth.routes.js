@@ -22,7 +22,7 @@ const client_1 = require("@prisma/client");
 const ratelimiter_middleware_1 = __importDefault(require("../middlewares/ratelimiter.middleware"));
 const router = express_1.default.Router();
 const prisma = new client_1.PrismaClient();
-router.post("/signup", auth_middleware_1.validateSignupAuth, ratelimiter_middleware_1.default, (0, express_async_handler_1.default)(auth_controller_1.signup));
+router.post("/signup", auth_middleware_1.validateSignupAuth, (0, express_async_handler_1.default)(auth_controller_1.signup));
 router.post("/send-otp", ratelimiter_middleware_1.default, (0, express_async_handler_1.default)(auth_controller_1.setupOtp));
 router.post("/login", auth_middleware_1.validateLoginAuth, (0, express_async_handler_1.default)(auth_controller_1.login));
 router.post("/refresh", (0, express_async_handler_1.default)(auth_controller_1.refresh));
