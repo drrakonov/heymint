@@ -8,7 +8,7 @@ import { SubHeading } from "./subComponents/SubHeading"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
 import { Button } from "./ui/button"
-import google from '@/assets/google.svg'
+import google from '@/assets/logo/google.svg'
 
 const Login = () => {
   const [email, setEmail] = useState("");

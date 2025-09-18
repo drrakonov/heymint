@@ -200,7 +200,7 @@ const DashboardStats = ({
             bgColor: "bg-primary/10",
             color: "text-accent",
             icon: CalendarCheckIcon,
-            subDetails: "asda avdas sgaa"
+            subDetails: "Paid and Scheduled"
         },
         {
             label: "Completed Meetings",

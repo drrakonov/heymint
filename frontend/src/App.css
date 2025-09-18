@@ -21,11 +21,21 @@
   box-shadow: 0 0 8px rgba(41, 177, 132, 0.5); /* slightly stronger glow on hover */
 }
 
+::selection {
+  background-color: #338b68; /* green background */
+  color: #101010;            /* white text */
+}
+
 /* Firefox support */
 * {
   scrollbar-width: thin;
   scrollbar-color: #34D399 #1E2023; /* thumb | track */
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
 
 @keyframes spin {
   to {

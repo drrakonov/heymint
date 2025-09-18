@@ -7,7 +7,7 @@ import PasswordInput from "./subComponents/PasswordInput"
 import { SubHeading } from "./subComponents/SubHeading"
 import { useAuth } from "@/context/AuthContext"
 import { Button } from "./ui/button"
-import google from '@/assets/google.svg'
+import google from '@/assets/logo/google.svg'
 import Otp from "./subComponents/Otp"
 import toast from "react-hot-toast"
 import api from "@/lib/axios"

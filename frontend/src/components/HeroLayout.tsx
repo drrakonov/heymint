@@ -1,8 +1,8 @@
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom"
-import appLogo from "../assets/heyMintLogo.png"
+import appLogo from "../assets/logo/heyMintLogo.png"
 import { GreenButton } from "./subComponents/Greenbutton";
-import GithubLogo from '../assets/github.svg';
-import XLogo from '../assets/x.svg'
+import GithubLogo from '../assets/logo/github.svg';
+import XLogo from '../assets/logo/x.svg'
 import { useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
 
@@ -30,7 +30,7 @@ const HeroLayout = () => {
 
     return (
         <div className="min-h-screen flex flex-col">
-            <nav className="py-4 px-4 bg-surface text-text-primary border-b border-gray-200/5">
+            <nav className="py-4 px-4 bg-surface-bl text-text-primary border-b border-gray-200/15">
                 <div className="flex mx-4 items-center justify-between">
                     <div className="flex flex-col items-center">
                         <a href="/">
@@ -41,9 +41,9 @@ const HeroLayout = () => {
                         </a>
                     </div>
                     <div className="hidden md:flex space-x-8">
-                        <Link to={"/"} className="hover:text-text-secondary" >Feature</Link>
-                        <Link to={"/"} className="hover:text-text-secondary" >How to use</Link>
-                        <Link to={"/"} className="hover:text-text-secondary" >Testimonial</Link>
+                        <a href="/#feature" className="hover:text-text-secondary" >Feature</a>
+                        <a href="/" className="hover:text-text-secondary" >How to use</a>
+                        <a href="/" className="hover:text-text-secondary" >Testimonial</a>
 
                     </div>
                     <div className="flex space-x-4">
@@ -51,22 +51,17 @@ const HeroLayout = () => {
                             variant="ghost"
                             label="Log In"
                             to="/dashboard"
-                            className="hidden sm:block font-bold"
-                        />
-                        <GreenButton
-                            variant="primary"
-                            label="Get Started"
-                            to="/dashboard"
                             className="font-bold"
                         />
+
                     </div>
                 </div>
             </nav>
             <main className="flex-1 bg-surface">
                 <Outlet />
             </main>
-            <footer className="bg-surface/95 text-gray-300 border-t border-gray-700">
-                <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <footer className="bg-surface-bl text-gray-300 border-t border-gray-200/15">
+                <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-3 gap-8">
                     {/* Branding */}
                     <div>
                         <img src={appLogo}
@@ -110,9 +105,27 @@ const HeroLayout = () => {
                 </div>
 
                 {/* Bottom */}
-                <div className="text-center py-4 border-t border-gray-200 dark:border-gray-700 text-sm">
-                    © {new Date().getFullYear()} HeyMint. All rights reserved.
+                <div className="hidden sm:block border-t border-gray-200/15">
+                    <div className="flex justify-center items-end">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 250" width="100%" height="250" role="img" aria-labelledby="title">
+                            <title id="title">Heymint wordmark</title>
+
+                            <text x="50%" y="100%"
+                                text-anchor="middle"
+                                dominant-baseline="bottom"
+                                font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial"
+                                font-weight="900"
+                                font-size="200"
+                                letter-spacing="20"
+                                fill="currentColor"
+                                opacity="0.2">
+                                HEYMINT
+                            </text>
+                        </svg>
+
+                    </div>
                 </div>
+
             </footer>
         </div>
     )

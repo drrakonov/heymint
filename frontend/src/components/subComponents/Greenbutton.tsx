@@ -20,9 +20,9 @@ export const GreenButton = ({
 
   const baseStyles = "px-4 py-2 rounded-md font-medium transition-colors";
   const variantStyles = {
-    primary: "bg-primary text-text-primary hover:bg-accent",
+    primary: "bg-primary/80 text-text-primary hover:bg-accent/30",
     secondary: "bg-green-100 text-green-800 hover:bg-green-200",
-    ghost: "bg-transparent text-text-primary border border-white/5 hover:bg-primary/40 hover:backdrop-blur-md",
+    ghost: "bg-transparent text-text-primary border-2 border-white/20 hover:bg-primary/40 hover:backdrop-blur-md",
   };
 
   const handleClick = () => {

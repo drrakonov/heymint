@@ -1,4 +1,4 @@
-import appLogo from "@/assets/heyMintLogo.png"
+import appLogo from "@/assets/logo/heyMintLogo.png"
 import { LogIn, Plus } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { GreenButton } from "../subComponents/Greenbutton";
