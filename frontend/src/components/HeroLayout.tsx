@@ -42,7 +42,7 @@ const HeroLayout = () => {
                     </div>
                     <div className="hidden md:flex space-x-8">
                         <a href="/#feature" className="hover:text-text-secondary" >Feature</a>
-                        <a href="/" className="hover:text-text-secondary" >How to use</a>
+                        <a href="/#howToUse" className="hover:text-text-secondary" >How to use</a>
                         <a href="/" className="hover:text-text-secondary" >Testimonial</a>
 
                     </div>

@@ -54,11 +54,11 @@ const WhyHeyMint = () => {
 
 
   return (
-    <div id="feature" className="mt-10 sm:mt-25 w-full px-3 sm:px-15 md:px-0">
+    <div id="feature" className="pt-10 sm:mt-25 w-full px-3 sm:px-15 md:px-0">
       <motion.h1
         ref={ref}
-        initial= {{ y: -20, opacity: 0.5 }}
-        animate={isInView ? { y: 0, opacity: 1 } : {} }
+        initial={{ y: -20, opacity: 0.5 }}
+        animate={isInView ? { y: 0, opacity: 1 } : {}}
         transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
         className="text-2xl flex justify-center sm:text-4xl md:text-5xl tracking-tighter text-center md:text-left">
         Why HeyMint?
@@ -69,7 +69,7 @@ const WhyHeyMint = () => {
           <motion.div
             ref={ref}
             initial={{
-              x: -30, y: -30, opacity: 0
+              x: -50, y: -50, opacity: 0
             }}
             animate={isInView ? {
               x: 0, y: 0, opacity: 1
@@ -81,7 +81,7 @@ const WhyHeyMint = () => {
             </p>
           </motion.div>
           <motion.div
-            initial={{ opacity: 0, x: -30, y: +30 }}
+            initial={{ opacity: 0, x: -50, y: +50 }}
             animate={isInView ? { opacity: 1, x: 0, y: 0 } : {}}
             transition={{ duration: 0.9, ease: [0.25, 0.1, 0.25, 1] }}
             className="bg-[#17191C] p-5 border border-slate-300/10 row-span-2 rounded-lg">
@@ -94,7 +94,7 @@ const WhyHeyMint = () => {
 
         <div className="grid grid-rows-3 sm:col-span-1 lg:col-span-2 gap-4">
           <motion.div
-            initial={{ opacity: 0, y: -30 }}
+            initial={{ opacity: 0, y: -50 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
             className="bg-[#17191C] px-4 py-8 flex flex-col justify-between border border-slate-300/10 md:row-span-2 rounded-lg">
@@ -104,7 +104,7 @@ const WhyHeyMint = () => {
             </p>
           </motion.div>
           <motion.div
-            initial={{ opacity: 0, x: +30, y: -30 }}
+            initial={{ opacity: 0, x: +50, y: -50 }}
             animate={isInView ? { opacity: 1, x: 0, y: 0 } : {}}
             transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
             className="bg-[#17191C] text-text-secondary flex flex-col justify-center items-center space-y-2 p-5 border border-slate-300/10 md:row-span-2 rounded-lg">
@@ -149,6 +149,99 @@ const WhyHeyMint = () => {
   )
 }
 
+const HowToUse = () => {
+
+  const ref = useRef(null);
+  const isInView = useInView(ref, {
+    once: true,
+    amount: 0.6
+  })
+
+  return (
+    <div id="howToUse" className="pt-10 sm:mt-25 w-full px-3 sm:px-15 md:px-0">
+      <motion.h1
+        ref={ref}
+        initial={{ y: -20, opacity: 0.5 }}
+        animate={isInView ? { y: 0, opacity: 1 } : {}}
+        transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+        className="text-2xl flex justify-center sm:text-4xl md:text-5xl tracking-tighter text-center md:text-left">
+        How To Use
+      </motion.h1>
+
+      <div className="grid lg:grid-cols-2 gap-4">
+        <div className="mt-10 grid grid-rows-2 gap-4">
+          {/* BOX-START */}
+          <motion.div
+            ref={ref}
+            initial={{z: -200, opacity: 0, scale: 0}}
+            animate={isInView ? { z: 0, opacity: 1, scale: 1 }: {}}
+            transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+            className="bg-[#17191C] flex p-2 sm:p-5 border border-slate-300/10 rounded-lg gap-4">
+            <div className="flex items-center justify-center">
+              <span className="p-5 bg-cardbg rounded-xl font-bold text-2xl">1</span>
+            </div>
+            <div className="w-full flex flex-col justify-center items-center">
+              <span className="text-xl lg:text-2xl font-semibold">Signup</span>
+              <p className="text-text-secondary mt-2 text-xs sm:text-lg md:text-sm leading-tight">
+                Create your Heymint account in seconds with just your email address.
+              </p>
+            </div>
+          </motion.div>
+          {/* BOX-START */}
+          <motion.div
+            ref={ref}
+            initial={{z: -200, opacity: 0, scale: 0}}
+            animate={isInView ? { z: 0, opacity: 1, scale: 1 }: {}}
+            transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+            className="bg-[#17191C] flex p-2 sm:p-5 border border-slate-300/10 rounded-lg gap-4">
+            <div className="flex items-center justify-center">
+              <span className="p-5 bg-cardbg rounded-xl font-bold text-2xl">2</span>
+            </div>
+            <div className="w-full flex flex-col justify-center items-center">
+              <div className="w-full flex flex-col justify-center items-center">
+                <span className="text-xl lg:text-2xl font-semibold">Schedule a Meeting</span>
+                <p className="text-text-secondary mt-2 text-xs sm:text-lg md:text-sm leading-tight">Set up your meeting preferences and choose your available time slots.</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+        <div className="lg:mt-10 grid grid-rows-2 gap-4">
+          {/* BOX-START */}
+          <motion.div
+            ref={ref}
+            initial={{z: -200, opacity: 0, scale: 0}}
+            animate={isInView ? { z: 0, opacity: 1, scale: 1 }: {}}
+            transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+            className="bg-[#17191C] flex p-2 sm:p-5 border border-slate-300/10 rounded-lg gap-4">
+            <div className="flex items-center justify-center">
+              <span className="p-5 bg-cardbg rounded-xl font-bold text-2xl">3</span>
+            </div>
+            <div className="w-full flex flex-col justify-center items-center">
+              <span className="text-xl lg:text-2xl font-semibold">Invite Participants</span>
+              <p className="text-text-secondary mt-2 text-xs sm:text-lg md:text-sm leading-tight">Send invitations to participants with a simple link or email integration.</p>
+            </div>
+          </motion.div>
+          {/* BOX-START */}
+          <motion.div
+            ref={ref}
+            initial={{z: -200, opacity: 0, scale: 0}}
+            animate={isInView ? { z: 0, opacity: 1, scale: 1 }: {}}
+            transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+            className="bg-[#17191C] flex p-2 sm:p-5 border border-slate-300/10 rounded-lg gap-4">
+            <div className="flex items-center justify-center">
+              <span className="p-5 bg-cardbg rounded-xl font-bold text-2xl">4</span>
+            </div>
+            <div className="w-full flex flex-col justify-center items-center">
+              <span className="text-xl lg:text-2xl font-semibold">Go Live</span>
+              <p className="text-text-secondary mt-2 text-xs sm:text-lg md:text-sm leading-tight">Start your meeting with HD video, crystal-clear audio, and seamless collaboration.</p>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 
 const Landing = () => {
@@ -164,7 +257,7 @@ const Landing = () => {
           <span><strong>HeyMint</strong>, Just</span>
           <RotatingText
             texts={['Host 🚀', 'Meet 👥', 'Share 📤', 'Earn! 💰']}
-            mainClassName="px-3 py-1 bg-accent text-black rounded-lg"
+            mainClassName="px-3 py-1 bg-accent text-[#101010] rounded-lg"
             staggerFrom="last"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
@@ -199,7 +292,8 @@ const Landing = () => {
         />
         <DashBoardImageSection />
         <WhyHeyMint />
-        
+        <HowToUse />
+
       </div>
     </section>
   );
