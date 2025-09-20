@@ -68,8 +68,10 @@ const handleMeetingSetup = (req, res) => __awaiter(void 0, void 0, void 0, funct
 exports.handleMeetingSetup = handleMeetingSetup;
 const getAllMeetings = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        const { userId } = req.query;
         const meeting = yield prisma.meeting.findMany({
             select: {
+                id: true,
                 title: true,
                 desc: true,
                 isPaid: true,
@@ -88,7 +90,14 @@ const getAllMeetings = (req, res) => __awaiter(void 0, void 0, void 0, function*
                 meetingCode: true
             },
         });
+        const meetingPurchased = yield prisma.meetingPurchase.findMany({
+            where: {
+                userId: String(userId)
+            },
+            select: { meetingId: true }
+        });
         const meetings = meeting.map(m => ({
+            meetingId: m.id,
             title: m.title,
             description: m.desc,
             type: m.isPaid ? "Paid" : "Free",
@@ -100,9 +109,11 @@ const getAllMeetings = (req, res) => __awaiter(void 0, void 0, void 0, function*
             meetingCode: m.meetingCode,
             createdById: m.createdById
         }));
-        res.status(201).json({ success: true, message: "Fetched all the meetings", meetings });
+        const purchases = meetingPurchased.map(p => p.meetingId);
+        res.status(201).json({ success: true, message: "Fetched all the meetings", meetings, purchases });
     }
     catch (err) {
+        console.log("Failed to get meetings", err);
         return res.status(500).json({ success: false, message: "failed to get all the meetings" });
     }
 });
@@ -112,13 +123,21 @@ const deleteMeeting = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         const { meetingCode, userId } = req.body;
         if (!meetingCode || !userId)
             throw new Error("missing meetingCode or userID");
-        yield prisma.meeting.delete({
-            where: {
-                createdById: userId,
-                meetingCode: meetingCode,
-            }
+        const meeting = yield prisma.meeting.findUnique({
+            where: { meetingCode },
         });
-        res.status(200).json({ success: true, message: "Meeting deleted" });
+        if (!meeting) {
+            return res.status(404).json({ success: false, message: "Meeting not found" });
+        }
+        if (meeting.createdById !== userId) {
+            return res.status(403).json({ success: false, message: "You are not authorized to delete this meeting" });
+        }
+        yield prisma.$transaction([
+            prisma.meetingPurchase.deleteMany({ where: { meetingId: meeting.id } }),
+            prisma.payment.deleteMany({ where: { meetingId: meeting.id } }),
+            prisma.meeting.delete({ where: { id: meeting.id } }),
+        ]);
+        res.status(200).json({ success: true, message: "Meeting and related records deleted successfully" });
     }
     catch (err) {
         console.log(err);

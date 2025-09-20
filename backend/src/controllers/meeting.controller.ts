@@ -15,8 +15,8 @@ const client = new StreamClient(getStreamApiKey, getStreamApiSecret, { timeout: 
 export const createGetStreamToken = async (req: Request, res: Response): Promise<any> => {
     try {
         const { userId, name } = req.body;
-        if(!userId) {
-           return res.status(400).json({ success: false, message: "UserId not found" }); 
+        if (!userId) {
+            return res.status(400).json({ success: false, message: "UserId not found" });
         }
 
         const newUser: UserRequest = {
@@ -36,24 +36,24 @@ export const createGetStreamToken = async (req: Request, res: Response): Promise
         const apiKey = getStreamApiKey;
         res.status(200).json({ success: true, message: "Token generated successfully", token, apiKey })
 
-    }catch(err) {
+    } catch (err) {
         console.log(err);
         return res.status(500).json({ success: false, message: "get stream token generation failed" })
     }
 }
 
 
-export const handleMeetingSetup = async (req: Request, res: Response):Promise<any> => {
+export const handleMeetingSetup = async (req: Request, res: Response): Promise<any> => {
     try {
-        const { 
-            title, 
-            description, 
-            isScheduled, 
-            isPaid, 
-            price,  
-            startingTime, 
+        const {
+            title,
+            description,
+            isScheduled,
+            isPaid,
+            price,
+            startingTime,
             createdBy,
-            isProtected, 
+            isProtected,
             password,
             meetingCode
         } = req.body;
@@ -77,15 +77,19 @@ export const handleMeetingSetup = async (req: Request, res: Response):Promise<an
         return res.status(201).json({ success: true, message: "meeting details stored" });
 
 
-    }catch(err) {
+    } catch (err) {
         return res.status(500).json({ success: false, message: "meeting setup failed" })
     }
-} 
+}
 
 export const getAllMeetings = async (req: Request, res: Response): Promise<any> => {
     try {
+
+        const { userId } = req.query
+
         const meeting = await prisma.meeting.findMany({
             select: {
+                id: true,
                 title: true,
                 desc: true,
                 isPaid: true,
@@ -105,7 +109,15 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
             },
         });
 
+        const meetingPurchased = await prisma.meetingPurchase.findMany({
+            where: {
+                userId: String(userId)
+            },
+            select: { meetingId: true }
+        });
+
         const meetings: Meeting[] = meeting.map(m => ({
+            meetingId: m.id,
             title: m.title,
             description: m.desc,
             type: m.isPaid ? "Paid" : "Free",
@@ -118,9 +130,12 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
             createdById: m.createdById
         }))
 
+        const purchases = meetingPurchased.map(p => p.meetingId);
 
-        res.status(201).json({ success: true, message: "Fetched all the meetings", meetings });
-    }catch(err) {
+
+        res.status(201).json({ success: true, message: "Fetched all the meetings", meetings, purchases });
+    } catch (err) {
+        console.log("Failed to get meetings", err);
         return res.status(500).json({ success: false, message: "failed to get all the meetings" });
     }
 }
@@ -131,17 +146,28 @@ export const deleteMeeting = async (req: Request, res: Response): Promise<any> =
     try {
         const { meetingCode, userId } = req.body;
 
-        if(!meetingCode || !userId) throw new Error("missing meetingCode or userID");
+        if (!meetingCode || !userId) throw new Error("missing meetingCode or userID");
 
-        await prisma.meeting.delete({
-            where: {
-                createdById: userId,
-                meetingCode: meetingCode,
-            }
-        })
+        const meeting = await prisma.meeting.findUnique({
+            where: { meetingCode },
+        });
 
-        res.status(200).json({ success: true, message: "Meeting deleted" });
-    }catch(err) {
+        if (!meeting) {
+            return res.status(404).json({ success: false, message: "Meeting not found" });
+        }
+
+        if (meeting.createdById !== userId) {
+            return res.status(403).json({ success: false, message: "You are not authorized to delete this meeting" });
+        }
+
+        await prisma.$transaction([
+            prisma.meetingPurchase.deleteMany({ where: { meetingId: meeting.id } }),
+            prisma.payment.deleteMany({ where: { meetingId: meeting.id } }),
+            prisma.meeting.delete({ where: { id: meeting.id } }),
+        ]);
+
+        res.status(200).json({ success: true, message: "Meeting and related records deleted successfully" });
+    } catch (err) {
         console.log(err);
         res.status(500).json({ success: false, message: "Failed to delete meeting" })
     }
@@ -153,7 +179,7 @@ export const isProtectedMeetingValidation = async (req: Request, res: Response):
         const meetingCode = req.query.meetingCode as string;
         const userId = req.query.userId as string;
 
-        if(!meetingCode) {
+        if (!meetingCode) {
             throw new Error("meetingCode or userId is missing");
         }
 
@@ -167,17 +193,17 @@ export const isProtectedMeetingValidation = async (req: Request, res: Response):
             }
         })
         let isProtected = meeting?.isProtected;
-        if(userId === meeting?.createdById) isProtected = false;
+        if (userId === meeting?.createdById) isProtected = false;
         res.status(201).json({ success: true, isProtected });
-    }catch(err) {
+    } catch (err) {
         res.status(500).json({ success: false, message: "Failed to validate meeting" });
     }
 }
 
-export const validateProtectedPassword = async (req: Request, res: Response):Promise<any> => {
+export const validateProtectedPassword = async (req: Request, res: Response): Promise<any> => {
     try {
-        const  { meetingPassword, meetingCode } = req.body;
-        if(!meetingCode || !meetingCode) {
+        const { meetingPassword, meetingCode } = req.body;
+        if (!meetingCode || !meetingCode) {
             return res.status(400).json({ success: false, message: "meetingCode, meetingPassword or userId is missing" });
         }
 
@@ -190,16 +216,16 @@ export const validateProtectedPassword = async (req: Request, res: Response):Pro
             }
         });
 
-        if(!meeting) {
+        if (!meeting) {
             throw new Error("Failed to fetch the meeting details");
         }
 
-        if(meeting.password === meetingPassword) {
+        if (meeting.password === meetingPassword) {
             res.status(200).json({ success: true, message: "Password is correct", isMatched: true });
-        }else {
+        } else {
             res.status(401).json({ success: true, message: "Password is incorrect", isMatched: false });
         }
-    }catch(err) {
+    } catch (err) {
         return res.status(500).json({ success: false, message: "Failed to validate the protected meeting" })
     }
 }

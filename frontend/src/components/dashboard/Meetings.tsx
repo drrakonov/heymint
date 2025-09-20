@@ -16,6 +16,7 @@ import { useUserStore } from "@/store/userStore";
 
 
 interface MeetingCardProps {
+    meetingId: string
     title: string
     hostName: string
     description: string
@@ -27,11 +28,13 @@ interface MeetingCardProps {
     meetingCode: string
     createdById: string
     setMeetings: React.Dispatch<React.SetStateAction<Meeting[]>>;
+    bookedMeetings: string[];
 }
 
 
 
 export function MeetingCard({
+    meetingId,
     title,
     hostName,
     description,
@@ -42,7 +45,8 @@ export function MeetingCard({
     participantCount,
     meetingCode,
     createdById,
-    setMeetings
+    setMeetings,
+    bookedMeetings
 }: MeetingCardProps) {
 
     const navigate = useNavigate();
@@ -54,12 +58,18 @@ export function MeetingCard({
         description: "scheduled-meeting",
         link: ''
     });
+    const isBooked = bookedMeetings.includes(meetingId) || createdById === user?.id;
 
 
     const handleJoinMeeting = async () => {
         try {
             if (!client || !user) {
                 toast.error("Failed to join");
+                return;
+            }
+
+            if (!isBooked) {
+                toast.error("Purchase to join");
                 return;
             }
 
@@ -128,6 +138,35 @@ export function MeetingCard({
         } catch (err) {
             toast.error("Failed to delete!")
             console.error("Failed to delete the meeting", err);
+        }
+    }
+
+    const handleMeetingPurchase = async () => {
+        if (!user) {
+            toast.error("User not found");
+        }
+
+        alert(
+            "⚠️ This payment is for demo purposes only.\n" +
+            "No real money is involved.\n" +
+            "This is to showcase the app functionality for your portfolio."
+        );
+
+        try {
+            const res = await api.post("/api/payment/demo-payment", {
+                userId: user?.id,
+                meetingId
+            });
+
+            if (!res.data.success) {
+                toast.error("Failed to make payment");
+                return;
+            }
+            toast.success(res.data.message);
+            navigate("/dashboard/bookings");
+        } catch (err) {
+            console.error("Failed to purchase", err);
+            toast.error("failed to purchase");
         }
     }
 
@@ -227,13 +266,22 @@ export function MeetingCard({
                             : "bg-accent-hover hover:bg-accent/60 text-black tracking-wider font-bold border border-[#393B40]"}`}
                     size="sm"
                     variant={isInstant ? "default" : "outline"}
-                    onClick={handleJoinMeeting}
+                    onClick={() => {
+                        if(type === 'Free' || isBooked || user?.id === createdById) {
+                            handleJoinMeeting()
+                        }else {
+                            handleMeetingPurchase()
+                        }
+                    }}
                 >
                     {user?.id === createdById
                         ? "start"
-                        : isInstant
-                            ? "Join Meeting"
-                            : "Join"
+                        : (
+                            type === 'Paid'
+                                ? (isBooked ? "Join" : "Purchase")
+                                : "Join"
+                        )
+
                     }
                 </Button>
             </CardFooter>
@@ -243,6 +291,7 @@ export function MeetingCard({
 
 // 1. Define a Meeting type
 type Meeting = {
+    meetingId: string
     title: string
     hostName: string
     description: string
@@ -257,12 +306,15 @@ type Meeting = {
 
 
 
+
 const Meetings = () => {
     const [searchQuery, setSearchQuery] = useState<string>("")
     const [filterType, setFilterType] = useState<"all" | "free" | "paid" | "instant">("all")
     const [sortBy, setSortBy] = useState<"title" | "time" | "participants">("title")
     const [isLoading, setIsLoading] = useState(false);
     const [meetings, setMeetings] = useState<Meeting[]>([]);
+    const [bookedMeetings, setBookedMeetings] = useState<string[]>([]);
+    const { user } = useUserStore();
 
     const filteredAndSortedMeetings = useMemo<Meeting[]>(() => {
         const filtered = meetings.filter((meeting) => {
@@ -310,12 +362,17 @@ const Meetings = () => {
 
     useEffect(() => {
         const getAllMeetings = async () => {
+
             try {
                 setIsLoading(true);
-                const res = await api.get("/api/meeting/get-meetings");
+
+                const res = await api.get("/api/meeting/get-meetings", {
+                    params: { userId: user?.id }
+                });
 
                 if (res.data.success) {
                     setMeetings(res.data.meetings);
+                    setBookedMeetings(res.data.purchases);
                 }
                 setIsLoading(false);
             } catch (err) {
@@ -394,7 +451,7 @@ const Meetings = () => {
                 {filteredAndSortedMeetings.length > 0 ? (
                     <div className="space-y-6 pb-20">
                         {filteredAndSortedMeetings.map((meeting, index) => (
-                            <MeetingCard key={index} {...meeting} setMeetings={setMeetings} />
+                            <MeetingCard key={index} {...meeting} setMeetings={setMeetings} bookedMeetings={bookedMeetings} />
                         ))}
                     </div>
                 ) : (

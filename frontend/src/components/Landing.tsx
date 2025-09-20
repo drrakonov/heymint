@@ -28,7 +28,7 @@ const DashBoardImageSection = () => {
   return (
     <motion.div
       style={{ opacity: opacityOuter }}
-      className="mt-10 sm:mt-25 mx-4 sm:mx-10 md:mx-20 bg-white/5 rounded-3xl backdrop-blur-lg border border-white/20 shadow-lg">
+      className="hidden lg:block mt-10 sm:mt-25 mx-4 sm:mx-10 md:mx-20 bg-white/5 rounded-3xl backdrop-blur-lg border border-white/20 shadow-lg">
       <motion.div
         style={
           played

@@ -106,7 +106,7 @@ const HeroLayout = () => {
 
                 {/* Bottom */}
                 <div className="hidden sm:block border-t border-gray-200/15">
-                    <div className="flex justify-center items-end">
+                    <div className="flex justify-center items-end select-none">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 250" width="100%" height="250" role="img" aria-labelledby="title">
                             <title id="title">Heymint wordmark</title>
 

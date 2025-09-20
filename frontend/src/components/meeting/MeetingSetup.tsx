@@ -14,6 +14,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
     const [isCamToggleOn, setIsCamToggleOn] = useState(false);
     const [isMeetingProtected, setIsMeetingProtected] = useState(true);
     const [password, setPassword] = useState("");
+    const [isLoading, setIsLoading] = useState(true);
 
     const call = useCall();
     const { user } = useUserStore();
@@ -32,6 +33,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
                 toast.error("User not found");
                 return;
             }
+            setIsLoading(true);
             const res = await api.get("/api/meeting/get-isProtected", {
                 params: {
                     meetingCode: id,
@@ -40,6 +42,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
             })
 
             if (!res.data.success) throw new Error(res.data.message);
+            setIsLoading(false);
             return res.data.isProtected;
         } catch (err) {
             toast.error("Failed to join");
@@ -48,13 +51,13 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
     }
 
     const handleJoinMeeting = async () => {
-        if(!user) {
+        if (!user) {
             toast.error("User not found");
             return;
         }
         try {
             if (isMeetingProtected) {
-                if(password.length < 2) {
+                if (password.length < 2) {
                     toast.error("Enter valid password");
                     return;
                 }
@@ -63,21 +66,21 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
                     meetingCode: id,
                 })
 
-                if(res.data.success) {
-                    if(res.data.isMatched) {
+                if (res.data.success) {
+                    if (res.data.isMatched) {
                         call.join();
                         setIsSetUpComplete(true);
                         return;
-                    }else {
+                    } else {
                         toast.error("Enter valid password");
                         return;
                     }
 
-                }else {
+                } else {
                     toast.error("Failed to join");
                     navigate("/dashboard");
                     return;
-                }  
+                }
 
             } else {
                 call.join();
@@ -94,7 +97,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
     useEffect(() => {
         const checkIsProtected = async () => {
             const isProtected = await handleProtectedMeetingAndValidate();
-            
+
             setIsMeetingProtected(isProtected);
         }
         checkIsProtected();
@@ -145,17 +148,24 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
                     <div className="rounded-2xl flex items-center"><DeviceSettings /></div>
                 </div>
                 <div className="flex flex-col justify-center gap-2">
-                    {isMeetingProtected ? (
-                        <PasswordInput value={password}
-                            onChange={(e) => setPassword(e.target.value)} />
+                    {isLoading ? (
+                        <div className="flex justify-center items-center h-16">
+                            <span className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent"></span>
+                            <span className="ml-2">Checking meeting protection...</span>
+                        </div>
                     ) : (
-                        <></>
+                        <>
+                            {isMeetingProtected && (
+                                <PasswordInput
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                />
+                            )}
+                            <Button onClick={handleJoinMeeting}>
+                                Join Meeting
+                            </Button>
+                        </>
                     )}
-                    <Button
-                        onClick={handleJoinMeeting}
-                    >
-                        Join Meeting
-                    </ Button>
 
                 </div>
             </div>
