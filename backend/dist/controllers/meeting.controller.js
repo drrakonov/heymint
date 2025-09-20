@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateProtectedPassword = exports.isProtectedMeetingValidation = exports.deleteMeeting = exports.getAllBookedMeetings = exports.getAllMeetings = exports.handleMeetingSetup = exports.createGetStreamToken = void 0;
+exports.validateJoinAccess = exports.validateProtectedPassword = exports.isProtectedMeetingValidation = exports.deleteMeeting = exports.getAllBookedMeetings = exports.getAllMeetings = exports.handleMeetingSetup = exports.createGetStreamToken = void 0;
 const node_sdk_1 = require("@stream-io/node-sdk");
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
@@ -238,3 +238,35 @@ const validateProtectedPassword = (req, res) => __awaiter(void 0, void 0, void 0
     }
 });
 exports.validateProtectedPassword = validateProtectedPassword;
+const validateJoinAccess = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { userId, meetingCode } = req.query;
+    try {
+        if (!userId || !meetingCode)
+            throw new Error("userId or meetingCode not found");
+        const meeting = yield prisma.meeting.findUnique({
+            where: { meetingCode: String(meetingCode) }
+        });
+        if (!meeting) {
+            return res.json({ success: false, message: "Meeting does not exists" });
+        }
+        if (meeting.isPaid) {
+            const purchase = yield prisma.meetingPurchase.findFirst({
+                where: {
+                    userId: String(userId),
+                    meeting: {
+                        meetingCode: String(meetingCode)
+                    }
+                }
+            });
+            if (!purchase) {
+                return res.json({ success: false, message: "Meeting is not purchased" });
+            }
+        }
+        res.status(200).json({ success: true, message: "Can join" });
+    }
+    catch (err) {
+        console.log("Failed to validate the access to join the meeting", err);
+        return res.status(500).json({ success: false, message: "Failed to validate join access" });
+    }
+});
+exports.validateJoinAccess = validateJoinAccess;
