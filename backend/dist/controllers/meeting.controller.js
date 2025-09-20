@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateProtectedPassword = exports.isProtectedMeetingValidation = exports.deleteMeeting = exports.getAllMeetings = exports.handleMeetingSetup = exports.createGetStreamToken = void 0;
+exports.validateProtectedPassword = exports.isProtectedMeetingValidation = exports.deleteMeeting = exports.getAllBookedMeetings = exports.getAllMeetings = exports.handleMeetingSetup = exports.createGetStreamToken = void 0;
 const node_sdk_1 = require("@stream-io/node-sdk");
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
@@ -118,6 +118,44 @@ const getAllMeetings = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.getAllMeetings = getAllMeetings;
+const getAllBookedMeetings = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { userId } = req.query;
+        if (!userId) {
+            throw new Error("userId not found");
+        }
+        const purchasedMeetings = yield prisma.meetingPurchase.findMany({
+            where: {
+                userId: String(userId)
+            },
+            include: {
+                meeting: {
+                    include: {
+                        createdBy: true
+                    }
+                }
+            }
+        });
+        const bookings = purchasedMeetings.map((b) => ({
+            meetingId: b.meeting.id,
+            title: b.meeting.title,
+            hostName: b.meeting.createdBy.name,
+            description: b.meeting.desc,
+            price: b.meeting.price,
+            isProtected: b.meeting.isProtected,
+            meetingTime: String(b.meeting.startingTime),
+            meetingCode: b.meeting.meetingCode,
+            isInstant: b.meeting.isScheduled ? false : true,
+            createdById: b.meeting.createdById
+        }));
+        res.status(201).json({ success: true, message: "All booked meetings", bookings });
+    }
+    catch (err) {
+        console.log("Failed to get booked meetings", err);
+        return res.status(500).json({ success: false, message: "Failed to get booked meetings" });
+    }
+});
+exports.getAllBookedMeetings = getAllBookedMeetings;
 const deleteMeeting = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { meetingCode, userId } = req.body;

@@ -24,3 +24,16 @@ export type Meeting = {
     isInstant?: boolean
     participantCount?: number
 }
+
+export type Bookings = {
+  meetingId: string,
+  title: string
+  hostName: string
+  description: string
+  price: number
+  isProtected: boolean
+  meetingTime: string
+  isInstant: boolean
+  meetingCode: string
+  createdById: string
+}

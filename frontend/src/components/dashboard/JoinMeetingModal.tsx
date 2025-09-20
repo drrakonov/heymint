@@ -7,11 +7,13 @@ import { Button } from "../ui/button";
 import { useStreamVideoClient } from "@stream-io/video-react-sdk";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { useUserStore } from "@/store/userStore";
 
 export default function JoinMeetingModal() {
   const [meetingId, setMeetingId] = useState("");
   const [name, setName] = useState("");
   const [isJoining, setIsJoining] = useState(false);
+  const { user } = useUserStore();
 
   const isFormValid = meetingId.trim() !== "" && name.trim() !== "";
   const client = useStreamVideoClient();
@@ -21,10 +23,21 @@ export default function JoinMeetingModal() {
     if (!isFormValid || isJoining) return;
 
     try {
-      if(!client) toast.error("unable to join this call");
+      if (!client || !user) {
+        toast.error("unable to join this call");
+        return;
+      }
       setIsJoining(true);
-      navigate(`/meeting/${meetingId}`);
-      
+
+      const call = client.call("default", meetingId);
+      if (!call) throw new Error("Failed to create call");
+
+      try {
+        await call.get();
+        navigate(`/meeting/${meetingId}`);
+      } catch (err) {
+        toast.error("Meeting not available yet. Wait for the host to start.");
+      }
 
     } catch (error) {
       console.error("Join failed", error);

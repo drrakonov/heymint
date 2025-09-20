@@ -58,7 +58,7 @@ export function MeetingCard({
         description: "scheduled-meeting",
         link: ''
     });
-    const isBooked = bookedMeetings.includes(meetingId) || createdById === user?.id;
+    const isBooked = type == "Paid" ? (bookedMeetings.includes(meetingId) || createdById === user?.id) : true;
 
 
     const handleJoinMeeting = async () => {
@@ -98,8 +98,13 @@ export function MeetingCard({
             }
 
             try {
-                const callDetails = await call.get();
+                await call.get();
                 navigate(`/meeting/${call.id}`);
+                // if (call.state.startedAt) {
+                    
+                // } else {
+                //     toast.error("Meeting not available yet. Wait for the host to start.");
+                // }
             } catch (err) {
                 toast.error("Meeting not available yet. Wait for the host to start.")
             }
@@ -267,9 +272,9 @@ export function MeetingCard({
                     size="sm"
                     variant={isInstant ? "default" : "outline"}
                     onClick={() => {
-                        if(type === 'Free' || isBooked || user?.id === createdById) {
+                        if (type === 'Free' || isBooked || user?.id === createdById) {
                             handleJoinMeeting()
-                        }else {
+                        } else {
                             handleMeetingPurchase()
                         }
                     }}
@@ -388,7 +393,7 @@ const Meetings = () => {
     return (
         <div className="pt-6 min-h-screen pl-5 pr-5 md:pl-10 md:pr-10">
             <div className="max-w-6xl mx-auto">
-                <h1 className="text-3xl text-text-primary font-bold text-foreground mb-2">Upcoming Meetings</h1>
+                <h1 className="text-3xl text-text-primary font-bold mb-2">Upcoming Meetings</h1>
                 <p className="text-muted-foreground text-text-secondary mb-8">Join your scheduled meetings or start an instant session</p>
                 <MeetingStats {...stats} />
 

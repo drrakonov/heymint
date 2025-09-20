@@ -56,6 +56,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
             return;
         }
         try {
+            
             if (isMeetingProtected) {
                 if (password.length < 2) {
                     toast.error("Enter valid password");
@@ -102,6 +103,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
         }
         checkIsProtected();
     }, [])
+
 
     useEffect(() => {
         if (isCamToggleOn) {
