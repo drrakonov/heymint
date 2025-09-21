@@ -103,7 +103,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const googleOAuth = async () => {
     try {
-      window.location.href = "http://localhost:3000/api/auth/google"
+      const backendURL = import.meta.env.VITE_BACKEND_URL;
+      window.location.href = `${backendURL}/api/auth/google`
     } catch (err) {
       console.log(err);
       toast.error("Failed to sign-in with google")
