@@ -13,6 +13,7 @@ import { useStreamVideoClient } from "@stream-io/video-react-sdk";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from "@/store/userStore";
+import CopyClipboardBtn from "../subComponents/CopyClipboardBtn";
 
 
 interface MeetingCardProps {
@@ -132,6 +133,7 @@ export function MeetingCard({
             const res = await api.post("/api/meeting/delete-meeting", {
                 userId: user.id,
                 meetingCode: meetingCode,
+                isComplete: false
             })
 
             if (!res.data.success) {
@@ -209,7 +211,7 @@ export function MeetingCard({
 
                     {/* On md+: badge/price on the right; on mobile, put below title/host */}
                     <div className="flex gap-2">
-                        <div className="flex flex-row md:flex-col gap-1 items-center mt-2 md:mt-0">
+                        <div className="flex flex-row md:flex-col gap-1 items-center mt-1 md:mt-0">
                             <Badge
                                 variant={type === "Free" ? "secondary" : "default"}
                                 className={
@@ -235,6 +237,7 @@ export function MeetingCard({
                             :
                             null
                         }
+                        <CopyClipboardBtn meetingCode={meetingCode} />
                     </div>
                 </div>
             </CardHeader>
@@ -266,7 +269,7 @@ export function MeetingCard({
             </CardContent>
             <CardFooter className="pt-3">
                 <Button
-                    className={`ml-auto w-full sm:w-auto mt-2 sm:mt-0
+                    className={`ml-auto w-full sm:w-auto mt-2 sm:mt-0 cursor-pointer
                     ${isInstant ? "bg-accent-hover hover:bg-accent/60 text-black font-bold"
                             : "bg-accent-hover hover:bg-accent/60 text-black tracking-wider font-bold border border-[#393B40]"}`}
                     size="sm"

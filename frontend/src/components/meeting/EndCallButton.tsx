@@ -29,6 +29,7 @@ const EndCallButton = () => {
         const res = await api.post("/api/meeting/delete-meeting", {
             userId: user?.id,
             meetingCode: id,
+            isComplete: true
         });
         if (!res.data.success) {
             toast.error("Failed to delete the call record");

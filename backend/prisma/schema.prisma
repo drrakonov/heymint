@@ -28,6 +28,8 @@ model Meeting {
   createdAt    DateTime          @default(now())
   price        Float
   isPaid       Boolean
+  isDeleted    Boolean           @default(false)
+  isComplete   Boolean           @default(false)
   startingTime DateTime
   isProtected  Boolean
   password     String?

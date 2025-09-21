@@ -88,6 +88,10 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
         const { userId } = req.query
 
         const meeting = await prisma.meeting.findMany({
+            where: {
+                isComplete: false,
+                isDeleted: false
+            },
             select: {
                 id: true,
                 title: true,
@@ -111,7 +115,11 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
 
         const meetingPurchased = await prisma.meetingPurchase.findMany({
             where: {
-                userId: String(userId)
+                userId: String(userId),
+                meeting: {
+                    isComplete: false,
+                    isDeleted: false
+                }
             },
             select: { meetingId: true }
         });
@@ -150,7 +158,11 @@ export const getAllBookedMeetings = async (req: Request, res: Response): Promise
 
         const purchasedMeetings = await prisma.meetingPurchase.findMany({
             where: {
-                userId: String(userId)
+                userId: String(userId),
+                meeting: {
+                    isComplete: false,
+                    isDeleted: false
+                }
             },
             include: {
                 meeting: {
@@ -221,7 +233,7 @@ export const getAllPayments = async (req: Request, res: Response): Promise<any> 
 
 export const deleteMeeting = async (req: Request, res: Response): Promise<any> => {
     try {
-        const { meetingCode, userId } = req.body;
+        const { meetingCode, userId, isComplete } = req.body;
 
         if (!meetingCode || !userId) throw new Error("missing meetingCode or userID");
 
@@ -233,15 +245,16 @@ export const deleteMeeting = async (req: Request, res: Response): Promise<any> =
             return res.status(404).json({ success: false, message: "Meeting not found" });
         }
 
-        if (meeting.createdById !== userId) {
-            return res.status(403).json({ success: false, message: "You are not authorized to delete this meeting" });
+        if (meeting.createdById !== userId || (!isComplete && meeting.isPaid)) {
+            return res.status(403).json({ success: false, message: "You are not authorized to delete this meeting or you can't delete paid meetings" });
         }
-
-        await prisma.$transaction([
-            prisma.meetingPurchase.deleteMany({ where: { meetingId: meeting.id } }),
-            prisma.payment.deleteMany({ where: { meetingId: meeting.id } }),
-            prisma.meeting.delete({ where: { id: meeting.id } }),
-        ]);
+        await prisma.meeting.update({
+            where: { id: meeting.id },
+            data: {
+                isDeleted: true,
+                isComplete
+            }
+        })
 
         res.status(200).json({ success: true, message: "Meeting and related records deleted successfully" });
     } catch (err) {

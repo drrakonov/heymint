@@ -4,8 +4,10 @@ import { useNavigate } from "react-router-dom"
 import { useUserStore } from "@/store/userStore"
 import { AnimatePresence } from "framer-motion"
 import { motion } from 'motion/react'
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import Loader from "../subComponents/Loader"
+import api from "@/lib/axios"
 
 interface dashboardStatsProps {
     totalEarning: number
@@ -13,6 +15,14 @@ interface dashboardStatsProps {
     myTotalMeetings: number
     completedMeetings: number
     activeUsers: number
+}
+type Meetings = {
+    id: string
+    title: string
+    type: "paid" | "free"
+}
+interface MyMeetingsProps {
+  meetings: Meetings[];
 }
 
 const DashboardGraph = () => {
@@ -114,15 +124,17 @@ const UserCard = () => {
     )
 }
 
-const MyMeetings = () => {
+
+
+const MyMeetings = ({ meetings }: MyMeetingsProps) => {
     const [activeTab, setActiveTab] = useState<"all" | "free" | "paid">("all")
 
     // Example meetings (replace with your data from backend)
-    const meetings = [
-        { id: 1, title: "Design Workshop", type: "free" },
-        { id: 2, title: "Startup Pitch", type: "paid" },
-        { id: 3, title: "Community Hangout", type: "free" },
-    ]
+    // const meetings: Meetings[] = [
+    //     { id: "1", title: "Design Workshop", type: "free" },
+    //     { id: "2", title: "Startup Pitch", type: "paid" },
+    //     { id: "3", title: "Community Hangout", type: "free" },
+    // ]
 
     // Filter meetings by tab
     const filteredMeetings =
@@ -185,6 +197,7 @@ const DashboardStats = ({
     completedMeetings,
     activeUsers
 }: dashboardStatsProps) => {
+
     const stats = [
         {
             label: "Total Earning",
@@ -243,24 +256,65 @@ const DashboardStats = ({
 }
 
 const Dashboard = () => {
+    const { user } = useUserStore();
+    const [isLoading, setIsLoading] = useState(false);
+    const [myTotalMeetings, setMyTotalMeetings] = useState(0);
+    const [totalMeetings, setTotalMeetings] = useState(0);
+    const [activeUsers, setActiveUsers] = useState(0);
+    const [completedMeetings, setCompletedMeetings] = useState(0);
+    const [totalEarning, setTotalEarning] = useState(0);
+    const [MyAllMeetings, setMyAllMeetings] = useState<Meetings[]>([]);
+
+
+    useEffect(() => {
+        if(!user) return;
+        const getDashboardStats = async () => {
+            try {
+                setIsLoading(true);
+                const res = await api.get("/api/user/get-dashboard-stats");
+                const allMeetingsRes = await api.get("/api/user/get-dashboard-allmeetings");
+
+                if (!res.data.success || !allMeetingsRes.data.success) {
+                    throw new Error("Some thing went wrong");
+                }
+                const stats: dashboardStatsProps = res.data.dashboardStats;
+                setActiveUsers(stats.activeUsers);
+                setCompletedMeetings(stats.completedMeetings)
+                setMyTotalMeetings(stats.myTotalMeetings);
+                setTotalEarning(stats.totalEarning)
+                setTotalMeetings(stats.totalMeetings)
+                setMyAllMeetings(allMeetingsRes.data.myMeetings);
+
+            } catch (err) {
+                console.error("Failed to get stats", err);
+                return;
+            }finally {
+                setIsLoading(false);
+            }
+        }
+        getDashboardStats();
+    }, [])
+
+
+    if (isLoading) return <Loader />
     return (
         <div className="w-full h-full p-4 md:p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Left Section (Graph + Stats) */}
             <div className="md:col-span-2 flex flex-col justify-between gap-3">
                 <DashboardGraph />
                 <DashboardStats
-                    myTotalMeetings={20}
-                    totalMeetings={30}
-                    activeUsers={400}
-                    completedMeetings={100}
-                    totalEarning={3000}
+                    myTotalMeetings={myTotalMeetings}
+                    totalMeetings={totalMeetings}
+                    activeUsers={activeUsers}
+                    completedMeetings={completedMeetings}
+                    totalEarning={totalEarning}
                 />
             </div>
 
             {/* Right Section (User + Meetings) */}
             <div className="md:col-span-1 flex flex-col gap-3">
                 <UserCard />
-                <MyMeetings />
+                <MyMeetings meetings={MyAllMeetings}  />
             </div>
         </div>
     )

@@ -12,6 +12,7 @@ import { EmptyState } from "../subComponents/EmptyStateMeeting";
 import toast from "react-hot-toast";
 import { useStreamVideoClient } from "@stream-io/video-react-sdk";
 import { useNavigate } from "react-router-dom";
+import CopyClipboardBtn from "../subComponents/CopyClipboardBtn";
 
 
 
@@ -154,7 +155,7 @@ const BookingCard = ({
 
                     {/* On md+: badge/price on the right; on mobile, put below title/host */}
                     <div className="flex gap-2">
-                        <div className="flex flex-row md:flex-col gap-1 items-center mt-2 md:mt-0">
+                        <div className="flex flex-row md:flex-col gap-1 items-center mt-1 md:mt-0">
                             <Badge
                                 variant={"default"}
                                 className="hidden bg-accent-hover text-black border-none"
@@ -167,6 +168,7 @@ const BookingCard = ({
                                 </Badge>
                             )}
                         </div>
+                        <CopyClipboardBtn meetingCode={meetingCode} />
                     </div>
                 </div>
             </CardHeader>
@@ -192,7 +194,7 @@ const BookingCard = ({
             </CardContent>
             <CardFooter className="pt-3">
                 <Button
-                    className={`ml-auto w-full sm:w-auto mt-2 sm:mt-0
+                    className={`ml-auto w-full sm:w-auto mt-2 sm:mt-0 cursor-pointer
                     ${isInstant ? "bg-accent-hover hover:bg-accent/60 text-black font-bold"
                             : "bg-accent-hover hover:bg-accent/60 text-black tracking-wider font-bold border border-[#393B40]"}`}
                     size="sm"
