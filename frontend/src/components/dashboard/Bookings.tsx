@@ -276,7 +276,7 @@ const Bookings = () => {
 
 
     return (
-        <div className="pt-6 min-h-screen pl-5 pr md:pl-10 md:pr-10">
+        <div className="pt-6 min-h-screen pl-5 pr-5 md:pl-10 md:pr-10">
             <div className="max-w-6xl mx-auto">
                 <h1 className="text-3xl text-text-primary font-bold mb-2">Bookings</h1>
                 <p className="text-muted-foreground text-text-secondary mb-8">Join your booked meetings.</p>

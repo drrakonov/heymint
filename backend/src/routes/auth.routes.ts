@@ -21,7 +21,7 @@ const prisma = new PrismaClient();
 router.post("/signup", validateSignupAuth, asyncHandler(signup));
 router.post("/send-otp",limiter, asyncHandler(setupOtp));
 router.post("/login", validateLoginAuth, asyncHandler(login));
-router.post("/refresh", asyncHandler(refresh));
+router.post("/refresh", limiter, asyncHandler(refresh));
 router.post("/logout", authenticate, asyncHandler(logout));
 
 

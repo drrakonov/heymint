@@ -1,7 +1,7 @@
 import { StreamClient, UserRequest } from "@stream-io/node-sdk"
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import { Bookings, Meeting } from "../utils/Types";
+import { Bookings, Meeting, Payments } from "../utils/Types";
 
 
 
@@ -183,6 +183,40 @@ export const getAllBookedMeetings = async (req: Request, res: Response): Promise
     }
 }
 
+export const getAllPayments = async (req: Request, res: Response): Promise<any> => {
+    try {
+        const { userId } = req.query;
+        if(!userId) throw new Error("userId not found");
+
+        const getPayments = await prisma.payment.findMany({
+            where: { userId: String(userId) },
+            include: {
+                meeting: {
+                    select: {
+                        title: true,
+                        price: true
+                    }
+                }
+            }
+        });
+
+        const payments: Payments[] = getPayments.map((payment) => ({
+            id: payment.tnxId,
+            meetingName: payment.meeting.title,
+            amount: payment.meeting.price,
+            status: payment.status,
+            date: payment.createdAt,
+            paymentMethod: "UPI"
+        }));
+
+        return res.status(201).json({ success: true, message: "All payments", payments });
+
+    }catch(err) {
+        console.log("Failed to get payments", err);
+        return res.status(500).json({ success: false, message: "Failed get the payments" })
+    }
+}
+
 
 
 export const deleteMeeting = async (req: Request, res: Response): Promise<any> => {
@@ -286,7 +320,7 @@ export const validateJoinAccess = async (req: Request, res: Response): Promise<a
             return res.json({ success: false, message: "Meeting does not exists" });
         }
 
-        if (meeting.isPaid) {
+        if (meeting.isPaid && meeting.createdById != userId) {
             const purchase = await prisma.meetingPurchase.findFirst({
                 where: {
                     userId: String(userId),

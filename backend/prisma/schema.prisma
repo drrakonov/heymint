@@ -86,6 +86,6 @@ enum Provider {
 
 enum PaymentStatus {
   pending
-  succsess
+  success
   failed
 }

@@ -7,6 +7,7 @@ import paymentRoutes from './routes/payment.routes'
 import meetingRoutes from './routes/meeting.routes'
 import cors from 'cors'
 import passport from './controllers/passport.controller';
+import limiter from './middlewares/ratelimiter.middleware';
 
 
 const app = express()

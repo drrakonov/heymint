@@ -40,7 +40,7 @@ export const setupOtp = async (req: Request, res: Response): Promise<any> => {
         }
         await prisma.otp.deleteMany({ where: { email } });
         const OTPSent = await sendOtpEmail(email, otp);
-        if(OTPSent.error) {
+        if (OTPSent.error) {
             console.log(OTPSent.error);
             return res.status(401).json({ success: false, message: "Failed to sent otp" });
         }
@@ -75,7 +75,7 @@ export const signup = async (req: Request, res: Response): Promise<any> => {
     }
 
     const isOtpVerified = verifyOtp(email, otp);
-    if(!isOtpVerified) {
+    if (!isOtpVerified) {
         return res.status(400).json({ success: false, message: "Invalid OTP" });
     }
 
@@ -152,26 +152,22 @@ export const refresh = async (req: Request, res: Response): Promise<any> => {
 
         const accessToken = generateAccessToken(decoded.userId);
         const newRefreshToken = generateRefreshToken(decoded.userId);
-        try {
-            await prisma.refreshToken.delete({ where: { token } });
-            await prisma.refreshToken.create({
-                data: {
-                    token: newRefreshToken,
-                    userId: decoded.userId,
-                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-                },
-            });
-        } catch (err) {
-            res.status(500).json({ message: "Error modifying refresh token" })
-        }
+
+        await prisma.refreshToken.update({
+            where: { token },
+            data: {
+                token: newRefreshToken,
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            },
+        });
 
         setRefreshToken(res, newRefreshToken);
-        res.status(200).json({ accessToken, message: "token refreshed..." })
+        return res.status(200).json({ accessToken, message: "token refreshed..." })
 
     } catch (err) {
-        res.status(403).json({ message: "Invalid refresh token" })
+        console.error("Refresh token error:", err);
+        return res.status(500).json({ message: "Invalid refresh token" })
     }
-
 }
 
 export const logout = async (req: Request, res: Response): Promise<any> => {

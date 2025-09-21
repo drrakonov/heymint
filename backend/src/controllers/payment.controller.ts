@@ -45,7 +45,7 @@ export const demoPayement = async (req: Request, res: Response): Promise<any> =>
                     userId,
                     meetingId,
                     tnxId,
-                    status: 'succsess',
+                    status: 'success',
                 }
             });
 

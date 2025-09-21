@@ -37,3 +37,12 @@ export type Bookings = {
   meetingCode: string
   createdById: string
 }
+
+export type Payments = {
+  id: string
+  meetingName: string
+  amount: number
+  status: string
+  date: Date
+  paymentMethod: string
+}
