@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Calendar, Copy, DollarSign } from "lucide-react"
+import { Calendar, Copy, IndianRupee } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -218,7 +218,7 @@ const MeetingForm = ({
                       {/* Price */}
                       <div className="space-y-2">
                         <Label className="flex items-center gap-2 text-sm font-medium">
-                          <DollarSign className="h-4 w-4" />
+                          <IndianRupee className="h-4 w-4" />
                           Price <span className="text-red-500">*</span>
                         </Label>
                         <Input

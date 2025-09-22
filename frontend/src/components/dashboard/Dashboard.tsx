@@ -27,11 +27,11 @@ interface MyMeetingsProps {
 
 const DashboardGraph = () => {
     const data = [
-        { month: "Jan", earnings: 400 },
-        { month: "Feb", earnings: 800 },
-        { month: "Mar", earnings: 600 },
-        { month: "Apr", earnings: 1200 },
-        { month: "May", earnings: 900 },
+        { month: "Jan", earnings: 0 },
+        { month: "Feb", earnings: 0 },
+        { month: "Mar", earnings: 0 },
+        { month: "Apr", earnings: 0 },
+        { month: "May", earnings: 0 },
     ]
 
     return (

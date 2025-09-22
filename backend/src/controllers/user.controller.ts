@@ -94,7 +94,9 @@ export const getAllMeetingToDashboard = async (req: any, res: Response): Promise
 
         const meetingsResult = await prisma.meeting.findMany({
             where: {
-                createdById: userId
+                createdById: userId,
+                isComplete: false,
+                isDeleted: false
             },
             select: {
                 isPaid: true,
