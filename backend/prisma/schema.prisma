@@ -1,9 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
 }
 
 model User {
@@ -20,23 +23,25 @@ model User {
 }
 
 model Meeting {
-  id           String            @id @default(uuid())
-  title        String
-  desc         String
-  createdById  String
-  createdAt    DateTime          @default(now())
-  price        Float
-  isPaid       Boolean
-  isDeleted    Boolean           @default(false)
-  isComplete   Boolean           @default(false)
-  startingTime DateTime
-  isProtected  Boolean
-  password     String?
-  meetingCode  String            @unique
-  isScheduled  Boolean           @default(false)
-  createdBy    User              @relation("createdMeetings", fields: [createdById], references: [id])
-  purchases    MeetingPurchase[]
-  payments     Payment[]
+  id               String            @id @default(uuid())
+  title            String
+  desc             String
+  createdById      String
+  createdAt        DateTime          @default(now())
+  price            Float
+  isPaid           Boolean
+  isDeleted        Boolean           @default(false)
+  isComplete       Boolean           @default(false)
+  startingTime     DateTime
+  isProtected      Boolean
+  password         String?
+  meetingCode      String            @unique
+  isScheduled      Boolean           @default(false)
+  createdBy        User              @relation("createdMeetings", fields: [createdById], references: [id])
+  purchases        MeetingPurchase[]
+  payments         Payment[]
+  summary          Summary?
+  transcriptChunks TranscriptChunk[]
 }
 
 model MeetingPurchase {
@@ -89,4 +94,19 @@ enum PaymentStatus {
   pending
   success
   failed
+}
+
+model Summary {
+  id        Int     @id @default(autoincrement())
+  content   String
+  meetingId String  @unique
+  meeting   Meeting @relation(fields: [meetingId], references: [id])
+}
+
+model TranscriptChunk {
+  id        String                     @id @default(uuid())
+  content   String
+  meetingId String
+  meeting   Meeting                    @relation(fields: [meetingId], references: [id])
+  embedding Unsupported("vector(768)")
 }
