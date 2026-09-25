@@ -6,7 +6,18 @@ import multer from 'multer';
 import { handleMeetingSummarizer } from '../controllers/summarizer.controller';
 
 const router = express.Router();
-const upload = multer({ dest: "./uploads" })
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, './uploads')
+    },
+    filename: function (req, file, cb) {
+        cb(null, file.fieldname + '-' + Date.now() + '.webm')
+    }
+});
+
+const upload = multer({ storage: storage });
+
 
 router.post("/token", authenticate, expressAsyncHandler(createGetStreamToken));
 router.post("/setup-meeting", validateMeetingInput, authenticate, expressAsyncHandler(handleMeetingSetup));

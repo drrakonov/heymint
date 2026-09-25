@@ -4,7 +4,7 @@ import { Groq } from "groq-sdk";
 import fs from "fs"
 import { PrismaClient } from "@prisma/client";
 
-const groq = new Groq();
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const prisma = new PrismaClient();
 
 export const handleMeetingSummarizer = async (req: Request, res: Response): Promise<any> => {
@@ -32,16 +32,19 @@ export const handleMeetingSummarizer = async (req: Request, res: Response): Prom
                 temperature: 0,
             })
         }catch(err) {
+            console.error("Something went wrong! ", err);
             return res.status(500).json({
                 success: false,
                 message: "Failed to get transcription"
             })
         }
 
+        console.log("transcription: ", transcription);
+
         try {
             //Get the summary from LLM
             summary = await groq.chat.completions.create({
-                model: "llama-3.1-8b-instant",
+                model: "openai/gpt-oss-20b",
                 temperature: 0,
                 messages: [
                     {
@@ -55,20 +58,34 @@ export const handleMeetingSummarizer = async (req: Request, res: Response): Prom
                 ]
             })
         }catch(err) {
+            console.error("Something went wrong! ", err);
             return res.status(500).json({
                 success: false,
                 message: "Failed to get summary"
             })
         }
-       
+        console.log("summary", summary.choices[0].message.content);
 
         try {
-            //Save the summary in the DB
-            await prisma.summary.create({data: {
-                content: summary.choices[0].message.content || "Empty",
-                meetingId,
-            }})
+            // Find the real meeting ID from the URL param (which is the meetingCode)
+            const meetingRecord = await prisma.meeting.findFirst({
+                where: {
+                    OR: [
+                        { id: String(meetingId) },
+                        { meetingCode: String(meetingId) }
+                    ]
+                }
+            });
+
+            if (meetingRecord) {
+                //Save the summary in the DB using the real UUID
+                await prisma.summary.create({data: {
+                    content: summary.choices[0].message.content || "Empty",
+                    meetingId: meetingRecord.id,
+                }});
+            }
         }catch(err) {
+            console.error("Something went wrong! ", err);
             return res.status(500).json({
                 success: false,
                 message: "Database query failed"
@@ -82,6 +99,7 @@ export const handleMeetingSummarizer = async (req: Request, res: Response): Prom
         })
 
     } catch(err) {
+        console.error("Something went wrong! ", err);
         return res.status(500).json({
             success: false,
             message: "Failed to summarize the meeting!"

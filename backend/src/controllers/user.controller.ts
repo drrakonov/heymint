@@ -105,7 +105,7 @@ export const getAllMeetingToDashboard = async (req: any, res: Response): Promise
             }
         });
 
-        const myMeetings: DashboardMyMeetings[] = meetingsResult.map((meeting) => ({
+        const myMeetings: DashboardMyMeetings[] = meetingsResult.map((meeting : any) => ({
             title: meeting.title,
             id: meeting.id,
             type: meeting.isPaid ? "paid" : "free"

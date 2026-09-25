@@ -124,7 +124,7 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
             select: { meetingId: true }
         });
 
-        const meetings: Meeting[] = meeting.map(m => ({
+        const meetings: Meeting[] = meeting.map((m : any) => ({
             meetingId: m.id,
             title: m.title,
             description: m.desc,
@@ -138,7 +138,7 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
             createdById: m.createdById
         }))
 
-        const purchases = meetingPurchased.map(p => p.meetingId);
+        const purchases = meetingPurchased.map((p : any) => p.meetingId);
 
 
         res.status(201).json({ success: true, message: "Fetched all the meetings", meetings, purchases });
@@ -174,7 +174,7 @@ export const getAllBookedMeetings = async (req: Request, res: Response): Promise
         });
 
 
-        const bookings: Bookings[] = purchasedMeetings.map((b) => ({
+        const bookings: Bookings[] = purchasedMeetings.map((b : any) => ({
             meetingId: b.meeting.id,
             title: b.meeting.title,
             hostName: b.meeting.createdBy.name,
@@ -212,7 +212,7 @@ export const getAllPayments = async (req: Request, res: Response): Promise<any> 
             }
         });
 
-        const payments: Payments[] = getPayments.map((payment) => ({
+        const payments: Payments[] = getPayments.map((payment : any) => ({
             id: payment.tnxId,
             meetingName: payment.meeting.title,
             amount: payment.meeting.price,

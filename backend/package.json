@@ -15,12 +15,12 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "@prisma/client": "^7.10.0",
+    "@prisma/client": "^6.19.3",
     "@types/bcrypt": "^5.0.2",
     "@types/cookie-parser": "^1.4.9",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.2.0",
-    "prisma": "^6.12.0",
+    "prisma": "^6.19.3",
     "typescript": "^5.8.3"
   },
   "dependencies": {
