@@ -312,10 +312,7 @@ export default function CreateMeeting() {
   }
 
   const setUpMeeting = async () => {
-    if (!user || !client) {
-      toast.error("Failed to setup meeting")
-      return;
-    }
+    if (!user) { toast.error("Session memory reset during live update. Please refresh the page (F5)."); return; }
     try {
 
       const code = createMeetingCode();
@@ -361,7 +358,8 @@ export default function CreateMeeting() {
 
 
   const handleCreateMeeting = async (id: string) => {
-    if (!user || !client || !id) return;
+    if (!client) { toast.error("Video client connecting... please try again in a few seconds."); return; }
+    if (!user || !id) return;
 
     try {
       if (!startAtValue.dateTime) return;

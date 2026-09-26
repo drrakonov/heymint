@@ -1,3 +1,4 @@
+import MeetingInsights from './components/meeting/MeetingInsights';
 import { Route, BrowserRouter, Routes, Navigate } from 'react-router-dom'
 import './App.css'
 import Auth from './components/Auth'
@@ -65,6 +66,7 @@ function App() {
           </Route>
 
           <Route path='/meeting/:id' element={<MeetingShower />} />
+          <Route path='/meeting/:id/insights' element={<MeetingInsights />} />
 
         </Routes>
         </StreamVideoProvider>

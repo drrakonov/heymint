@@ -28,7 +28,7 @@ const MeetingShower = () => {
 
     const uploadMeetingRecording = async (blob : Blob) => {
         try {
-            const userId = call?.state.createdBy?.id;
+            const userId = user.id;
             if(!blob || !userId) {
                 throw new Error("Recording Failed!");
             }
@@ -52,6 +52,8 @@ const MeetingShower = () => {
             }
         }catch(err) {
             console.error("Failed to send recording! ", err);
+        } finally {
+            window.dispatchEvent(new Event("upload-complete"));
         }
     }
 
@@ -79,6 +81,12 @@ const MeetingShower = () => {
             // Create final audio file when recording stops
             mediaRecorder.onstop = () => {
                 const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+                if (audioBlob.size < 1000) { // < 10KB is just empty headers or 1 millisecond
+                    console.log("Audio too short, skipping upload");
+                    window.dispatchEvent(new Event("upload-complete"));
+                    stream.getTracks().forEach(t => t.stop());
+                    return;
+                }
                 const url = URL.createObjectURL(audioBlob);
                 setAudioURL(url);
                 console.log(audioBlob);
@@ -91,7 +99,7 @@ const MeetingShower = () => {
 
 
             //Begin the recording process
-            mediaRecorder.start();
+            mediaRecorder.start(1000);
             setIsRecording(true);
 
         }catch(err) {
@@ -103,12 +111,25 @@ const MeetingShower = () => {
 
     //Stop Recording meeting
     const stopRecordingMeeting = () => {
-        if (mediaRecorderRef.current && isRecording) {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
             toast.success("Recoding stopped!");
             mediaRecorderRef.current.stop();
             setIsRecording(false);
         }
+        
+        // Guaranteed fallback to kill mic if component unmounts rapidly
+        setTimeout(() => {
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+            }
+        }, 1500);
     };
+
+    useEffect(() => {
+        const handleStop = () => stopRecordingMeeting();
+        window.addEventListener("stop-recording", handleStop);
+        return () => window.removeEventListener("stop-recording", handleStop);
+    }, []);
 
     useEffect(() => {
         if(isSetUpComplete) {

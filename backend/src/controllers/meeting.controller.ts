@@ -89,8 +89,8 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
 
         const meeting = await prisma.meeting.findMany({
             where: {
-                isComplete: false,
-                isDeleted: false
+                isComplete: undefined,
+                OR: [ { isDeleted: false }, { isComplete: true } ]
             },
             select: {
                 id: true,
@@ -109,6 +109,7 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
                     }
                 },
                 createdById: true,
+                isComplete: true,
                 meetingCode: true
             },
         });
@@ -117,9 +118,9 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
             where: {
                 userId: String(userId),
                 meeting: {
-                    isComplete: false,
-                    isDeleted: false
-                }
+                    isComplete: undefined,
+                    OR: [ { isDeleted: false }, { isComplete: true } ]
+            }
             },
             select: { meetingId: true }
         });
@@ -135,7 +136,8 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
             isProtected: m.isProtected,
             isInstant: m.isScheduled ? false : true,
             meetingCode: m.meetingCode,
-            createdById: m.createdById
+            createdById: m.createdById,
+            isComplete: m.isComplete
         }))
 
         const purchases = meetingPurchased.map((p : any) => p.meetingId);
@@ -160,9 +162,9 @@ export const getAllBookedMeetings = async (req: Request, res: Response): Promise
             where: {
                 userId: String(userId),
                 meeting: {
-                    isComplete: false,
-                    isDeleted: false
-                }
+                    isComplete: undefined,
+                    OR: [ { isDeleted: false }, { isComplete: true } ]
+            }
             },
             include: {
                 meeting: {
@@ -276,7 +278,8 @@ export const isProtectedMeetingValidation = async (req: Request, res: Response):
         const meeting = await prisma.meeting.findUnique({
             select: {
                 isProtected: true,
-                createdById: true
+                createdById: true,
+                isComplete: true
             },
             where: {
                 meetingCode: meetingCode,

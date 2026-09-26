@@ -30,6 +30,8 @@ export const handleMeetingSummarizer = async (req: Request, res: Response): Prom
                 model: "whisper-large-v3",
                 file: audio,
                 temperature: 0,
+                prompt: "The following is a meeting recording in English. Hello, let's start.",
+                language: "en",
             })
         }catch(err) {
             console.error("Something went wrong! ", err);
@@ -49,11 +51,14 @@ export const handleMeetingSummarizer = async (req: Request, res: Response): Prom
                 messages: [
                     {
                         role: "system",
-                        content: "Summarize this meeting transcript and list key action items."
+                        content: `You are an expert AI meeting assistant. 
+                        Your task is to summarize the meeting transcript provided by the user. 
+                        You must ALWAYS output a formatted summary with bullet points, even if the transcript is extremely short (like 'Hello' or 'Thank you'). 
+                        Do not ask the user for more information, just summarize what you are given.`
                     },
                     {
                         role: "user",
-                        content: transcription.text
+                        content: `Here is the meeting transcript:\n\n"${transcription.text}"\n\nPlease provide a concise summary and list any action items.`
                     },
                 ]
             })
@@ -79,10 +84,14 @@ export const handleMeetingSummarizer = async (req: Request, res: Response): Prom
 
             if (meetingRecord) {
                 //Save the summary in the DB using the real UUID
-                await prisma.summary.create({data: {
-                    content: summary.choices[0].message.content || "Empty",
-                    meetingId: meetingRecord.id,
-                }});
+                await prisma.summary.upsert({
+                    where: { meetingId: meetingRecord.id },
+                    update: { content: summary.choices[0].message.content || "Empty" },
+                    create: {
+                        content: summary.choices[0].message.content || "Empty",
+                        meetingId: meetingRecord.id,
+                    }
+                });
             }
         }catch(err) {
             console.error("Something went wrong! ", err);
@@ -109,3 +118,22 @@ export const handleMeetingSummarizer = async (req: Request, res: Response): Prom
         if(filePath) fs.unlinkSync(filePath)     
     }
 }
+export const getMeetingSummary = async (req: any, res: any) => {
+    try {
+        const { id } = req.params; // this is the meetingCode
+        
+        const meeting = await prisma.meeting.findUnique({
+            where: { meetingCode: String(id) },
+            include: { summary: true }
+        });
+
+        if (!meeting || !meeting.summary) {
+            return res.status(404).json({ success: false, message: "Summary not found" });
+        }
+
+        return res.status(200).json({ success: true, summary: meeting.summary.content, meeting });
+    } catch (err) {
+        console.error("Failed to fetch summary:", err);
+        return res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};

@@ -219,9 +219,9 @@ const Bookings = () => {
     const filteredAndSortedMeetings = useMemo<Bookings[]>(() => {
         const filtered = bookings.filter((meeting) => {
             const matchesSearch =
-                meeting.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                meeting.hostName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                meeting.description.toLowerCase().includes(searchQuery.toLowerCase())
+                (meeting.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (meeting.hostName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (meeting.description || "").toLowerCase().includes(searchQuery.toLowerCase())
             const matchesFilter =
                 filterType === "all" ||
                 (filterType === "instant" && meeting.isInstant)

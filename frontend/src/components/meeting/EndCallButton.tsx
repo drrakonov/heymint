@@ -1,5 +1,6 @@
 import { useCall, useCallStateHooks } from "@stream-io/video-react-sdk";
 import { useNavigate, useParams } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "../ui/button";
 import toast from 'react-hot-toast';
 import api from "@/lib/axios";
@@ -24,7 +25,11 @@ const EndCallButton = () => {
 
     if (!isMeetingOwner) return null;
 
+    const [isEnding, setIsEnding] = useState(false);
     const endCall = async () => {
+        if (isEnding) return;
+        setIsEnding(true);
+        window.dispatchEvent(new Event("stop-recording"));
         call.endCall();
         const res = await api.post("/api/meeting/delete-meeting", {
             userId: user?.id,
@@ -34,13 +39,20 @@ const EndCallButton = () => {
         if (!res.data.success) {
             toast.error("Failed to delete the call record");
         } else {
-            toast.success("meeting ended for everyone")
+            toast.success("Meeting ended! Generating AI summary...")
         }
-        navigate("/dashboard");
+        
+        // Wait for the actual upload to finish before navigating
+        window.addEventListener("upload-complete", () => {
+            navigate("/dashboard");
+        }, { once: true });
+
+        // Fallback in case of catastrophic failure
+        setTimeout(() => navigate("/dashboard"), 15000);
     }
     return (
-        <Button onClick={endCall} className="bg-danger hover:bg-danger/50">
-            End Call for everyone
+        <Button onClick={endCall} disabled={isEnding} className="bg-danger hover:bg-danger/80 text-white font-bold">
+            {isEnding ? "Saving AI Summary..." : "End Call for everyone"}
         </Button>
     )
 }

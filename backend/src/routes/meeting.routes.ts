@@ -3,7 +3,7 @@ import expressAsyncHandler from 'express-async-handler';
 import { createGetStreamToken, deleteMeeting, getAllBookedMeetings, getAllMeetings, handleMeetingSetup, isProtectedMeetingValidation, validateJoinAccess, validateProtectedPassword } from '../controllers/meeting.controller';
 import { authenticate, validateMeetingInput } from '../middlewares/auth.middleware';
 import multer from 'multer';
-import { handleMeetingSummarizer } from '../controllers/summarizer.controller';
+import { handleMeetingSummarizer, getMeetingSummary } from '../controllers/summarizer.controller';
 
 const router = express.Router();
 
@@ -30,6 +30,7 @@ router.get("/validate-access", authenticate, expressAsyncHandler(validateJoinAcc
 
 
 //Meeting Summary Routes
+router.get("/summary/:id", authenticate, expressAsyncHandler(getMeetingSummary));
 router.post("/summarize/:id", authenticate, upload.single('audio'), expressAsyncHandler(handleMeetingSummarizer));
 
 export default router;
