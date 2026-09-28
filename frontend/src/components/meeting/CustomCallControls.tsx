@@ -1,5 +1,4 @@
 import {
-  CancelCallButton,
   ReactionsButton,
   ScreenShareButton,
   SpeakingWhileMutedNotification,
@@ -7,10 +6,8 @@ import {
   ToggleVideoPublishingButton,
 } from "@stream-io/video-react-sdk";
 
-import type { CallControlsProps } from "@stream-io/video-react-sdk";
 
-
-export const CustomCallControls = ({ onLeave }: CallControlsProps) => (
+export const CustomCallControls = () => (
   <div className="str-video__call-controls">
     <SpeakingWhileMutedNotification>
       <ToggleAudioPublishingButton />
@@ -18,6 +15,5 @@ export const CustomCallControls = ({ onLeave }: CallControlsProps) => (
     <ToggleVideoPublishingButton />
     <ScreenShareButton />
     <ReactionsButton />
-    <CancelCallButton onLeave={onLeave} />
   </div>
 );

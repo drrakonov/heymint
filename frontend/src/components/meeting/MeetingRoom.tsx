@@ -29,10 +29,6 @@ const MeetingRoom = () => {
         }
     }
 
-    const handleOnLeave = () => {
-        navigate("/dashboard");
-    }
-
     return (
         <section className="relative h-screen w-full overflow-hidden text-white bg-background">
             <div className="relative flex size-full items-center justify-center">
@@ -46,7 +42,7 @@ const MeetingRoom = () => {
             
             {/* FLOATING GLASSMORPHIC CONTROL BAR */}
             <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center justify-center gap-4 bg-surface/40 backdrop-blur-xl border border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.5)] px-6 py-3 rounded-full">
-                    <CustomCallControls onLeave={handleOnLeave} />
+                    <CustomCallControls />
                     
                     <div className="w-[1px] h-8 bg-white/10 mx-1" /> {/* Divider */}
 
@@ -76,12 +72,9 @@ const MeetingRoom = () => {
                         <Users size={20} />
                     </button>
                     
-                    {!isPersonalRoom && (
-                        <>
-                            <div className="w-[1px] h-8 bg-white/10 mx-1" /> {/* Divider */}
-                            <EndCallButton />
-                        </>
-                    )}
+                    
+                    <div className="w-[1px] h-8 bg-white/10 mx-1" /> {/* Divider */}
+                    <EndCallButton />
             </div>
         </section>
     )

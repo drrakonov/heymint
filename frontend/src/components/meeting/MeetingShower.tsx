@@ -28,7 +28,7 @@ const MeetingShower = () => {
 
     const uploadMeetingRecording = async (blob : Blob) => {
         try {
-            const userId = user.id;
+            const userId = user?.id;
             if(!blob || !userId) {
                 throw new Error("Recording Failed!");
             }
@@ -47,8 +47,7 @@ const MeetingShower = () => {
             console.log(summaryRes);
             if(summaryRes) {
                 setSummary(summaryRes);
-                toast.success(summaryRes);
-                console.log(summaryRes);
+                //console.log(summaryRes);
             }
         }catch(err) {
             console.error("Failed to send recording! ", err);
@@ -81,15 +80,9 @@ const MeetingShower = () => {
             // Create final audio file when recording stops
             mediaRecorder.onstop = () => {
                 const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
-                if (audioBlob.size < 1000) { // < 10KB is just empty headers or 1 millisecond
-                    console.log("Audio too short, skipping upload");
-                    window.dispatchEvent(new Event("upload-complete"));
-                    stream.getTracks().forEach(t => t.stop());
-                    return;
-                }
                 const url = URL.createObjectURL(audioBlob);
                 setAudioURL(url);
-                console.log(audioBlob);
+                console.log("Recording blob size:", audioBlob.size);
 
                 uploadMeetingRecording(audioBlob);
 
@@ -99,7 +92,7 @@ const MeetingShower = () => {
 
 
             //Begin the recording process
-            mediaRecorder.start(1000);
+            mediaRecorder.start();
             setIsRecording(true);
 
         }catch(err) {
@@ -134,13 +127,7 @@ const MeetingShower = () => {
     useEffect(() => {
         if(isSetUpComplete) {
             startRecordMeeting();
-        } else {
-            stopRecordingMeeting();
         }
-
-        return () => {
-            stopRecordingMeeting();
-        };
     }, [isSetUpComplete]);
 
 

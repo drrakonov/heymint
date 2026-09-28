@@ -23,9 +23,13 @@ const EndCallButton = () => {
 
     const isMeetingOwner = localParticipant && call.state.createdBy && localParticipant.userId === call.state.createdBy.id;
 
-    if (!isMeetingOwner) return null;
-
     const [isEnding, setIsEnding] = useState(false);
+
+    const leaveCall = () => {
+        call.leave();
+        navigate("/dashboard");
+    };
+
     const endCall = async () => {
         if (isEnding) return;
         setIsEnding(true);
@@ -50,6 +54,15 @@ const EndCallButton = () => {
         // Fallback in case of catastrophic failure
         setTimeout(() => navigate("/dashboard"), 15000);
     }
+
+    if (!isMeetingOwner) {
+        return (
+            <Button onClick={leaveCall} className="bg-danger hover:bg-danger/80 text-white font-bold">
+                Leave
+            </Button>
+        );
+    }
+
     return (
         <Button onClick={endCall} disabled={isEnding} className="bg-danger hover:bg-danger/80 text-white font-bold">
             {isEnding ? "Saving AI Summary..." : "End Call for everyone"}

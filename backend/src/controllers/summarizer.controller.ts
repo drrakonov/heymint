@@ -30,8 +30,6 @@ export const handleMeetingSummarizer = async (req: Request, res: Response): Prom
                 model: "whisper-large-v3",
                 file: audio,
                 temperature: 0,
-                prompt: "The following is a meeting recording in English. Hello, let's start.",
-                language: "en",
             })
         }catch(err) {
             console.error("Something went wrong! ", err);
@@ -51,14 +49,11 @@ export const handleMeetingSummarizer = async (req: Request, res: Response): Prom
                 messages: [
                     {
                         role: "system",
-                        content: `You are an expert AI meeting assistant. 
-                        Your task is to summarize the meeting transcript provided by the user. 
-                        You must ALWAYS output a formatted summary with bullet points, even if the transcript is extremely short (like 'Hello' or 'Thank you'). 
-                        Do not ask the user for more information, just summarize what you are given.`
+                        content: "Summarize this meeting transcript and list key action items."
                     },
                     {
                         role: "user",
-                        content: `Here is the meeting transcript:\n\n"${transcription.text}"\n\nPlease provide a concise summary and list any action items.`
+                        content: transcription.text
                     },
                 ]
             })
@@ -115,7 +110,9 @@ export const handleMeetingSummarizer = async (req: Request, res: Response): Prom
         })
     } finally {
         const filePath = req.file?.path;
-        if(filePath) fs.unlinkSync(filePath)     
+        if(filePath) {  
+            fs.unlinkSync(filePath);
+        }
     }
 }
 export const getMeetingSummary = async (req: any, res: any) => {
