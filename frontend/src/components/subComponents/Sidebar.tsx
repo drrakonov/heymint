@@ -30,9 +30,9 @@ const Sidebar = ({ children }: { children: ReactNode }) => {
         <div className={`p-4 pb-2 flex items-center transition-all ${expanded ? "justify-end" : "justify-center"}`}>
           <button onClick={() => toggleExpanded()}>
             {expanded ?
-              <ChevronFirst className="rounded-lg bg-primary hover:bg-accent text-slate-100" />
+              <ChevronFirst className="rounded-lg bg-surface-1 hover:bg-surface-2 text-text-secondary p-1" />
               :
-              <ChevronLast className="rounded-lg bg-primary hover:bg-accent text-slate-100" />
+              <ChevronLast className="rounded-lg bg-surface-1 hover:bg-surface-2 text-text-secondary p-1" />
             }
           </button>
         </div>
@@ -58,9 +58,9 @@ export function SidebarItems({ icon, text, to }: any) {
       className={`text-white relative flex items-center py-2 px-3 my-1
     font-medium rounded-md cursor-pointer transition-colors group
     ${isActive ?
-          "bg-gradient-to-tr from-accent to-primary"
+          "bg-primary/15 text-primary border-l-2 border-primary"
           :
-          "hover:bg-accent/40 text-gray-100"
+          "hover:bg-surface-1 text-text-secondary"
         }
     `} >
       {icon}

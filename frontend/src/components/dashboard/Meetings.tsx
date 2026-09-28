@@ -175,7 +175,15 @@ const Meetings = () => {
                 </div>
 
                 <div className="space-y-4">
-                    {filteredMeetings.map((m, i) => <MeetingCard key={i} {...m} setMeetings={setMeetings} bookedMeetings={bookedMeetings} />)}
+                    {filteredMeetings.length > 0 ? (
+                        filteredMeetings.map((m, i) => <MeetingCard key={i} {...m} setMeetings={setMeetings} bookedMeetings={bookedMeetings} />)
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-20 text-text-secondary">
+                            <Video size={48} className="mb-4 opacity-30" />
+                            <p className="text-lg font-medium">No {activeTab === 'upcoming' ? 'upcoming' : 'past'} meetings</p>
+                            <p className="text-sm mt-1 opacity-70">{activeTab === 'upcoming' ? 'Create a meeting to get started.' : 'Completed meetings will appear here.'}</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

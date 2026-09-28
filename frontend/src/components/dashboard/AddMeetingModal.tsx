@@ -312,7 +312,7 @@ export default function CreateMeeting() {
   }
 
   const setUpMeeting = async () => {
-    if (!user) { toast.error("Session memory reset during live update. Please refresh the page (F5)."); return; }
+    if (!user) { toast.error("User not authenticated"); return; }
     try {
 
       const code = createMeetingCode();

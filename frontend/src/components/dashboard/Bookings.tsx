@@ -136,74 +136,53 @@ const BookingCard = ({
 
 
     return (
-        <Card className="w-full max-w-5xl bg-cardbg border-surface-2 shadow-md hover:shadow-lg transition-shadow duration-200
-        p-3 rounded-xl">
-            <CardHeader className="pb-3">
-                {/* On small screens: column, on md+: row */}
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-1">
+        <Card className="w-full bg-surface/40 backdrop-blur-md border border-white/5 shadow-sm hover:border-primary/50 transition-colors duration-200 p-0 rounded-xl overflow-hidden">
+            <div className="p-6">
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg leading-tight text-[#F4F4F5] truncate">
-                            {title}
-                        </h3>
-                        <p className="text-sm mt-1 flex items-center gap-1 text-[#A1A1AA]">
-                            <Users className="h-3 w-3 text-[#A1A1AA]" />
-                            {hostName}
-                        </p>
-                        {/* Always show description under host on small, only show two lines */}
-                        <p className="text-sm mt-2 text-[#8C8D98] line-clamp-2">{description}</p>
+                        <h3 className="font-bold text-lg text-text-primary tracking-tight truncate">{title}</h3>
+                        <div className="flex items-center gap-3 mt-2 text-xs text-text-secondary font-medium">
+                            <span className="flex items-center gap-1.5"><Users size={14} className="text-primary"/>{hostName}</span>
+                        </div>
+                        <p className="text-sm mt-3 text-text-secondary line-clamp-2">{description}</p>
                     </div>
-
-                    {/* On md+: badge/price on the right; on mobile, put below title/host */}
-                    <div className="flex gap-2">
-                        <div className="flex flex-row md:flex-col gap-1 items-center mt-1 md:mt-0">
-                            <Badge
-                                variant={"default"}
-                                className="hidden bg-accent-hover text-black border-none"
-                            >
-                                {"Paid"}
-                            </Badge>
-                            {price && (
-                                <Badge variant="outline" className="text-xs font-medium text-[#F4F4F5] border-[#6EE7B7] bg-transparent ml-2 md:ml-0">
+                    <div className="flex flex-col items-end gap-3 mt-1 md:mt-0">
+                        <div className="flex items-center gap-3">
+                            {price ? (
+                                <Badge variant="outline" className="text-xs font-medium text-primary border-primary/30 bg-primary/5">
                                     ₹{price}
                                 </Badge>
-                            )}
+                            ) : null}
+                            <CopyClipboardBtn meetingCode={meetingCode} />
                         </div>
-                        <CopyClipboardBtn meetingCode={meetingCode} />
                     </div>
                 </div>
-            </CardHeader>
-            <hr className="my-4 border-t border-surface-2 hidden sm:block" />
-            <CardContent className="py-2">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-[#6EE7B7]">
-                    {isInstant ? (
-                        <>
-                            <span className="flex items-center gap-1">
-                                <Video className="h-4 w-4 text-accent" />
-                                <span className="font-medium text-accent">Quick Join</span>
+                <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2 text-sm text-text-secondary">
+                        {isInstant ? (
+                            <span className="flex items-center gap-1.5">
+                                <Video className="h-4 w-4 text-primary" />
+                                <span className="font-medium text-primary">Quick Join</span>
                             </span>
-                        </>
-                    ) : (
-                        <>
-                            <span className="flex items-center gap-1">
-                                <Calendar size={25} className="text-[#A1A1AA]" />
-                                <span className="align-baselinec text-[#A1A1AA]">{formatMeetingTime(meetingTime)}</span>
+                        ) : (
+                            <span className="flex items-center gap-1.5">
+                                <Calendar size={16} className="text-text-secondary" />
+                                <span className="font-medium text-text-secondary">{formatMeetingTime(meetingTime)}</span>
                             </span>
-                        </>
-                    )}
+                        )}
+                    </div>
+                    <Button
+                        className={`w-full sm:w-auto cursor-pointer rounded-lg transition-colors
+                        ${isInstant ? "bg-primary hover:bg-primary/90 text-background font-medium"
+                                : "bg-surface-1 hover:bg-surface-2 text-text-primary font-medium border border-border"}`}
+                        size="sm"
+                        variant={isInstant ? "default" : "outline"}
+                        onClick={handleJoinMeeting}
+                    >
+                        {"Join"}
+                    </Button>
                 </div>
-            </CardContent>
-            <CardFooter className="pt-3">
-                <Button
-                    className={`ml-auto w-full sm:w-auto mt-2 sm:mt-0 cursor-pointer
-                    ${isInstant ? "bg-accent-hover hover:bg-accent/60 text-black font-bold"
-                            : "bg-accent-hover hover:bg-accent/60 text-black tracking-wider font-bold border border-[#393B40]"}`}
-                    size="sm"
-                    variant={isInstant ? "default" : "outline"}
-                    onClick={handleJoinMeeting}
-                >
-                    {"Join"}
-                </Button>
-            </CardFooter>
+            </div>
         </Card>
     )
 }
@@ -278,53 +257,53 @@ const Bookings = () => {
 
 
     return (
-        <div className="pt-6 min-h-screen pl-5 pr-5 md:pl-10 md:pr-10">
+        <div className="min-h-screen bg-background pt-6 px-4 md:px-8">
             <div className="max-w-6xl mx-auto">
-                <h1 className="text-3xl text-text-primary font-bold mb-2">Bookings</h1>
-                <p className="text-muted-foreground text-text-secondary mb-8">Join your booked meetings.</p>
+                <h1 className="text-3xl font-bold text-text-primary mb-2 tracking-tight">Bookings</h1>
+                <p className="text-sm text-text-secondary mb-8">Join your booked meetings.</p>
 
                 {/* search bar */}
-                <div className="bg-cardbg rounded-xl border-surface-2 border-2 p-6 mb-8">
+                <div className="bg-surface border border-border rounded-xl p-4 mb-8 shadow-sm">
                     <div className="flex flex-col lg:flex-row gap-4">
                         <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-secondary h-5 w-5" />
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-secondary h-4 w-4" />
                             <Input
-                                placeholder="Search meetings by title, host, description, or category..."
+                                placeholder="Search meetings by title, host, description..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10 h-10 text-base bg-surface border-accent text-text-primary placeholder:text-text-secondary focus:border-accent"
+                                className="pl-9 h-10 bg-background border-border text-text-primary placeholder:text-text-secondary focus:border-primary/50 rounded-lg transition-colors"
                             />
                         </div>
 
-                        <div className="flex gap-3 flex-col sm:flex-row justify-center">
+                        <div className="flex gap-3 flex-col sm:flex-row">
                             <Select value={filterType} onValueChange={(value: any) => setFilterType(value)}>
-                                <SelectTrigger className="w-40 min-h-10 border-accent bg-surface text-text-primary">
-                                    <Filter className="h-4 w-4 mr-2" />
+                                <SelectTrigger className="w-full sm:w-[160px] h-10 border-border bg-background text-text-primary rounded-lg focus:ring-1 focus:ring-primary/50">
+                                    <Filter className="h-4 w-4 mr-2 text-text-secondary" />
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="bg-surface border-custom">
-                                    <SelectItem value="all" className="text-text-primary hover:bg-surface-1">
+                                <SelectContent className="bg-surface border-border rounded-lg shadow-md">
+                                    <SelectItem value="all" className="text-text-primary focus:bg-surface-1 cursor-pointer">
                                         All Types
                                     </SelectItem>
-                                    <SelectItem value="scheduled" className="text-text-primary hover:bg-surface-1">
+                                    <SelectItem value="scheduled" className="text-text-primary focus:bg-surface-1 cursor-pointer">
                                         Scheduled Only
                                     </SelectItem>
-                                    <SelectItem value="instant" className="text-text-primary hover:bg-surface-1">
+                                    <SelectItem value="instant" className="text-text-primary focus:bg-surface-1 cursor-pointer">
                                         Instant Join
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
 
                             <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                                <SelectTrigger className="w-40 min-h-10 border-accent bg-surface text-text-primary">
-                                    <SortAsc className="h-4 w-4 mr-2" />
+                                <SelectTrigger className="w-full sm:w-[160px] h-10 border-border bg-background text-text-primary rounded-lg focus:ring-1 focus:ring-primary/50">
+                                    <SortAsc className="h-4 w-4 mr-2 text-text-secondary" />
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="bg-surface border-custom">
-                                    <SelectItem value="title" className="text-text-primary hover:bg-surface-1">
+                                <SelectContent className="bg-surface border-border rounded-lg shadow-md">
+                                    <SelectItem value="title" className="text-text-primary focus:bg-surface-1 cursor-pointer">
                                         Sort by Title
                                     </SelectItem>
-                                    <SelectItem value="time" className="text-text-primary hover:bg-surface-1">
+                                    <SelectItem value="time" className="text-text-primary focus:bg-surface-1 cursor-pointer">
                                         Sort by Time
                                     </SelectItem>
                                 </SelectContent>

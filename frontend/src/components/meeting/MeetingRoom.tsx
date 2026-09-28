@@ -1,9 +1,8 @@
 import { cn } from "@/lib/utils";
-import { CallControls, CallingState, CallParticipantsList, CallStatsButton, PaginatedGridLayout, SpeakerLayout, useCallStateHooks } from "@stream-io/video-react-sdk";
+import { CallingState, CallParticipantsList, CallStatsButton, PaginatedGridLayout, SpeakerLayout, useCallStateHooks } from "@stream-io/video-react-sdk";
 import { useState } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { LayoutList, Users } from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
 import EndCallButton from "./EndCallButton";
 import Loader from "../subComponents/Loader";
 import { CustomCallControls } from "./CustomCallControls";
@@ -13,11 +12,8 @@ type CallLayoutType = 'grid' | 'speaker-left' | 'speaker-right'
 const MeetingRoom = () => {
     const [layout, setLayout] = useState<CallLayoutType>('speaker-left')
     const [showParticipants, setShowParticipants] = useState(false)
-    const [searchParams] = useSearchParams();
-    const isPersonalRoom  = !!searchParams.get("personal");
     const { useCallCallingState } = useCallStateHooks();
     const callingState = useCallCallingState();
-    const navigate = useNavigate();
 
     if(callingState !== CallingState.JOINED) return <Loader />
 
