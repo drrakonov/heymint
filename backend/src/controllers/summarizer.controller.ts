@@ -49,11 +49,23 @@ export const handleMeetingSummarizer = async (req: Request, res: Response): Prom
                 messages: [
                     {
                         role: "system",
-                        content: "Summarize this meeting transcript and list key action items."
+                        content: `You are a meeting summarizer. You MUST respond with ONLY a valid JSON object (no markdown, no backticks, no extra text). Use this exact structure:
+{
+  "overview": "2-3 sentence high-level summary of the meeting",
+  "keyPoints": ["point 1", "point 2", "point 3"],
+  "actionItems": ["action 1", "action 2"],
+  "decisions": ["decision 1", "decision 2"]
+}
+Rules:
+- Always return valid JSON, nothing else
+- If the transcript is very short or unclear, still return the JSON with your best interpretation
+- keyPoints should have 3-6 items
+- actionItems can be empty array [] if none were discussed
+- decisions can be empty array [] if none were made`
                     },
                     {
                         role: "user",
-                        content: transcription.text
+                        content: `Meeting transcript:\n\n${transcription.text}`
                     },
                 ]
             })
