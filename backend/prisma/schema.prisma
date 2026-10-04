@@ -97,10 +97,11 @@ enum PaymentStatus {
 }
 
 model Summary {
-  id        Int     @id @default(autoincrement())
-  content   String
-  meetingId String  @unique
-  meeting   Meeting @relation(fields: [meetingId], references: [id])
+  id            Int     @id @default(autoincrement())
+  content       String
+  transcription String?
+  meetingId     String  @unique
+  meeting       Meeting @relation(fields: [meetingId], references: [id])
 }
 
 model TranscriptChunk {

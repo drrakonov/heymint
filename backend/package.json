@@ -24,6 +24,9 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@langchain/core": "^1.2.13",
+    "@langchain/textsplitters": "^1.0.2",
     "@stream-io/node-sdk": "^0.8.7",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
@@ -38,6 +41,7 @@
     "express-rate-limit": "^8.1.0",
     "groq-sdk": "^1.6.0",
     "jsonwebtoken": "^9.0.2",
+    "langchain": "^1.5.14",
     "multer": "^2.4.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",

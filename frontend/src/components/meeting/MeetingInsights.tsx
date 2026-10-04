@@ -1,5 +1,5 @@
 import { ArrowLeft, CheckCircle2, CircleDot, Lightbulb, Send, Sparkles, Target } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "../ui/button";
 import api from "@/lib/axios";
@@ -14,7 +14,6 @@ interface SummaryJSON {
 
 function parseSummary(raw: string): SummaryJSON | null {
     try {
-        // Strip markdown code fences if the AI wrapped it
         const cleaned = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
         const parsed = JSON.parse(cleaned);
         if (parsed.overview && Array.isArray(parsed.keyPoints)) {
@@ -24,7 +23,6 @@ function parseSummary(raw: string): SummaryJSON | null {
     return null;
 }
 
-// Fallback: render old summaries (plain text) that were saved before the JSON prompt
 function FallbackSummary({ raw }: { raw: string }) {
     const lines = raw.split('\n').map(l => l.replace(/^[-*•]\s*/, '').trim()).filter(l => l.length > 5);
     return (
@@ -67,6 +65,15 @@ export default function MeetingInsights() {
     const [summary, setSummary] = useState<SummaryJSON | null>(null);
     const [meetingDetails, setMeetingDetails] = useState<any>(null);
 
+    // Chat state
+    const [isChatLoading, setIsChatLoading] = useState(false);
+    const [messages, setMessages] = useState<{ sender: "ai" | "user", text: string }[]>([
+        { sender: "ai", text: "Hi! I have the context of this meeting. What would you like to know?" }
+    ]);
+    
+    // Auto-scroll ref
+    const chatContainerRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
         const fetchSummary = async () => {
             try {
@@ -85,9 +92,35 @@ export default function MeetingInsights() {
         fetchSummary();
     }, [id]);
 
-    const mockChat = [
-        { sender: "ai", text: "Hi! I have the context of this meeting. What would you like to know?" },
-    ];
+    // Scroll to bottom whenever messages change
+    useEffect(() => {
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+    }, [messages, isChatLoading]);
+
+    const handleSendMessage = async () => {
+        if (!chatInput.trim() || isChatLoading) return;
+        
+        const userText = chatInput.trim();
+        setChatInput("");
+        setMessages(prev => [...prev, { sender: "user", text: userText }]);
+        setIsChatLoading(true);
+
+        try {
+            const res = await api.post(`/api/meeting/chat/${id}`, { question: userText });
+            if (res.data.success) {
+                setMessages(prev => [...prev, { sender: "ai", text: res.data.answer }]);
+            } else {
+                setMessages(prev => [...prev, { sender: "ai", text: "Sorry, I encountered an error." }]);
+            }
+        } catch (err) {
+            console.error("Chat error:", err);
+            setMessages(prev => [...prev, { sender: "ai", text: "Sorry, I couldn't reach the server right now." }]);
+        } finally {
+            setIsChatLoading(false);
+        }
+    };
 
     if (isLoading) return <Loader />
 
@@ -181,18 +214,21 @@ export default function MeetingInsights() {
                     <div className="bg-cardbg border border-border rounded-xl shadow-sm h-[600px] flex flex-col overflow-hidden sticky top-8">
                         
                         <div className="p-4 border-b border-border bg-surface flex items-center justify-between">
-                            <h2 className="text-sm font-bold text-text-primary">
-                                AI Assistant <span className="ml-2 text-[10px] text-primary border border-primary/30 bg-primary/10 px-2 py-0.5 rounded-full uppercase tracking-widest">Coming Soon</span>
+                            <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                                <Sparkles size={16} className="text-primary" /> Ask AI
                             </h2>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-background/50">
-                            {mockChat.map((msg, idx) => (
+                        <div 
+                            ref={chatContainerRef}
+                            className="flex-1 overflow-y-auto p-6 space-y-6 bg-background/50 scroll-smooth"
+                        >
+                            {messages.map((msg, idx) => (
                                 <div key={idx} className={`flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                                     <div className={`h-8 w-8 rounded-md flex items-center justify-center shrink-0 text-xs font-bold ${msg.sender === 'user' ? 'bg-surface border border-border text-text-primary' : 'bg-primary text-black'}`}>
                                         {msg.sender === 'user' ? 'U' : <Sparkles size={14} />}
                                     </div>
-                                    <div className={`p-3 rounded-lg max-w-[85%] text-sm leading-relaxed ${
+                                    <div className={`p-3 rounded-lg max-w-[85%] text-sm leading-relaxed whitespace-pre-wrap ${
                                         msg.sender === 'user' 
                                             ? 'bg-surface border border-border text-text-primary' 
                                             : 'bg-primary/10 border border-primary/20 text-primary'
@@ -201,20 +237,40 @@ export default function MeetingInsights() {
                                     </div>
                                 </div>
                             ))}
+                            
+                            {isChatLoading && (
+                                <div className="flex gap-3 flex-row">
+                                    <div className="h-8 w-8 rounded-md flex items-center justify-center shrink-0 text-xs font-bold bg-primary text-black">
+                                        <Sparkles size={14} />
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-1.5">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '0ms' }} />
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '150ms' }} />
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '300ms' }} />
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="p-4 bg-surface border-t border-border opacity-50 pointer-events-none">
+                        <div className="p-4 bg-surface border-t border-border">
                             <div className="relative">
                                 <input 
                                     type="text" 
                                     value={chatInput}
                                     onChange={(e) => setChatInput(e.target.value)}
-                                    placeholder="RAG Chatbot feature coming next..."
-                                    className="w-full bg-background border border-border rounded-lg py-2.5 pl-4 pr-12 text-sm text-text-primary focus:outline-none"
-                                    disabled
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleSendMessage();
+                                    }}
+                                    placeholder="Ask anything about the meeting..."
+                                    className="w-full bg-background border border-border rounded-lg py-3 pl-4 pr-12 text-sm text-text-primary focus:outline-none focus:border-primary/50 transition-colors"
+                                    disabled={isChatLoading}
                                 />
-                                <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-text-secondary" disabled>
-                                    <Send size={16} />
+                                <button 
+                                    onClick={handleSendMessage}
+                                    disabled={!chatInput.trim() || isChatLoading}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary text-black rounded-md disabled:opacity-50 disabled:bg-surface disabled:text-text-secondary transition-colors"
+                                >
+                                    <Send size={14} />
                                 </button>
                             </div>
                         </div>

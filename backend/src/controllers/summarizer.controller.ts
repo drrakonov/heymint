@@ -3,6 +3,7 @@ import Fs from "fs"
 import { Groq } from "groq-sdk";
 import fs from "fs"
 import { PrismaClient } from "@prisma/client";
+import { chunkTheTranscription } from "../utils/chunker"
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const prisma = new PrismaClient();
@@ -39,7 +40,7 @@ export const handleMeetingSummarizer = async (req: Request, res: Response): Prom
             })
         }
 
-        console.log("transcription: ", transcription);
+
 
         try {
             //Get the summary from LLM
@@ -76,7 +77,7 @@ Rules:
                 message: "Failed to get summary"
             })
         }
-        console.log("summary", summary.choices[0].message.content);
+
 
         try {
             // Find the real meeting ID from the URL param (which is the meetingCode)
@@ -93,12 +94,17 @@ Rules:
                 //Save the summary in the DB using the real UUID
                 await prisma.summary.upsert({
                     where: { meetingId: meetingRecord.id },
-                    update: { content: summary.choices[0].message.content || "Empty" },
+                    update: { content: summary.choices[0].message.content || "Empty", transcription: transcription.text || "Empty" },
                     create: {
                         content: summary.choices[0].message.content || "Empty",
                         meetingId: meetingRecord.id,
+                        transcription: transcription.text || "Empty"
                     }
                 });
+
+
+                //Store the embeddings into vector DB
+                chunkTheTranscription(meetingRecord.id).catch(console.error)
             }
         }catch(err) {
             console.error("Something went wrong! ", err);

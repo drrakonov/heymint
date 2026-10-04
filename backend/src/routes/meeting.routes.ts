@@ -4,6 +4,7 @@ import { createGetStreamToken, deleteMeeting, getAllBookedMeetings, getAllMeetin
 import { authenticate, validateMeetingInput } from '../middlewares/auth.middleware';
 import multer from 'multer';
 import { handleMeetingSummarizer, getMeetingSummary } from '../controllers/summarizer.controller';
+import { handleSummaryChat } from "../controllers/chat.controller"
 
 const router = express.Router();
 
@@ -32,5 +33,6 @@ router.get("/validate-access", authenticate, expressAsyncHandler(validateJoinAcc
 //Meeting Summary Routes
 router.get("/summary/:id", authenticate, expressAsyncHandler(getMeetingSummary));
 router.post("/summarize/:id", authenticate, upload.single('audio'), expressAsyncHandler(handleMeetingSummarizer));
+router.post("/chat/:id", authenticate, expressAsyncHandler(handleSummaryChat));
 
 export default router;
