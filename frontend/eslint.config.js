@@ -15,6 +15,7 @@ export default tseslint.config([
       reactHooks.configs['recommended-latest'],
       reactRefresh.configs.vite,
     ],
+    rules: { 'react-refresh/only-export-components': ['error', { allowExportNames: ['useAuth', 'useNavigate', 'useRouterState'] }] },
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,

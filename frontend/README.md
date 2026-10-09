@@ -1,69 +1,46 @@
-# React + TypeScript + Vite
+# HeyMint frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+HeyMint’s React and Vite frontend for video meetings, scheduling, and meeting insights. It connects to the Express API and Stream Video SDK.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Requires Node.js 22.12+ (or another version supported by Vite 7).
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+cd frontend
+npm ci
+cp .env.example .env.local
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Set `VITE_BACKEND_URL` to the existing backend origin (for example `http://localhost:3000`, without `/api`). Run the backend separately with its existing database, email, OAuth, Stream, and AI configuration. Its configured `CORS_ORIGIN` must match the frontend origin. Keep frontend/backend on the same site for the existing `SameSite=Lax` refresh cookie. See [INTEGRATION.md](./INTEGRATION.md) for exact contracts, deployment constraints, and backend limitations.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+npm run build       # TypeScript checking and production bundle
+npm run lint
+npm test            # API contracts and recording lifecycle checks
+npx playwright install chromium
+npm run test:e2e    # Browser flows with isolated API fixtures
 ```
+
+To use an existing Chromium-based browser, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to its executable path. The test runner starts a local Vite server when one is not already running. API fixtures and synthetic audio exist only in `tests/`; application screens always use real service requests. Browser tests do not prove email delivery, OAuth provider configuration, multi-participant Stream media, or real AI results. Those live checks are listed in the integration guide.
+
+## Included workflows
+
+- Email/password login, registration OTP/resend, Google redirect login, shared-link return navigation, rotating cookie refresh, and logout.
+- Personal and platform dashboard metrics; hosted/discover/completed meetings with search, filters, and sorting; bookings and payment history.
+- Instant and scheduled meetings, passwords, paid/free settings, shareable room links, cancellation of owned free meetings, and clearly labeled **demo checkout**. The backend does not process real money.
+- Access-checked prejoin with device controls, video, microphone, screen sharing, speaker/grid layouts, reactions, participant controls, call statistics, leaving, and host end-for-everyone with recoverable completion errors.
+- Automatic AI notes when enabled on the host’s prejoin screen, with recording disclosure and a consent reminder. Shared participant audio is captured in parallel; muted microphones are excluded. Leaving or ending the call finalizes capture and submits it automatically. Processing does not delay leaving the call. Failed submission retains the audio for retry, optional recovery download, or discard. Keep the call page open until processing finishes; capture requires a WebM-capable browser and HTTPS/localhost.
+- Structured AI summaries with legacy-text fallback, saved transcripts, and meeting-context Q&A with retry. Manual audio upload is a recovery option; replacing existing insights is explicitly labeled.
+- Profile name updates, responsive mobile navigation, loading/error/empty states, reduced-motion support, and keyboard-accessible controls.
+
+## Source map
+
+- `src/features/`: pages and workflows.
+- `src/components/heymint/`: shared design system and workspace shell.
+- `src/lib/api.ts`: typed existing-backend contracts and session refresh.
+- `src/lib/video.ts`, `src/lib/meeting-recorder.ts`: Stream integration and owned recording resources.
+- `src/lib/router.tsx`: typed navigation helpers for React Router.
+- `src/index.css`: responsive dark/mint visual system.
+- `tests/`: deterministic contract, browser, and recording checks.

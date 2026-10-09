@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local browser QA output
+test-results/
+playwright-report/
+.env
