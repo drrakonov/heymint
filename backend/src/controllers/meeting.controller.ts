@@ -1,16 +1,15 @@
-import { StreamClient, UserRequest } from "@stream-io/node-sdk"
+import { UserRequest } from "@stream-io/node-sdk"
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { Bookings, Meeting, Payments } from "../utils/Types";
+import { streamClient } from "../utils/streamClient";
 
 
 
 const prisma = new PrismaClient();
 
 const getStreamApiKey = process.env.STREAM_API_KEY!;
-const getStreamApiSecret = process.env.STREAM_SECRET_KEY!;
-
-const client = new StreamClient(getStreamApiKey, getStreamApiSecret, { timeout: 15000 });
+const client = streamClient;
 
 export const createGetStreamToken = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -356,5 +355,133 @@ export const validateJoinAccess = async (req: Request, res: Response): Promise<a
     } catch (err) {
         console.log("Failed to validate the access to join the meeting", err);
         return res.status(500).json({ success: false, message: "Failed to validate join access" });
+    }
+}
+
+
+export const startMeetingRecording = async (req: any, res: Response): Promise<any> => {
+    try {
+        const meetingCode = req.params.meetingCode as string;
+        const userId = req.user?.id;
+
+        if (!userId) {
+            return res.status(401).json({ success: false, message: "User is not authenticated" });
+        }
+
+        if (!meetingCode) {
+            return res.status(400).json({ success: false, message: "Meeting code is required" });
+        }
+
+        const meeting = await prisma.meeting.findUnique({
+            where: { meetingCode }
+        });
+
+        if (!meeting) {
+            return res.status(404).json({ success: false, message: "Meeting not found" });
+        }
+
+        if (meeting.createdById !== userId) {
+            return res.status(403).json({ success: false, message: "Only the meeting host can start recording" });
+        }
+
+        const call = client.video.call("default", meetingCode);
+        const callResponse = await call.get();
+
+        if (callResponse.call.ended_at || !callResponse.call.current_session_id) {
+            return res.status(409).json({ success: false, message: "Meeting session is not active" });
+        }
+
+        const isRecording = callResponse.call.egress.individual_recording?.status === "active";
+        const isTranscribing = callResponse.call.transcribing;
+
+        //  Configure the call settings to ensure recording and transcription are available
+        await call.update({
+            settings_override: {
+                individual_recording: {
+                    mode: "available",
+                    output_types: ["audio_only"],
+                },
+                transcription: {
+                    mode: "available",
+                    language: "auto"
+                }
+            },
+        });
+
+        let recordingStartedByRequest = false;
+
+        if (!isRecording) {
+            await call.startRecording({ recording_type: "individual" });
+            recordingStartedByRequest = true;
+        }
+
+        try {
+            if (!isTranscribing) {
+                await call.startTranscription({ language: "auto" });
+            }
+        } catch (error) {
+            if (recordingStartedByRequest) {
+                await call.stopRecording({ recording_type: "individual" }).catch(console.error);
+            }
+            throw error;
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: isRecording && isTranscribing
+                ? "Recording and transcription are already active"
+                : "Recording and transcription started successfully"
+        });
+    } catch (err) {
+        console.log("Failed to start meeting recording", err);
+        return res.status(500).json({ success: false, message: "Failed to start meeting recording" });
+    }
+}
+
+
+export const stopMeetingRecording = async (req: any, res: Response): Promise<any> => {
+    try {
+        const meetingCode = req.params.meetingCode as string;
+        const userId = req.user?.id;
+
+        if (!userId) {
+            return res.status(401).json({ success: false, message: "User is not authenticated" });
+        }
+
+        if (!meetingCode) {
+            return res.status(400).json({ success: false, message: "Meeting code is required" });
+        }
+
+        const meeting = await prisma.meeting.findUnique({
+            where: { meetingCode },
+            select: { id: true }
+        });
+
+        if (!meeting) {
+            return res.status(404).json({ success: false, message: "Meeting not found" });
+        }
+
+        const call = client.video.call("default", meetingCode);
+        const callResponse = await call.get();
+        const recordingStatus = callResponse.call.egress.individual_recording?.status;
+        const isTranscribing = callResponse.call.transcribing;
+
+        if (recordingStatus !== "active" && !isTranscribing) {
+            return res.status(200).json({ success: true, message: "Recording and transcription are already stopped" });
+        }
+
+        const stopOperations: Promise<unknown>[] = [];
+        if (recordingStatus === "active") {
+            stopOperations.push(call.stopRecording({ recording_type: "individual" }));
+        }
+        if (isTranscribing) {
+            stopOperations.push(call.stopTranscription());
+        }
+        await Promise.all(stopOperations);
+
+        return res.status(200).json({ success: true, message: "Recording and transcription stopped successfully" });
+    } catch (err) {
+        console.log("Failed to stop meeting recording", err);
+        return res.status(500).json({ success: false, message: "Failed to stop meeting recording" });
     }
 }

@@ -1,8 +1,6 @@
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom"
 import appLogo from "../assets/logo/heyMintLogo.png"
 import { GreenButton } from "./subComponents/Greenbutton";
-import GithubLogo from '../assets/logo/github.svg';
-import XLogo from '../assets/logo/x.svg'
 import { useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
 
@@ -29,103 +27,68 @@ const HeroLayout = () => {
     }, [location, setAccessToken, navigate]);
 
     return (
-        <div className="min-h-screen flex flex-col">
-            <nav className="py-4 px-4 bg-surface-bl text-text-primary border-b border-gray-200/15">
-                <div className="flex mx-4 items-center justify-between">
-                    <div className="flex flex-col items-center">
-                        <a href="/">
+        <div className="min-h-screen flex flex-col bg-surface-bl">
+            <nav className="sticky top-0 z-50 border-b border-white/[0.07] bg-surface-bl/80 px-4 py-3 text-text-primary backdrop-blur-xl sm:px-8">
+                <div className="mx-auto flex max-w-7xl items-center justify-between">
+                    <div className="flex items-center">
+                        <Link to="/" aria-label="HeyMint home">
                             <img src={appLogo}
-                                alt="app logo"
-                                className="w-25"
+                                alt="HeyMint"
+                                className="w-24 sm:w-28"
                             />
-                        </a>
+                        </Link>
                     </div>
-                    <div className="hidden md:flex space-x-8">
-                        <a href="/#feature" className="hover:text-text-secondary" >Feature</a>
-                        <a href="/#howToUse" className="hover:text-text-secondary" >How to use</a>
-                        <a href="/" className="hover:text-text-secondary" >Testimonial</a>
-
+                    <div className="hidden items-center gap-8 text-sm text-text-secondary md:flex">
+                        <a href="#feature" className="transition-colors hover:text-text-primary">Features</a>
+                        <a href="#howToUse" className="transition-colors hover:text-text-primary">How it works</a>
                     </div>
-                    <div className="flex space-x-4">
+                    <div className="flex items-center">
                         <GreenButton
                             variant="ghost"
                             label="Log In"
-                            to="/dashboard"
-                            className="font-bold"
+                            to="/auth/login"
+                            className="font-semibold"
                         />
-
                     </div>
                 </div>
             </nav>
-            <main className="flex-1 bg-surface">
+            <main className="flex-1 bg-surface-bl">
                 <Outlet />
             </main>
-            <footer className="bg-surface-bl text-gray-300 border-t border-gray-200/15">
-                <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {/* Branding */}
-                    <div>
+            <footer className="border-t border-white/[0.07] bg-surface-bl text-text-secondary">
+                <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-10 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="max-w-sm">
                         <img src={appLogo}
-                            alt="app logo"
-                            className="w-25"
+                            alt="HeyMint"
+                            className="w-24"
                         />
-                        <p className="mt-2 text-sm">Your platform for smart, secure meetings & bookings.</p>
-                        <p className="mt-2 text-sm">Reliable meetings. Transparent earnings. Zero hassle.</p>
+                        <p className="mt-3 text-sm leading-relaxed">Smart meetings, simple bookings, and clear insights.</p>
                     </div>
-
-                    {/* Navigation */}
-                    <div>
-                        <h3 className="text-sm text-text-primary font-semibold uppercase mb-3">Quick Links</h3>
-                        <ul className="space-y-2 text-sm">
-                            <li><Link to="/about" className="hover:underline">About Us</Link></li>
-                            <li><Link to="/meetings" className="hover:underline">Privacy Policy</Link></li>
-                            <li><Link to="/bookings" className="hover:underline">Contact</Link></li>
-                        </ul>
-                    </div>
-
-                    {/* Social Links */}
-                    <div>
-                        <h3 className="text-sm text-text-primary font-semibold uppercase mb-3">Connect</h3>
-                        <div className="flex space-x-4">
-                            <a href="" target="_blank" rel="noopener noreferrer">
-                                <img
-                                    src={GithubLogo}
-                                    alt="Github logo"
-                                    className="w-8 h-8"
-                                />
-                            </a>
-                            <a href="" target="_blank" rel="noopener noreferrer">
-                                <img
-                                    src={XLogo}
-                                    alt="Github logo"
-                                    className="w-8 h-8"
-                                />
-                            </a>
-                        </div>
+                    <div className="flex gap-6 text-sm">
+                        <a href="#feature" className="transition-colors hover:text-text-primary">Features</a>
+                        <a href="#howToUse" className="transition-colors hover:text-text-primary">How it works</a>
                     </div>
                 </div>
 
-                {/* Bottom */}
-                <div className="hidden sm:block border-t border-gray-200/15">
-                    <div className="flex justify-center items-end select-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 250" width="100%" height="250" role="img" aria-labelledby="title">
+                <div className="hidden overflow-hidden border-t border-white/[0.05] sm:block">
+                    <div className="flex select-none items-end justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 190" width="100%" height="190" role="img" aria-labelledby="title">
                             <title id="title">Heymint wordmark</title>
 
-                            <text x="50%" y="100%"
-                                text-anchor="middle"
-                                dominant-baseline="bottom"
-                                font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial"
-                                font-weight="900"
-                                font-size="200"
-                                letter-spacing="20"
+                            <text x="50%" y="103%"
+                                textAnchor="middle"
+                                dominantBaseline="bottom"
+                                fontFamily="Inter, system-ui, sans-serif"
+                                fontWeight="900"
+                                fontSize="185"
+                                letterSpacing="18"
                                 fill="currentColor"
-                                opacity="0.2">
+                                opacity="0.08">
                                 HEYMINT
                             </text>
                         </svg>
-
                     </div>
                 </div>
-
             </footer>
         </div>
     )
