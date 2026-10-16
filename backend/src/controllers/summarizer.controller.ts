@@ -1,152 +1,78 @@
 import { Response, Request } from "express"
-import Fs from "fs"
-import { Groq } from "groq-sdk";
-import fs from "fs"
 import { PrismaClient } from "@prisma/client";
-import { chunkTheTranscription } from "../utils/chunker"
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const prisma = new PrismaClient();
-
-export const handleMeetingSummarizer = async (req: Request, res: Response): Promise<any> => {
-    try {
-        const meetingId = req.params.id;
-        const filePath = req.file?.path;        
-
-        if(!meetingId || !filePath) {
-            return res.status(500).json({
-                success: false,
-                message: "Something went wrong"
-            })
-        }
-
-        const audio = fs.createReadStream(filePath);
-        let transcription;
-        let summary;
-
-
-        try {
-             //Get the audio to text transcription.
-            transcription = await groq.audio.transcriptions.create({
-                model: "whisper-large-v3",
-                file: audio,
-                temperature: 0,
-            })
-        }catch(err) {
-            console.error("Something went wrong! ", err);
-            return res.status(500).json({
-                success: false,
-                message: "Failed to get transcription"
-            })
-        }
-
-
-
-        try {
-            //Get the summary from LLM
-            summary = await groq.chat.completions.create({
-                model: "openai/gpt-oss-20b",
-                temperature: 0,
-                messages: [
-                    {
-                        role: "system",
-                        content: `You are a meeting summarizer. You MUST respond with ONLY a valid JSON object (no markdown, no backticks, no extra text). Use this exact structure:
-{
-  "overview": "2-3 sentence high-level summary of the meeting",
-  "keyPoints": ["point 1", "point 2", "point 3"],
-  "actionItems": ["action 1", "action 2"],
-  "decisions": ["decision 1", "decision 2"]
-}
-Rules:
-- Always return valid JSON, nothing else
-- If the transcript is very short or unclear, still return the JSON with your best interpretation
-- keyPoints should have 3-6 items
-- actionItems can be empty array [] if none were discussed
-- decisions can be empty array [] if none were made`
-                    },
-                    {
-                        role: "user",
-                        content: `Meeting transcript:\n\n${transcription.text}`
-                    },
-                ]
-            })
-        }catch(err) {
-            console.error("Something went wrong! ", err);
-            return res.status(500).json({
-                success: false,
-                message: "Failed to get summary"
-            })
-        }
-
-
-        try {
-            // Find the real meeting ID from the URL param (which is the meetingCode)
-            const meetingRecord = await prisma.meeting.findFirst({
-                where: {
-                    OR: [
-                        { id: String(meetingId) },
-                        { meetingCode: String(meetingId) }
-                    ]
-                }
-            });
-
-            if (meetingRecord) {
-                //Save the summary in the DB using the real UUID
-                await prisma.summary.upsert({
-                    where: { meetingId: meetingRecord.id },
-                    update: { content: summary.choices[0].message.content || "Empty", transcription: transcription.text || "Empty" },
-                    create: {
-                        content: summary.choices[0].message.content || "Empty",
-                        meetingId: meetingRecord.id,
-                        transcription: transcription.text || "Empty"
-                    }
-                });
-
-
-                //Store the embeddings into vector DB
-                chunkTheTranscription(meetingRecord.id).catch(console.error)
-            }
-        }catch(err) {
-            console.error("Something went wrong! ", err);
-            return res.status(500).json({
-                success: false,
-                message: "Database query failed"
-            })
-        }
-   
-        
-        return res.status(200).json({
-            success: true,
-            message: summary.choices[0].message.content
-        })
-
-    } catch(err) {
-        console.error("Something went wrong! ", err);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to summarize the meeting!"
-        })
-    } finally {
-        const filePath = req.file?.path;
-        if(filePath) {  
-            fs.unlinkSync(filePath);
-        }
-    }
-}
 export const getMeetingSummary = async (req: any, res: any) => {
     try {
         const { id } = req.params; // this is the meetingCode
-        
-        const meeting = await prisma.meeting.findUnique({
-            where: { meetingCode: String(id) },
-            include: { summary: true }
-        });
+        const userId = req.user?.id;
 
-        if (!meeting || !meeting.summary) {
-            return res.status(404).json({ success: false, message: "Summary not found" });
+        if (!userId) {
+            return res.status(401).json({ success: false, message: "User is not authenticated" });
         }
 
-        return res.status(200).json({ success: true, summary: meeting.summary.content, meeting });
+        const meeting = await prisma.meeting.findUnique({
+            where: { meetingCode: String(id) },
+            select: {
+                id: true,
+                title: true,
+                startingTime: true,
+                isPaid: true,
+                createdById: true,
+                summary: { select: { content: true } },
+                transcriptionJobs: {
+                    orderBy: { createdAt: "desc" },
+                    take: 1,
+                    select: { status: true, attempts: true }
+                },
+                purchases: {
+                    where: { userId },
+                    take: 1,
+                    select: { id: true }
+                }
+            }
+        });
+
+        if (!meeting) {
+            return res.status(404).json({ success: false, message: "Meeting not found" });
+        }
+
+        if (meeting.isPaid && meeting.createdById !== userId && meeting.purchases.length === 0) {
+            return res.status(403).json({ success: false, message: "You do not have access to these meeting insights" });
+        }
+
+        const meetingDetails = {
+            id: meeting.id,
+            title: meeting.title,
+            startingTime: meeting.startingTime,
+            isPaid: meeting.isPaid,
+            createdById: meeting.createdById
+        };
+
+        const job = meeting.transcriptionJobs[0];
+
+        if (!meeting.summary || (job && job.status !== "COMPLETED")) {
+            const maximumAttempts = Number(process.env.TRANSCRIPTION_WORKER_MAX_ATTEMPTS || 5);
+            const hasPermanentlyFailed = job?.status === "FAILED" && job.attempts >= maximumAttempts;
+
+            if (hasPermanentlyFailed) {
+                return res.status(500).json({
+                    success: false,
+                    status: "failed",
+                    message: "Meeting insights could not be generated",
+                    meeting: meetingDetails
+                });
+            }
+
+            return res.status(202).json({
+                success: false,
+                status: job?.status?.toLowerCase() || "waiting_for_recording",
+                message: "Meeting insights are being generated",
+                meeting: meetingDetails
+            });
+        }
+
+        return res.status(200).json({ success: true, summary: meeting.summary.content, meeting: meetingDetails });
     } catch (err) {
         console.error("Failed to fetch summary:", err);
         return res.status(500).json({ success: false, message: "Internal server error" });

@@ -25,34 +25,50 @@ const EndCallButton = () => {
 
     const [isEnding, setIsEnding] = useState(false);
 
-    const leaveCall = () => {
-        call.leave();
-        navigate("/dashboard");
+    const leaveCall = async () => {
+        try {
+            await call.leave();
+        } finally {
+            navigate("/dashboard");
+        }
     };
 
     const endCall = async () => {
-        if (isEnding) return;
-        setIsEnding(true);
-        window.dispatchEvent(new Event("stop-recording"));
-        call.endCall();
-        const res = await api.post("/api/meeting/delete-meeting", {
-            userId: user?.id,
-            meetingCode: id,
-            isComplete: true
-        });
-        if (!res.data.success) {
-            toast.error("Failed to delete the call record");
-        } else {
-            toast.success("Meeting ended! Generating AI summary...")
-        }
-        
-        // Wait for the actual upload to finish before navigating
-        window.addEventListener("upload-complete", () => {
-            navigate("/dashboard");
-        }, { once: true });
+        if (isEnding || !id) return;
 
-        // Fallback in case of catastrophic failure
-        setTimeout(() => navigate("/dashboard"), 15000);
+        setIsEnding(true);
+
+        try {
+            try {
+                await api.post(`/api/meeting/${id}/recording/stop`);
+            } catch (error) {
+                console.error("Failed to stop recording before ending the call", error);
+            }
+
+            await call.endCall();
+
+            try {
+                const res = await api.post("/api/meeting/delete-meeting", {
+                    userId: user?.id,
+                    meetingCode: id,
+                    isComplete: true
+                });
+
+                if (!res.data.success) {
+                    throw new Error(res.data.message || "Failed to complete meeting");
+                }
+            } catch (error) {
+                console.error("Meeting ended but could not be marked complete", error);
+                toast.error("Meeting ended, but its status could not be updated");
+            }
+
+            toast.success("Meeting ended! Generating AI summary...");
+            navigate("/dashboard");
+        } catch (error) {
+            console.error("Failed to end meeting", error);
+            toast.error("Failed to end meeting");
+            setIsEnding(false);
+        }
     }
 
     if (!isMeetingOwner) {
@@ -65,7 +81,7 @@ const EndCallButton = () => {
 
     return (
         <Button onClick={endCall} disabled={isEnding} className="bg-danger hover:bg-danger/80 text-white font-bold">
-            {isEnding ? "Saving AI Summary..." : "End Call for everyone"}
+            {isEnding ? "Ending..." : "End Call for everyone"}
         </Button>
     )
 }

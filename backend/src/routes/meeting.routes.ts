@@ -1,24 +1,11 @@
 import express from 'express';
 import expressAsyncHandler from 'express-async-handler';
-import { createGetStreamToken, deleteMeeting, getAllBookedMeetings, getAllMeetings, handleMeetingSetup, isProtectedMeetingValidation, validateJoinAccess, validateProtectedPassword } from '../controllers/meeting.controller';
+import { createGetStreamToken, deleteMeeting, getAllBookedMeetings, getAllMeetings, handleMeetingSetup, isProtectedMeetingValidation, startMeetingRecording, stopMeetingRecording, validateJoinAccess, validateProtectedPassword } from '../controllers/meeting.controller';
 import { authenticate, validateMeetingInput } from '../middlewares/auth.middleware';
-import multer from 'multer';
-import { handleMeetingSummarizer, getMeetingSummary } from '../controllers/summarizer.controller';
+import { getMeetingSummary } from '../controllers/summarizer.controller';
 import { handleSummaryChat } from "../controllers/chat.controller"
 
 const router = express.Router();
-
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, './uploads')
-    },
-    filename: function (req, file, cb) {
-        cb(null, file.fieldname + '-' + Date.now() + '.webm')
-    }
-});
-
-const upload = multer({ storage: storage });
-
 
 router.post("/token", authenticate, expressAsyncHandler(createGetStreamToken));
 router.post("/setup-meeting", validateMeetingInput, authenticate, expressAsyncHandler(handleMeetingSetup));
@@ -32,7 +19,10 @@ router.get("/validate-access", authenticate, expressAsyncHandler(validateJoinAcc
 
 //Meeting Summary Routes
 router.get("/summary/:id", authenticate, expressAsyncHandler(getMeetingSummary));
-router.post("/summarize/:id", authenticate, upload.single('audio'), expressAsyncHandler(handleMeetingSummarizer));
 router.post("/chat/:id", authenticate, expressAsyncHandler(handleSummaryChat));
+
+//Meeting Recording Routes
+router.post("/:meetingCode/recording/start", authenticate, expressAsyncHandler(startMeetingRecording));
+router.post("/:meetingCode/recording/stop", authenticate, expressAsyncHandler(stopMeetingRecording));
 
 export default router;

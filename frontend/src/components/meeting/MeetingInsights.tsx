@@ -1,15 +1,22 @@
-import { ArrowLeft, CheckCircle2, CircleDot, Lightbulb, Send, Sparkles, Target } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, Clock3, Lightbulb, Send, Sparkles, Target } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "../ui/button";
 import api from "@/lib/axios";
 import Loader from "../subComponents/Loader";
+import axios from "axios";
 
 interface SummaryJSON {
     overview: string;
     keyPoints: string[];
     actionItems: string[];
     decisions: string[];
+}
+
+interface MeetingDetails {
+    title?: string;
+    startingTime?: string;
+    isPaid?: boolean;
 }
 
 function parseSummary(raw: string): SummaryJSON | null {
@@ -19,7 +26,9 @@ function parseSummary(raw: string): SummaryJSON | null {
         if (parsed.overview && Array.isArray(parsed.keyPoints)) {
             return parsed as SummaryJSON;
         }
-    } catch {}
+    } catch {
+        return null;
+    }
     return null;
 }
 
@@ -38,20 +47,23 @@ function FallbackSummary({ raw }: { raw: string }) {
 }
 
 function SectionCard({ icon, title, items, emptyText, accent = false }: { icon: React.ReactNode, title: string, items: string[], emptyText: string, accent?: boolean }) {
-    if (items.length === 0) return null;
     return (
         <div className={`rounded-lg p-5 ${accent ? 'bg-primary/5 border border-primary/10' : 'bg-surface/50 border border-border'}`}>
             <h3 className={`text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2 ${accent ? 'text-primary' : 'text-text-secondary'}`}>
                 {icon} {title}
             </h3>
-            <ul className="space-y-3 list-none">
-                {items.map((item, i) => (
-                    <li key={i} className="flex gap-3 items-start">
-                        <div className={`mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 ${accent ? 'bg-primary' : 'bg-text-secondary/50'}`} />
-                        <p className="text-text-primary text-sm leading-relaxed">{item}</p>
-                    </li>
-                ))}
-            </ul>
+            {items.length > 0 ? (
+                <ul className="space-y-3 list-none">
+                    {items.map((item, i) => (
+                        <li key={i} className="flex gap-3 items-start">
+                            <div className={`mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 ${accent ? 'bg-primary' : 'bg-text-secondary/50'}`} />
+                            <p className="text-text-primary text-sm leading-relaxed">{item}</p>
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p className="text-sm text-text-secondary">{emptyText}</p>
+            )}
         </div>
     );
 }
@@ -63,7 +75,8 @@ export default function MeetingInsights() {
     const [isLoading, setIsLoading] = useState(true);
     const [rawSummary, setRawSummary] = useState<string>("");
     const [summary, setSummary] = useState<SummaryJSON | null>(null);
-    const [meetingDetails, setMeetingDetails] = useState<any>(null);
+    const [meetingDetails, setMeetingDetails] = useState<MeetingDetails | null>(null);
+    const [insightStatus, setInsightStatus] = useState<"processing" | "ready" | "failed">("processing");
 
     // Chat state
     const [isChatLoading, setIsChatLoading] = useState(false);
@@ -75,21 +88,45 @@ export default function MeetingInsights() {
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const fetchSummary = async () => {
+        let cancelled = false;
+        let retryTimer: ReturnType<typeof setTimeout> | undefined;
+
+        const fetchSummary = async (isFirstRequest = false) => {
             try {
                 const res = await api.get(`/api/meeting/summary/${id}`);
+                if (cancelled) return;
+
                 if (res.data.success) {
                     setRawSummary(res.data.summary);
                     setSummary(parseSummary(res.data.summary));
                     setMeetingDetails(res.data.meeting);
+                    setInsightStatus("ready");
+                    return;
                 }
-            } catch (err) {
+
+                setMeetingDetails(res.data.meeting);
+                setInsightStatus("processing");
+                retryTimer = setTimeout(() => fetchSummary(), 5000);
+            } catch (err: unknown) {
+                if (cancelled) return;
                 console.error("Failed to fetch summary:", err);
+
+                if (axios.isAxiosError(err) && err.response?.data?.status === "failed") {
+                    setMeetingDetails(err.response.data.meeting as MeetingDetails);
+                    setInsightStatus("failed");
+                } else {
+                    retryTimer = setTimeout(() => fetchSummary(), 5000);
+                }
             } finally {
-                setIsLoading(false);
+                if (isFirstRequest && !cancelled) setIsLoading(false);
             }
-        }
-        fetchSummary();
+        };
+
+        fetchSummary(true);
+        return () => {
+            cancelled = true;
+            if (retryTimer) clearTimeout(retryTimer);
+        };
     }, [id]);
 
     // Scroll to bottom whenever messages change
@@ -169,8 +206,24 @@ export default function MeetingInsights() {
                             AI Summary
                         </h2>
                         
-                        {!rawSummary ? (
-                            <p className="text-text-secondary italic">No summary generated yet for this meeting.</p>
+                        {insightStatus === "processing" ? (
+                            <div className="flex items-start gap-3 rounded-lg border border-primary/15 bg-primary/5 p-5">
+                                <Clock3 size={18} className="mt-0.5 shrink-0 text-primary animate-pulse" />
+                                <div>
+                                    <p className="text-sm font-semibold text-text-primary">Generating meeting insights</p>
+                                    <p className="mt-1 text-sm leading-relaxed text-text-secondary">The recording is being processed and transcribed by speaker. This page updates automatically.</p>
+                                </div>
+                            </div>
+                        ) : insightStatus === "failed" ? (
+                            <div className="flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/5 p-5">
+                                <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-400" />
+                                <div>
+                                    <p className="text-sm font-semibold text-text-primary">Insights could not be generated</p>
+                                    <p className="mt-1 text-sm leading-relaxed text-text-secondary">The recording could not be processed after several attempts. Please contact support.</p>
+                                </div>
+                            </div>
+                        ) : !rawSummary ? (
+                            <p className="text-text-secondary italic">No spoken content was found for this meeting.</p>
                         ) : summary ? (
                             <div className="space-y-6">
                                 {/* Overview */}
@@ -223,7 +276,16 @@ export default function MeetingInsights() {
                             ref={chatContainerRef}
                             className="flex-1 overflow-y-auto p-6 space-y-6 bg-background/50 scroll-smooth"
                         >
-                            {messages.map((msg, idx) => (
+                            {insightStatus !== "ready" ? (
+                                <div className="flex h-full items-center justify-center text-center">
+                                    <div className="max-w-xs">
+                                        <Sparkles size={22} className="mx-auto mb-3 text-primary/70" />
+                                        <p className="text-sm text-text-secondary">
+                                            {insightStatus === "failed" ? "Meeting chat is unavailable because processing failed." : "Meeting chat will be ready when the transcript has finished processing."}
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : messages.map((msg, idx) => (
                                 <div key={idx} className={`flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                                     <div className={`h-8 w-8 rounded-md flex items-center justify-center shrink-0 text-xs font-bold ${msg.sender === 'user' ? 'bg-surface border border-border text-text-primary' : 'bg-primary text-black'}`}>
                                         {msg.sender === 'user' ? 'U' : <Sparkles size={14} />}
@@ -261,13 +323,13 @@ export default function MeetingInsights() {
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') handleSendMessage();
                                     }}
-                                    placeholder="Ask anything about the meeting..."
+                                    placeholder={insightStatus === "ready" ? "Ask anything about the meeting..." : "Waiting for meeting insights..."}
                                     className="w-full bg-background border border-border rounded-lg py-3 pl-4 pr-12 text-sm text-text-primary focus:outline-none focus:border-primary/50 transition-colors"
-                                    disabled={isChatLoading}
+                                    disabled={isChatLoading || insightStatus !== "ready"}
                                 />
                                 <button 
                                     onClick={handleSendMessage}
-                                    disabled={!chatInput.trim() || isChatLoading}
+                                    disabled={!chatInput.trim() || isChatLoading || insightStatus !== "ready"}
                                     className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary text-black rounded-md disabled:opacity-50 disabled:bg-surface disabled:text-text-secondary transition-colors"
                                 >
                                     <Send size={14} />

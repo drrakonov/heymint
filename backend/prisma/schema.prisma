@@ -23,25 +23,27 @@ model User {
 }
 
 model Meeting {
-  id               String            @id @default(uuid())
-  title            String
-  desc             String
-  createdById      String
-  createdAt        DateTime          @default(now())
-  price            Float
-  isPaid           Boolean
-  isDeleted        Boolean           @default(false)
-  isComplete       Boolean           @default(false)
-  startingTime     DateTime
-  isProtected      Boolean
-  password         String?
-  meetingCode      String            @unique
-  isScheduled      Boolean           @default(false)
-  createdBy        User              @relation("createdMeetings", fields: [createdById], references: [id])
-  purchases        MeetingPurchase[]
-  payments         Payment[]
-  summary          Summary?
-  transcriptChunks TranscriptChunk[]
+  id                 String              @id @default(uuid())
+  title              String
+  desc               String
+  createdById        String
+  createdAt          DateTime            @default(now())
+  price              Float
+  isPaid             Boolean
+  isDeleted          Boolean             @default(false)
+  isComplete         Boolean             @default(false)
+  startingTime       DateTime
+  isProtected        Boolean
+  password           String?
+  meetingCode        String              @unique
+  isScheduled        Boolean             @default(false)
+  createdBy          User                @relation("createdMeetings", fields: [createdById], references: [id])
+  purchases          MeetingPurchase[]
+  payments           Payment[]
+  summary            Summary?
+  transcriptChunks   TranscriptChunk[]
+  transcriptSegments TranscriptSegment[]
+  transcriptionJobs  TranscriptionJob[]
 }
 
 model MeetingPurchase {
@@ -110,4 +112,56 @@ model TranscriptChunk {
   meetingId String
   meeting   Meeting                    @relation(fields: [meetingId], references: [id])
   embedding Unsupported("vector(768)")
+}
+
+enum TranscriptionJobStatus {
+  WAITING
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model TranscriptionJob {
+  id               String                 @id @default(uuid())
+  sourceId         String                 @unique
+  meetingId        String
+  sessionId        String?
+  transcriptionUrl String?
+  filename         String?
+  status           TranscriptionJobStatus @default(WAITING)
+  attempts         Int                    @default(0)
+  availableAt      DateTime               @default(now())
+  leaseToken       String?
+  leaseExpiresAt   DateTime?
+  lastError        String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  meeting          Meeting                @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  segments         TranscriptSegment[]
+
+  @@index([status, availableAt])
+  @@index([meetingId])
+}
+
+model TranscriptSegment {
+  id                 String           @id @default(uuid())
+  meetingId          String
+  transcriptionJobId String
+  sequence           Int
+  sessionId          String
+  speakerId          String
+  speakerName        String?
+  startedAt          DateTime
+  endedAt            DateTime
+  startMs            Int
+  endMs              Int
+  text               String
+  createdAt          DateTime         @default(now())
+  meeting            Meeting          @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  transcriptionJob   TranscriptionJob @relation(fields: [transcriptionJobId], references: [id], onDelete: Cascade)
+
+  @@unique([transcriptionJobId, sequence])
+  @@index([meetingId, startMs])
+  @@index([meetingId, sessionId])
 }

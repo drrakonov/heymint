@@ -23,18 +23,33 @@ export const handleSummaryChat = async (req: Request, res: Response): Promise<an
     try {
         const meetingCode = req.params.id;
         const { question } = req.body;
+        const userId = (req as any).user?.id as string | undefined;
 
-        if(!meetingCode || !question) {
+        if(!meetingCode || !question || !userId) {
             return res.status(400).json({ success: false, message: "meetingCode and question is required" })
         }
 
         const meeting = await prisma.meeting.findUnique({
             where: { meetingCode: String(meetingCode) },
-            select: { id: true, summary: true }
+            select: {
+                id: true,
+                isPaid: true,
+                createdById: true,
+                summary: true,
+                purchases: {
+                    where: { userId },
+                    take: 1,
+                    select: { id: true }
+                }
+            }
         })
 
         if(!meeting) {
             return res.status(404).json({ success: false, message: "Meeting not found" })
+        }
+
+        if (meeting.isPaid && meeting.createdById !== userId && meeting.purchases.length === 0) {
+            return res.status(403).json({ success: false, message: "You do not have access to this meeting chat" });
         }
 
         const questionEmbedding = await getEmbbedText(question)

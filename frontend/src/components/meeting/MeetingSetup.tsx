@@ -1,5 +1,5 @@
 import { DeviceSettings, useCall, VideoPreview } from "@stream-io/video-react-sdk";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import toast from "react-hot-toast";
 import api from "@/lib/axios";
@@ -26,7 +26,25 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
         throw new Error("useCall must be in streamCall componenet");
     }
 
-    const handleProtectedMeetingAndValidate = async () => {
+    const joinCallAndStartRecording = async () => {
+        await call.join();
+
+        const isHost = call.state.createdBy?.id === user?.id;
+
+        if (isHost && id) {
+            try {
+                await api.post(`/api/meeting/${id}/recording/start`);
+                toast.success("Meeting recording started");
+            } catch (error) {
+                console.error("Failed to start meeting recording", error);
+                toast.error("Meeting joined, but recording could not start");
+            }
+        }
+
+        setIsSetUpComplete(true);
+    };
+
+    const handleProtectedMeetingAndValidate = useCallback(async () => {
         try {
 
             if (!user || !id) {
@@ -48,7 +66,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
             toast.error("Failed to join");
             console.error("Failed to validate the meeting", err);
         }
-    }
+    }, [id, user]);
 
     const handleJoinMeeting = async () => {
         if (!user) {
@@ -69,8 +87,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
 
                 if (res.data.success) {
                     if (res.data.isMatched) {
-                        call.join();
-                        setIsSetUpComplete(true);
+                        await joinCallAndStartRecording();
                         return;
                     } else {
                         toast.error("Enter valid password");
@@ -84,8 +101,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
                 }
 
             } else {
-                call.join();
-                setIsSetUpComplete(true);
+                await joinCallAndStartRecording();
             }
 
         } catch (err) {
@@ -102,7 +118,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
             setIsMeetingProtected(isProtected);
         }
         checkIsProtected();
-    }, [])
+    }, [handleProtectedMeetingAndValidate])
 
 
     useEffect(() => {

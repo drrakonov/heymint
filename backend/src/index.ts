@@ -8,6 +8,7 @@ import meetingRoutes from './routes/meeting.routes'
 import cors from 'cors'
 import passport from './controllers/passport.controller';
 import limiter from './middlewares/ratelimiter.middleware';
+import { handleStreamWebhook } from './controllers/streamWebhook.controller';
 
 
 const app = express()
@@ -17,6 +18,11 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN,
   credentials: true
 }));
+app.post(
+  "/api/webhooks/stream",
+  express.raw({ type: "application/json" }),
+  handleStreamWebhook
+);
 app.use(express.json({
   limit: "20kb"
 }));
