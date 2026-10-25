@@ -1,4 +1,4 @@
-import { CalendarClock, ClipboardList, CreditCard, LayoutDashboard, LifeBuoy, Settings, User } from "lucide-react";
+import { CalendarClock, LayoutDashboard, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const SidebarMobile = () => {
@@ -8,8 +8,6 @@ const SidebarMobile = () => {
   const items = [
     { icon: <LayoutDashboard size={20} />, to: "/dashboard" },
     { icon: <CalendarClock size={20} />, to: "/dashboard/meetings" },
-    { icon: <ClipboardList size={20} />, to: "/dashboard/bookings" },
-    { icon: <CreditCard size={20} />, to: "/dashboard/payments" },
     { icon: <User size={20} />, to: "/dashboard/profile" },
   ];
 

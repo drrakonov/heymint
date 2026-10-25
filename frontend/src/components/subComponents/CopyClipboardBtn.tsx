@@ -7,7 +7,7 @@ const CopyClipboardBtn = ({ meetingCode }: { meetingCode: string }) => {
         try {
             await navigator.clipboard.writeText(meetingCode);
             toast.success("Code copied to clipboard!")
-        } catch (err) {
+        } catch {
             console.log("Failed to copy code in clipboard");
         }
     }

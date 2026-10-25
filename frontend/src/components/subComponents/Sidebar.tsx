@@ -21,7 +21,7 @@ const Sidebar = ({ children }: { children: ReactNode }) => {
 
     window.addEventListener("resize", handleSidebar);
     return () => window.removeEventListener("resize", handleSidebar);
-  }, []);
+  }, [setExpanded]);
 
 
   return (
@@ -46,7 +46,7 @@ const Sidebar = ({ children }: { children: ReactNode }) => {
   )
 }
 
-export function SidebarItems({ icon, text, to }: any) {
+export function SidebarItems({ icon, text, to }: { icon: ReactNode; text: string; to: string }) {
   const { expanded } = useContext(SideBarContext);
   const location = useLocation();
   const navigate = useNavigate();

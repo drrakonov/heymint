@@ -1,43 +1,18 @@
-import { CalendarCheckIcon, CheckCircle2, IndianRupee, MoveRightIcon, Users } from "lucide-react"
+import { CalendarCheckIcon, CheckCircle2, Globe2, MoveRightIcon, ShieldCheck, Users } from "lucide-react"
 import { Card, CardContent } from "../ui/card"
 import { useNavigate } from "react-router-dom"
 import { useUserStore } from "@/store/userStore"
 import { AnimatePresence } from "framer-motion"
 import { motion } from 'motion/react'
 import { useEffect, useState } from "react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import Loader from "../subComponents/Loader"
 import api from "@/lib/axios"
 
 interface dashboardStatsProps {
-    totalEarning: number; totalMeetings: number; myTotalMeetings: number; completedMeetings: number; activeUsers: number;
+    protectedMeetings: number; totalMeetings: number; myTotalMeetings: number; completedMeetings: number; activeUsers: number;
 }
-type Meetings = { id: string; title: string; type: "paid" | "free" }
+type Meetings = { id: string; title: string; type: "protected" | "free" }
 interface MyMeetingsProps { meetings: Meetings[]; }
-
-const DashboardGraph = () => {
-    const data = [
-        { month: "Jan", earnings: 0 }, { month: "Feb", earnings: 0 }, { month: "Mar", earnings: 0 },
-        { month: "Apr", earnings: 0 }, { month: "May", earnings: 0 },
-    ];
-
-    return (
-        <div className="bg-cardbg p-6 md:p-8 rounded-xl border border-border w-full shadow-sm">
-            <h2 className="text-lg font-bold text-text-primary mb-6">Revenue Overview</h2>
-            <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={data}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                        <XAxis dataKey="month" stroke="var(--color-text-secondary)" fontSize={12} tickLine={false} axisLine={false} dy={10} />
-                        <YAxis stroke="var(--color-text-secondary)" fontSize={12} tickLine={false} axisLine={false} dx={-10} tickFormatter={(value) => `₹${value}`} />
-                        <Tooltip contentStyle={{ backgroundColor: "var(--color-surface)", borderRadius: "8px", border: "1px solid var(--color-border)", color: "#fff", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} cursor={{ stroke: 'var(--color-border)' }} />
-                        <Line type="monotone" dataKey="earnings" stroke="var(--color-primary)" strokeWidth={3} dot={{ r: 4, fill: "var(--color-surface)", stroke: "var(--color-primary)", strokeWidth: 2 }} activeDot={{ r: 6, fill: "var(--color-primary)", stroke: "var(--color-primary)" }} />
-                    </LineChart>
-                </ResponsiveContainer>
-            </div>
-        </div>
-    )
-}
 
 const UserCard = () => {
     const navigate = useNavigate();
@@ -68,15 +43,15 @@ const UserCard = () => {
 }
 
 const MyMeetings = ({ meetings }: MyMeetingsProps) => {
-    const [activeTab, setActiveTab] = useState<"all" | "free" | "paid">("all")
+    const [activeTab, setActiveTab] = useState<"all" | "free" | "protected">("all")
     const filteredMeetings = activeTab === "all" ? meetings : meetings.filter((m) => m.type === activeTab);
 
     return (
         <div className="h-64 md:h-[calc(100%-14rem)] w-full bg-cardbg rounded-xl border border-border p-5 flex flex-col shadow-sm mt-4">
             <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider mb-4">Quick Agenda</h3>
             <div className="flex gap-4 mb-4 border-b border-border">
-                {["all", "free", "paid"].map((tab) => (
-                    <button key={tab} onClick={() => setActiveTab(tab as "all" | "free" | "paid")} className={`pb-2 text-xs font-bold capitalize transition-colors relative ${activeTab === tab ? "text-primary" : "text-text-secondary hover:text-text-primary"}`}>
+                {["all", "free", "protected"].map((tab) => (
+                    <button key={tab} onClick={() => setActiveTab(tab as "all" | "free" | "protected")} className={`pb-2 text-xs font-bold capitalize transition-colors relative ${activeTab === tab ? "text-primary" : "text-text-secondary hover:text-text-primary"}`}>
                         {tab}
                         {activeTab === tab && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full" />}
                     </button>
@@ -103,16 +78,17 @@ const MyMeetings = ({ meetings }: MyMeetingsProps) => {
     )
 }
 
-const DashboardStats = ({ totalEarning, myTotalMeetings, completedMeetings, activeUsers }: dashboardStatsProps) => {
+const DashboardStats = ({ protectedMeetings, totalMeetings, myTotalMeetings, completedMeetings, activeUsers }: dashboardStatsProps) => {
     const stats = [
-        { label: "Total Earning", value: `₹${totalEarning}`, icon: IndianRupee, subDetails: "+12% this month" },
-        { label: "My Meetings", value: myTotalMeetings, icon: CalendarCheckIcon, subDetails: "Paid & Scheduled" },
-        { label: "Completed", value: completedMeetings, icon: CheckCircle2, subDetails: "91% completion rate" },
-        { label: "Active Users", value: activeUsers, icon: Users, subDetails: "+15% this month" }
+        { label: "All Meetings", value: totalMeetings, icon: Globe2, subDetails: "Available across HeyMint" },
+        { label: "My Meetings", value: myTotalMeetings, icon: CalendarCheckIcon, subDetails: "Active meetings you created" },
+        { label: "Protected", value: protectedMeetings, icon: ShieldCheck, subDetails: "Participant-only insights" },
+        { label: "Completed", value: completedMeetings, icon: CheckCircle2, subDetails: "Meetings ready for insights" },
+        { label: "Active Users", value: activeUsers, icon: Users, subDetails: "Registered collaborators" }
     ]
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {stats.map((stat) => (
                 <Card key={stat.label} className="bg-cardbg border border-border shadow-sm hover:border-primary/30 transition-colors group">
                     <CardContent className="p-5">
@@ -140,7 +116,7 @@ const Dashboard = () => {
     const [totalMeetings, setTotalMeetings] = useState(0);
     const [activeUsers, setActiveUsers] = useState(0);
     const [completedMeetings, setCompletedMeetings] = useState(0);
-    const [totalEarning, setTotalEarning] = useState(0);
+    const [protectedMeetings, setProtectedMeetings] = useState(0);
     const [MyAllMeetings, setMyAllMeetings] = useState<Meetings[]>([]);
 
     useEffect(() => {
@@ -155,11 +131,15 @@ const Dashboard = () => {
                     setActiveUsers(stats.activeUsers);
                     setCompletedMeetings(stats.completedMeetings);
                     setMyTotalMeetings(stats.myTotalMeetings);
-                    setTotalEarning(stats.totalEarning);
+                    setProtectedMeetings(stats.protectedMeetings);
                     setTotalMeetings(stats.totalMeetings);
                     setMyAllMeetings(allMeetingsRes.data.myMeetings);
                 }
-            } catch (err) { } finally { setIsLoading(false); }
+            } catch (error) {
+                console.error("Failed to load dashboard", error);
+            } finally {
+                setIsLoading(false);
+            }
         }
         getDashboardStats();
     }, [user])
@@ -169,13 +149,12 @@ const Dashboard = () => {
         <div className="w-full h-full p-6 md:p-10 max-w-7xl mx-auto">
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-text-primary">Dashboard</h1>
-                <p className="text-sm text-text-secondary mt-1">Here is a summary of your monetization and meeting metrics.</p>
+                <p className="text-sm text-text-secondary mt-1">Your meetings, activity, and access overview.</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 flex flex-col h-full">
-                    <DashboardGraph />
-                    <DashboardStats totalEarning={totalEarning} totalMeetings={totalMeetings} activeUsers={activeUsers} completedMeetings={completedMeetings} myTotalMeetings={myTotalMeetings} />
+                    <DashboardStats protectedMeetings={protectedMeetings} totalMeetings={totalMeetings} activeUsers={activeUsers} completedMeetings={completedMeetings} myTotalMeetings={myTotalMeetings} />
                 </div>
                 <div className="md:col-span-1 flex flex-col h-full">
                     <UserCard />

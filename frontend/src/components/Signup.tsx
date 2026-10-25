@@ -11,6 +11,7 @@ import google from '@/assets/logo/google.svg'
 import Otp from "./subComponents/Otp"
 import toast from "react-hot-toast"
 import api from "@/lib/axios"
+import axios from "axios"
 
 const Signup = () => {
   const [email, setEmail] = useState("");
@@ -32,11 +33,11 @@ const Signup = () => {
       }else {
         toast.error("Failed to signup");
       }
-    }catch(err: any) {
-      if(err.response?.status === 409) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 409) {
         toast.success("User already exists");
       }
-      console.log(err);
+      console.error("Failed to send signup OTP", error);
     }
   };
 

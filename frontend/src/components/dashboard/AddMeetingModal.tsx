@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Calendar, Copy, IndianRupee } from "lucide-react"
+import { Calendar, Copy, LockKeyhole } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { useUserStore } from "@/store/userStore"
-import { Call, useStreamVideoClient } from "@stream-io/video-react-sdk"
+import { useStreamVideoClient } from "@stream-io/video-react-sdk"
 import { useNavigate } from "react-router-dom"
 import api from "@/lib/axios"
 import toast from "react-hot-toast"
@@ -28,10 +28,6 @@ interface MeetingFormProps {
   setIsScheduled: (v: boolean) => void;
   meetingDate: string;
   setMeetingDate: (v: string) => void;
-  isPaid: boolean;
-  setIsPaid: (v: boolean) => void;
-  price: number;
-  setPrice: (v: number) => void;
   setUpMeeting: () => void;
   isCreating: boolean;
 }
@@ -82,10 +78,6 @@ const MeetingForm = ({
   setIsScheduled,
   meetingDate,
   setMeetingDate,
-  isPaid,
-  setIsPaid,
-  price,
-  setPrice,
   setUpMeeting,
   isCreating,
 }: MeetingFormProps) => {
@@ -117,11 +109,17 @@ const MeetingForm = ({
 
             {/* ---------- isPROTECTED FIELDS ---------- */}
 
-            <div className="flex gap-1">
-              <div>
-                <Label className="text-sm font-medium">
-                  Protect
-                </Label>
+            <div className="flex items-center justify-between rounded-lg bg-[var(--color-surface-2)] p-4">
+              <div className="flex gap-3">
+                <LockKeyhole className="mt-0.5 h-4 w-4 text-[var(--color-accent)]" />
+                <div>
+                  <Label className="text-sm font-medium">
+                    Protected meeting
+                  </Label>
+                  <p className="text-xs text-[var(--color-text-secondary)]">
+                    Require a password and limit insights to past participants
+                  </p>
+                </div>
               </div>
               <Switch
                 checked={isProtected}
@@ -136,7 +134,7 @@ const MeetingForm = ({
             {isProtected && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">
-                  Passowrd <span className="text-red-500">*</span>
+                  Password <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   value={meetingPassword}
@@ -190,50 +188,6 @@ const MeetingForm = ({
 
                 </div>
 
-                {/* ---------- PAID TOGGLE ---------- */}
-                <div className="flex items-center justify-between rounded-lg bg-[var(--color-surface-2)] p-3">
-                  <div>
-                    <Label className="text-sm font-medium">
-                      Make this a paid meeting?
-                    </Label>
-                    <p className="text-xs text-[var(--color-text-secondary)]">
-                      Charge attendees to join this meeting
-                    </p>
-                  </div>
-                  <Switch
-                    checked={isPaid}
-                    onCheckedChange={setIsPaid}
-                    className="data-[state=checked]:bg-[var(--color-accent)] data-[state=unchecked]:bg-gray-600"
-                  />
-                </div>
-
-                {/* ---------- PAYMENT DETAILS ---------- */}
-                {isPaid && (
-                  <div className="space-y-4 rounded-lg border border-[var(--color-surface-2)] bg-[var(--color-surface-1)] p-3">
-                    <h4 className="text-sm font-medium uppercase tracking-wide text-[var(--color-text-secondary)]">
-                      Payment Details
-                    </h4>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {/* Price */}
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2 text-sm font-medium">
-                          <IndianRupee className="h-4 w-4" />
-                          Price <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          value={price}
-                          onChange={(e) => setPrice(parseFloat(e.target.value))}
-                          className="border border-[var(--color-surface-2)] bg-[var(--color-surface-2)] focus:ring-2 focus:ring-[var(--color-accent)]"
-                        />
-                      </div>
-
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -256,9 +210,7 @@ export default function CreateMeeting() {
   const [meetingPassword, setMeetingPassword] = useState("");
   const [isScheduled, setIsScheduled] = useState(false)
   const [isProtected, setIsProtected] = useState(false);
-  const [isPaid, setIsPaid] = useState(false)
   const [meetingDate, setMeetingDate] = useState("")
-  const [price, setPrice] = useState(10)
   const [meetingCode, setMeetingCode] = useState("")
   const [isCreating, setIsCreating] = useState(false)
   const [meetingType, setMeetingType] = useState<MeetingType>("quick-meeting");
@@ -269,31 +221,12 @@ export default function CreateMeeting() {
     try {
       await navigator.clipboard.writeText(meetingCode);
       toast.success("Code copied to clipboard!")
-    }catch(err) {
+    } catch {
       console.log("Failed to copy code in clipboard");
     }
   }
-  const resetForm = () => {
-    setMeetingTitle("")
-    setDescription("")
-    setMeetingPassword("")
-    setIsScheduled(false)
-    setIsPaid(false)
-    setIsProtected(false)
-    setMeetingDate("")
-    setPrice(0.0)
-    setMeetingCode("")
-    setMeetingType("quick-meeting");
-  }
-
   const { user } = useUserStore();
   const client = useStreamVideoClient();
-  const [startAtValue, setStartAtValue] = useState({
-    dateTime: new Date(),
-    description: meetingType,
-    link: ''
-  });
-  const [callDetails, setCallDetails] = useState<Call>();
   const navigate = useNavigate();
 
 
@@ -313,26 +246,24 @@ export default function CreateMeeting() {
 
   const setUpMeeting = async () => {
     if (!user) { toast.error("User not authenticated"); return; }
-    try {
+    if (meetingTitle.trim().length < 2) { toast.error("Enter a meeting title"); return; }
+    if (isProtected && meetingPassword.length < 2) { toast.error("Set a valid meeting password"); return; }
+    if (isScheduled && !meetingDate) { toast.error("Choose a meeting date and time"); return; }
 
+    try {
+      setIsCreating(true);
       const code = createMeetingCode();
       setMeetingCode(code);
-
-      if(meetingType === "quick-meeting" || meetingDate === "") {
-        const now = new Date();
-        setMeetingDate(now.toISOString().slice(0, 16));
-      }
+      const startsAt = isScheduled ? new Date(meetingDate) : new Date();
 
       const res = await api.post("api/meeting/setup-meeting", {
         title: meetingTitle,
         description: meetingDescription,
         isScheduled: isScheduled,
-        isPaid: isPaid,
         isProtected: isProtected,
-        price: price,
         createdBy: user.id,
         password: meetingPassword,
-        startingTime: new Date(meetingDate),
+        startingTime: startsAt,
         meetingCode: code
       })
 
@@ -342,7 +273,7 @@ export default function CreateMeeting() {
       }
 
       if(meetingType === "quick-meeting") {
-        await handleCreateMeeting(code);
+        await handleCreateMeeting(code, startsAt);
         return;
       }
       toast.success("meeting created successfully!")
@@ -350,6 +281,9 @@ export default function CreateMeeting() {
 
     } catch (err) {
       console.error("Failed to setup meeting", err);
+      toast.error("Failed to create meeting");
+    } finally {
+      setIsCreating(false);
     }
   }
 
@@ -357,36 +291,24 @@ export default function CreateMeeting() {
 
 
 
-  const handleCreateMeeting = async (id: string) => {
+  const handleCreateMeeting = async (id: string, startsAt: Date) => {
     if (!client) { toast.error("Video client connecting... please try again in a few seconds."); return; }
     if (!user || !id) return;
 
     try {
-      if (!startAtValue.dateTime) return;
-
       const call = client.call("default", id);
 
-      setIsCreating(true);
-
       if (!call) throw new Error("Failed to create call");
-      const startsAt = startAtValue.dateTime.toISOString() ||
-        new Date(Date.now()).toISOString();
-
-      const description = startAtValue.description || 'quick-meeting';
 
       await call.getOrCreate({
         data: {
-          starts_at: startsAt,
+          starts_at: startsAt.toISOString(),
           custom: {
-            description
+            description: "quick-meeting"
           }
         }
       })
-      setCallDetails(call);
-      setIsCreating(false);
-      if (startAtValue.description === "quick-meeting") {
-        navigate(`/meeting/${call.id}`);
-      }
+      navigate(`/meeting/${call.id}`);
 
     } catch (err) {
       console.error("Failed to create meeting", err);
@@ -424,10 +346,6 @@ export default function CreateMeeting() {
                 setIsScheduled={setIsScheduled}
                 meetingDate={meetingDate}
                 setMeetingDate={setMeetingDate}
-                isPaid={isPaid}
-                setIsPaid={setIsPaid}
-                price={price}
-                setPrice={setPrice}
                 setUpMeeting={setUpMeeting}
                 isCreating={isCreating}
               />

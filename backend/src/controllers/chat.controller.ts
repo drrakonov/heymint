@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 import Groq from "groq-sdk";
+import { getMeetingInsightAccess } from "../services/meetingInsightAccess.service";
 
 const prisma = new PrismaClient()
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -29,28 +30,20 @@ export const handleSummaryChat = async (req: Request, res: Response): Promise<an
             return res.status(400).json({ success: false, message: "meetingCode and question is required" })
         }
 
-        const meeting = await prisma.meeting.findUnique({
-            where: { meetingCode: String(meetingCode) },
-            select: {
-                id: true,
-                isPaid: true,
-                createdById: true,
-                summary: true,
-                purchases: {
-                    where: { userId },
-                    take: 1,
-                    select: { id: true }
-                }
-            }
-        })
+        const access = await getMeetingInsightAccess(prisma, String(meetingCode), userId);
 
-        if(!meeting) {
+        if(!access) {
             return res.status(404).json({ success: false, message: "Meeting not found" })
         }
 
-        if (meeting.isPaid && meeting.createdById !== userId && meeting.purchases.length === 0) {
-            return res.status(403).json({ success: false, message: "You do not have access to this meeting chat" });
+        if (!access.canAccess) {
+            return res.status(403).json({ success: false, message: "Only past participants can access this meeting chat" });
         }
+
+        const summary = await prisma.summary.findUnique({
+            where: { meetingId: access.meeting.id },
+            select: { content: true }
+        });
 
         const questionEmbedding = await getEmbbedText(question)
         const vectorString = `[${questionEmbedding.join(",")}]`; 
@@ -59,13 +52,13 @@ export const handleSummaryChat = async (req: Request, res: Response): Promise<an
         const relevantChunks = await prisma.$queryRaw<{content: string, similarity: number}[]>`                                                         
             SELECT content, 1 - (embedding <=> ${vectorString}::vector) AS similarity                                                                   
             FROM "TranscriptChunk"                                                                                                                      
-            WHERE "meetingId" = ${meeting.id}                                                                                                           
+            WHERE "meetingId" = ${access.meeting.id}
             ORDER BY embedding <=> ${vectorString}::vector                                                                                              
             LIMIT 5                                                                                                                                     
         `;
 
         const chunksExist = relevantChunks && relevantChunks.length > 0;
-        const summaryExists = meeting.summary && meeting.summary.content !== "Empty";
+        const summaryExists = summary && summary.content !== "Empty";
 
         if (!chunksExist && !summaryExists) {                                                                                           
             return res.status(200).json({                                                                                                               
@@ -77,7 +70,7 @@ export const handleSummaryChat = async (req: Request, res: Response): Promise<an
         // Build the context for the LLM
         let contextText = "";
         if (summaryExists) {
-            contextText += `--- MEETING SUMMARY ---\n${meeting.summary?.content}\n\n`;
+            contextText += `--- MEETING SUMMARY ---\n${summary.content}\n\n`;
         }
         if (chunksExist) {
             contextText += `--- RELEVANT TRANSCRIPT EXCERPTS ---\n${relevantChunks.map(c => c.content).join("\n\n")}`;

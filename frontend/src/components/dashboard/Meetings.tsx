@@ -1,14 +1,11 @@
-import { Calendar, Clock, Filter, Search, SortAsc, Trash2, Users, Video, Sparkles, ArrowRight } from "lucide-react";
+import { Calendar, Clock, LockKeyhole, Search, Trash2, Users, Video, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
+import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { MeetingStats } from "../subComponents/MeetingStats";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { EmptyState } from "../subComponents/EmptyStateMeeting";
 import api from "@/lib/axios";
-import Loader from "../subComponents/Loader";
 import { useStreamVideoClient } from "@stream-io/video-react-sdk";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -20,28 +17,24 @@ interface MeetingCardProps {
     title: string
     hostName: string
     description: string
-    type: "Free" | "Paid"
-    price?: number
+    type: "Free" | "Protected"
     meetingTime?: string
     isInstant?: boolean
     participantCount?: number
     meetingCode: string
     createdById: string
     isComplete?: boolean;
+    canAccessInsights: boolean;
     setMeetings: React.Dispatch<React.SetStateAction<Meeting[]>>;
-    bookedMeetings: string[];
 }
 
-export function MeetingCard({ meetingId, title, hostName, description, type, price, meetingTime, isInstant = false, participantCount, meetingCode, createdById, isComplete = false, setMeetings, bookedMeetings }: MeetingCardProps) {
+export function MeetingCard({ title, hostName, description, type, meetingTime, isInstant = false, participantCount, meetingCode, createdById, isComplete = false, canAccessInsights, setMeetings }: MeetingCardProps) {
     const navigate = useNavigate();
     const client = useStreamVideoClient();
     const { user } = useUserStore();
-    const isBooked = type == "Paid" ? (bookedMeetings.includes(meetingId) || createdById === user?.id) : true;
-
     const handleJoinMeeting = async () => {
         try {
             if (!client || !user) return toast.error("Failed to join");
-            if (!isBooked) return toast.error("Purchase to join");
             const call = client.call("default", meetingCode);
             if (!call) throw new Error("Failed to create call");
 
@@ -50,17 +43,17 @@ export function MeetingCard({ meetingId, title, hostName, description, type, pri
                 navigate(`/meeting/${call.id}`);
                 return;
             }
-            try { await call.get(); navigate(`/meeting/${call.id}`); } 
-            catch (err) { toast.error("Meeting not available yet.") }
-        } catch (err) { toast.error("Unable to join meeting"); }
+            try { await call.get(); navigate(`/meeting/${call.id}`); }
+            catch { toast.error("Meeting not available yet.") }
+        } catch { toast.error("Unable to join meeting"); }
     }
 
     const handleDeleteMeeting = async () => {
         if (!user || user.id !== createdById) return;
         try {
-            const res = await api.post("/api/meeting/delete-meeting", { userId: user.id, meetingCode, isComplete: false });
+            const res = await api.post("/api/meeting/delete-meeting", { meetingCode, isComplete: false });
             if (res.data.success) { toast.success("Meeting deleted"); setMeetings(prev => prev.filter(m => m.meetingCode !== meetingCode)); }
-        } catch (err) { toast.error("Failed to delete!") }
+        } catch { toast.error("Failed to delete!") }
     }
 
     return (
@@ -78,8 +71,7 @@ export function MeetingCard({ meetingId, title, hostName, description, type, pri
 
                     <div className="flex flex-col items-end gap-3">
                         <div className="flex gap-2 items-center">
-                            <Badge variant="outline" className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md border ${type === "Paid" ? "bg-primary/10 text-primary border-primary/20" : "bg-surface text-text-secondary border-border"}`}>{type}</Badge>
-                            {type === "Paid" && price && <span className="text-primary text-sm font-bold">₹{price}</span>}
+                            <Badge variant="outline" className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md border ${type === "Protected" ? "bg-primary/10 text-primary border-primary/20" : "bg-surface text-text-secondary border-border"}`}>{type}</Badge>
                         </div>
                         <div className="flex items-center gap-2">
                             <CopyClipboardBtn meetingCode={meetingCode} />
@@ -99,10 +91,14 @@ export function MeetingCard({ meetingId, title, hostName, description, type, pri
                     </div>
                     
                     <div>
-                        {isComplete ? (
+                        {isComplete && canAccessInsights ? (
                             <Button onClick={() => navigate(`/meeting/${meetingCode}/insights`)} className="bg-primary hover:bg-primary/90 text-black text-sm font-bold px-4 py-2 rounded-lg">
                                 <Sparkles size={14} className="mr-2" /> View Insights
                             </Button>
+                        ) : isComplete ? (
+                            <span className="flex items-center gap-2 text-xs font-medium text-text-secondary">
+                                <LockKeyhole size={14} /> Participants only
+                            </span>
                         ) : (
                             <Button onClick={handleJoinMeeting} className="bg-surface hover:bg-surface-1 border border-border text-text-primary text-sm font-bold px-4 py-2 rounded-lg">
                                 {user?.id === createdById ? "Start Session" : "Join Now"}
@@ -115,21 +111,19 @@ export function MeetingCard({ meetingId, title, hostName, description, type, pri
     )
 }
 
-type Meeting = { meetingId: string, title: string, hostName: string, description: string, type: "Free" | "Paid", price?: number, isProtected: boolean, meetingTime?: string, isInstant?: boolean, meetingCode: string, createdById: string, isComplete?: boolean }
+type Meeting = { meetingId: string, title: string, hostName: string, description: string, type: "Free" | "Protected", isProtected: boolean, meetingTime?: string, isInstant?: boolean, meetingCode: string, createdById: string, isComplete?: boolean, canAccessInsights: boolean }
 
 const Meetings = () => {
     const [searchQuery, setSearchQuery] = useState("");
-    const [filterType, setFilterType] = useState<"all" | "free" | "paid" | "instant">("all");
+    const [filterType, setFilterType] = useState<"all" | "free" | "protected" | "instant">("all");
     const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
     const [meetings, setMeetings] = useState<Meeting[]>([]);
-    const [bookedMeetings, setBookedMeetings] = useState<string[]>([]);
-    const { user } = useUserStore();
 
     const filteredMeetings = useMemo(() => {
         return meetings.filter(m => {
             const isTabMatch = activeTab === "upcoming" ? !m.isComplete : m.isComplete;
             const matchesSearch = m.title.toLowerCase().includes(searchQuery.toLowerCase()) || m.hostName.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesFilter = filterType === "all" || (filterType === "free" && m.type === "Free") || (filterType === "paid" && m.type === "Paid") || (filterType === "instant" && m.isInstant);
+            const matchesFilter = filterType === "all" || (filterType === "free" && m.type === "Free") || (filterType === "protected" && m.type === "Protected") || (filterType === "instant" && m.isInstant);
             return isTabMatch && matchesSearch && matchesFilter;
         });
     }, [searchQuery, filterType, meetings, activeTab]);
@@ -137,16 +131,17 @@ const Meetings = () => {
     useEffect(() => {
         const getMeetings = async () => {
             try {
-                const res = await api.get("/api/meeting/get-meetings", { params: { userId: user?.id } });
+                const res = await api.get("/api/meeting/get-meetings");
                 if (res.data.success) {
-                    const real = res.data.meetings;
-                    setMeetings(real);
-                    setBookedMeetings(res.data.purchases);
+                    setMeetings(res.data.meetings);
                 }
-            } catch (err) {}
+            } catch (error) {
+                console.error("Failed to load meetings", error);
+                toast.error("Failed to load meetings");
+            }
         }
         getMeetings();
-    }, [user]);
+    }, []);
 
     return (
         <div className="pt-8 min-h-screen px-4 md:px-10 bg-background pb-20">
@@ -166,17 +161,17 @@ const Meetings = () => {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary h-4 w-4" />
                         <Input placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 bg-surface border-border text-text-primary focus:border-primary rounded-lg" />
                     </div>
-                    <Select value={filterType} onValueChange={(val: any) => setFilterType(val)}>
+                    <Select value={filterType} onValueChange={(value: "all" | "free" | "protected" | "instant") => setFilterType(value)}>
                         <SelectTrigger className="w-full sm:w-40 bg-surface border-border text-text-primary rounded-lg"><SelectValue /></SelectTrigger>
                         <SelectContent className="bg-cardbg border-border text-text-primary">
-                            <SelectItem value="all">All</SelectItem><SelectItem value="free">Free</SelectItem><SelectItem value="paid">Paid</SelectItem>
+                            <SelectItem value="all">All</SelectItem><SelectItem value="free">Free</SelectItem><SelectItem value="protected">Protected</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
 
                 <div className="space-y-4">
                     {filteredMeetings.length > 0 ? (
-                        filteredMeetings.map((m, i) => <MeetingCard key={i} {...m} setMeetings={setMeetings} bookedMeetings={bookedMeetings} />)
+                        filteredMeetings.map((meeting) => <MeetingCard key={meeting.meetingId} {...meeting} setMeetings={setMeetings} />)
                     ) : (
                         <div className="flex flex-col items-center justify-center py-20 text-text-secondary">
                             <Video size={48} className="mb-4 opacity-30" />

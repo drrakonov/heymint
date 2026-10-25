@@ -35,7 +35,7 @@ export default function JoinMeetingModal() {
       try {
         await call.get();
         navigate(`/meeting/${meetingId}`);
-      } catch (err) {
+      } catch {
         toast.error("Meeting not available yet. Wait for the host to start.");
       }
 

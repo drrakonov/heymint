@@ -1,5 +1,5 @@
-import { Response, Request } from "express"
 import { PrismaClient } from "@prisma/client";
+import { getMeetingInsightAccess } from "../services/meetingInsightAccess.service";
 
 const prisma = new PrismaClient();
 export const getMeetingSummary = async (req: any, res: any) => {
@@ -11,47 +11,33 @@ export const getMeetingSummary = async (req: any, res: any) => {
             return res.status(401).json({ success: false, message: "User is not authenticated" });
         }
 
-        const meeting = await prisma.meeting.findUnique({
-            where: { meetingCode: String(id) },
+        const access = await getMeetingInsightAccess(prisma, String(id), userId);
+
+        if (!access) {
+            return res.status(404).json({ success: false, message: "Meeting not found" });
+        }
+
+        if (!access.canAccess) {
+            return res.status(403).json({ success: false, message: "Only past participants can access these meeting insights" });
+        }
+
+        const insightData = await prisma.meeting.findUnique({
+            where: { id: access.meeting.id },
             select: {
-                id: true,
-                title: true,
-                startingTime: true,
-                isPaid: true,
-                createdById: true,
                 summary: { select: { content: true } },
                 transcriptionJobs: {
                     orderBy: { createdAt: "desc" },
                     take: 1,
                     select: { status: true, attempts: true }
-                },
-                purchases: {
-                    where: { userId },
-                    take: 1,
-                    select: { id: true }
                 }
             }
         });
 
-        if (!meeting) {
-            return res.status(404).json({ success: false, message: "Meeting not found" });
-        }
+        const meetingDetails = access.meeting;
 
-        if (meeting.isPaid && meeting.createdById !== userId && meeting.purchases.length === 0) {
-            return res.status(403).json({ success: false, message: "You do not have access to these meeting insights" });
-        }
+        const job = insightData?.transcriptionJobs[0];
 
-        const meetingDetails = {
-            id: meeting.id,
-            title: meeting.title,
-            startingTime: meeting.startingTime,
-            isPaid: meeting.isPaid,
-            createdById: meeting.createdById
-        };
-
-        const job = meeting.transcriptionJobs[0];
-
-        if (!meeting.summary || (job && job.status !== "COMPLETED")) {
+        if (!insightData?.summary || (job && job.status !== "COMPLETED")) {
             const maximumAttempts = Number(process.env.TRANSCRIPTION_WORKER_MAX_ATTEMPTS || 5);
             const hasPermanentlyFailed = job?.status === "FAILED" && job.attempts >= maximumAttempts;
 
@@ -72,7 +58,7 @@ export const getMeetingSummary = async (req: any, res: any) => {
             });
         }
 
-        return res.status(200).json({ success: true, summary: meeting.summary.content, meeting: meetingDetails });
+        return res.status(200).json({ success: true, summary: insightData.summary.content, meeting: meetingDetails });
     } catch (err) {
         console.error("Failed to fetch summary:", err);
         return res.status(500).json({ success: false, message: "Internal server error" });

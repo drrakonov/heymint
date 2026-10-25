@@ -1,4 +1,4 @@
-import { CalendarClock, ClipboardList, CreditCard, LayoutDashboard, LifeBuoy, User } from "lucide-react";
+import { CalendarClock, LayoutDashboard, LifeBuoy, User } from "lucide-react";
 import { Outlet } from "react-router-dom";
 import { useSidebarStore } from "@/store/sidebarStore";
 import DashNav from "./DashNav";
@@ -19,8 +19,6 @@ const DashboardLayout = () => {
             <SidebarItems icon={<User size={20} />} text="Profile" to="/dashboard/profile" />
             <SidebarItems icon={<LayoutDashboard size={20} />} text="Dashboard" to="/dashboard" />
             <SidebarItems icon={<CalendarClock size={20} />} text="Meetings" to="/dashboard/meetings" />
-            <SidebarItems icon={<ClipboardList size={20} />} text="Bookings" to="/dashboard/bookings" />
-            <SidebarItems icon={<CreditCard size={20} />} text="Payments" to="/dashboard/payments" />
             <hr className="my-3 text-slate-400" />
             <SidebarItems icon={<LifeBuoy size={20} />} text="Help" to="/dashboard/help" />
           </Sidebar>
