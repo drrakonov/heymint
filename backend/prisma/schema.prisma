@@ -10,61 +10,50 @@ datasource db {
 }
 
 model User {
-  id            String            @id @default(uuid())
-  name          String
-  email         String            @unique
-  password      String?
-  googleId      String?           @unique
-  provider      Provider          @default(local)
-  meetings      Meeting[]         @relation("createdMeetings")
-  purchases     MeetingPurchase[]
-  payments      Payment[]
-  refreshTokens RefreshToken[]
+  id                    String               @id @default(uuid())
+  name                  String
+  email                 String               @unique
+  password              String?
+  googleId              String?              @unique
+  provider              Provider             @default(local)
+  meetings              Meeting[]            @relation("createdMeetings")
+  meetingParticipations MeetingParticipant[]
+  refreshTokens         RefreshToken[]
 }
 
 model Meeting {
-  id                 String              @id @default(uuid())
+  id                 String               @id @default(uuid())
   title              String
   desc               String
   createdById        String
-  createdAt          DateTime            @default(now())
-  price              Float
-  isPaid             Boolean
-  isDeleted          Boolean             @default(false)
-  isComplete         Boolean             @default(false)
+  createdAt          DateTime             @default(now())
+  isDeleted          Boolean              @default(false)
+  isComplete         Boolean              @default(false)
   startingTime       DateTime
   isProtected        Boolean
   password           String?
-  meetingCode        String              @unique
-  isScheduled        Boolean             @default(false)
-  createdBy          User                @relation("createdMeetings", fields: [createdById], references: [id])
-  purchases          MeetingPurchase[]
-  payments           Payment[]
+  meetingCode        String               @unique
+  isScheduled        Boolean              @default(false)
+  createdBy          User                 @relation("createdMeetings", fields: [createdById], references: [id])
+  participants       MeetingParticipant[]
   summary            Summary?
   transcriptChunks   TranscriptChunk[]
   transcriptSegments TranscriptSegment[]
   transcriptionJobs  TranscriptionJob[]
 }
 
-model MeetingPurchase {
-  id          String   @id @default(uuid())
-  meetingId   String
-  userId      String
-  purchasedAt DateTime @default(now())
-  amountPaid  Float
-  meeting     Meeting  @relation(fields: [meetingId], references: [id])
-  user        User     @relation(fields: [userId], references: [id])
-}
+model MeetingParticipant {
+  id            String   @id @default(uuid())
+  meetingId     String
+  userId        String
+  firstJoinedAt DateTime @default(now())
+  lastJoinedAt  DateTime @default(now())
+  joinCount     Int      @default(1)
+  meeting       Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-model Payment {
-  id        String        @id @default(uuid())
-  userId    String
-  meetingId String
-  tnxId     String        @unique
-  status    PaymentStatus @default(pending)
-  createdAt DateTime      @default(now())
-  meeting   Meeting       @relation(fields: [meetingId], references: [id])
-  user      User          @relation(fields: [userId], references: [id])
+  @@unique([meetingId, userId])
+  @@index([userId, firstJoinedAt])
 }
 
 model RefreshToken {
@@ -90,12 +79,6 @@ model Otp {
 enum Provider {
   local
   google
-}
-
-enum PaymentStatus {
-  pending
-  success
-  failed
 }
 
 model Summary {

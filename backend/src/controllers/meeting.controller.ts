@@ -1,7 +1,7 @@
 import { UserRequest } from "@stream-io/node-sdk"
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
-import { Bookings, Meeting, Payments } from "../utils/Types";
+import { Prisma, PrismaClient } from "@prisma/client";
+import { Meeting } from "../utils/Types";
 import { streamClient } from "../utils/streamClient";
 
 
@@ -48,8 +48,6 @@ export const handleMeetingSetup = async (req: Request, res: Response): Promise<a
             title,
             description,
             isScheduled,
-            isPaid,
-            price,
             startingTime,
             createdBy,
             isProtected,
@@ -67,8 +65,6 @@ export const handleMeetingSetup = async (req: Request, res: Response): Promise<a
                 createdById: createdBy,
                 startingTime: isScheduled ? startingTime : new Date(),
                 isScheduled: isScheduled,
-                price: isPaid ? price : 0,
-                isPaid: isPaid,
                 meetingCode: meetingCode
             }
         })
@@ -83,8 +79,11 @@ export const handleMeetingSetup = async (req: Request, res: Response): Promise<a
 
 export const getAllMeetings = async (req: Request, res: Response): Promise<any> => {
     try {
+        const userId = (req as any).user?.id as string | undefined;
 
-        const { userId } = req.query
+        if (!userId) {
+            return res.status(401).json({ success: false, message: "User is not authenticated" });
+        }
 
         const meeting = await prisma.meeting.findMany({
             where: {
@@ -95,13 +94,10 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
                 id: true,
                 title: true,
                 desc: true,
-                isPaid: true,
                 isProtected: true,
-                password: true,
                 createdAt: true,
                 startingTime: true,
                 isScheduled: true,
-                price: true,
                 createdBy: {
                     select: {
                         name: true
@@ -109,124 +105,34 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
                 },
                 createdById: true,
                 isComplete: true,
-                meetingCode: true
+                meetingCode: true,
+                participants: {
+                    where: { userId },
+                    take: 1,
+                    select: { id: true }
+                }
             },
-        });
-
-        const meetingPurchased = await prisma.meetingPurchase.findMany({
-            where: {
-                userId: String(userId),
-                meeting: {
-                    isComplete: undefined,
-                    OR: [ { isDeleted: false }, { isComplete: true } ]
-            }
-            },
-            select: { meetingId: true }
         });
 
         const meetings: Meeting[] = meeting.map((m : any) => ({
             meetingId: m.id,
             title: m.title,
             description: m.desc,
-            type: m.isPaid ? "Paid" : "Free",
+            type: m.isProtected ? "Protected" : "Free",
             hostName: m.createdBy.name,
-            price: m.price,
             meetingTime: String(m.startingTime),
             isProtected: m.isProtected,
             isInstant: m.isScheduled ? false : true,
             meetingCode: m.meetingCode,
             createdById: m.createdById,
-            isComplete: m.isComplete
+            isComplete: m.isComplete,
+            canAccessInsights: !m.isProtected || m.createdById === userId || m.participants.length > 0
         }))
 
-        const purchases = meetingPurchased.map((p : any) => p.meetingId);
-
-
-        res.status(201).json({ success: true, message: "Fetched all the meetings", meetings, purchases });
+        res.status(200).json({ success: true, message: "Fetched all the meetings", meetings });
     } catch (err) {
         console.log("Failed to get meetings", err);
         return res.status(500).json({ success: false, message: "failed to get all the meetings" });
-    }
-}
-
-export const getAllBookedMeetings = async (req: Request, res: Response): Promise<any> => {
-    try {
-        const { userId } = req.query
-
-        if (!userId) {
-            throw new Error("userId not found");
-        }
-
-        const purchasedMeetings = await prisma.meetingPurchase.findMany({
-            where: {
-                userId: String(userId),
-                meeting: {
-                    isComplete: undefined,
-                    OR: [ { isDeleted: false }, { isComplete: true } ]
-            }
-            },
-            include: {
-                meeting: {
-                    include: {
-                        createdBy: true
-                    }
-                }
-            }
-        });
-
-
-        const bookings: Bookings[] = purchasedMeetings.map((b : any) => ({
-            meetingId: b.meeting.id,
-            title: b.meeting.title,
-            hostName: b.meeting.createdBy.name,
-            description: b.meeting.desc,
-            price: b.meeting.price,
-            isProtected: b.meeting.isProtected,
-            meetingTime: String(b.meeting.startingTime),
-            meetingCode: b.meeting.meetingCode,
-            isInstant: b.meeting.isScheduled ? false : true,
-            createdById: b.meeting.createdById
-        }));
-
-        res.status(201).json({ success: true, message: "All booked meetings", bookings })
-
-    } catch (err) {
-        console.log("Failed to get booked meetings", err);
-        return res.status(500).json({ success: false, message: "Failed to get booked meetings" })
-    }
-}
-
-export const getAllPayments = async (req: Request, res: Response): Promise<any> => {
-    try {
-        const { userId } = req.query;
-        if(!userId) throw new Error("userId not found");
-
-        const getPayments = await prisma.payment.findMany({
-            where: { userId: String(userId) },
-            include: {
-                meeting: {
-                    select: {
-                        title: true,
-                        price: true
-                    }
-                }
-            }
-        });
-
-        const payments: Payments[] = getPayments.map((payment : any) => ({
-            id: payment.tnxId,
-            meetingName: payment.meeting.title,
-            amount: payment.meeting.price,
-            status: payment.status,
-            date: payment.createdAt,
-            paymentMethod: "UPI"
-        }));
-
-        return res.status(201).json({ success: true, message: "All payments", payments });
-
-    }catch(err) {
-        console.log("Failed to get payments", err);
-        return res.status(500).json({ success: false, message: "Failed get the payments" })
     }
 }
 
@@ -234,7 +140,8 @@ export const getAllPayments = async (req: Request, res: Response): Promise<any> 
 
 export const deleteMeeting = async (req: Request, res: Response): Promise<any> => {
     try {
-        const { meetingCode, userId, isComplete } = req.body;
+        const { meetingCode, isComplete } = req.body;
+        const userId = (req as any).user?.id as string | undefined;
 
         if (!meetingCode || !userId) throw new Error("missing meetingCode or userID");
 
@@ -246,8 +153,8 @@ export const deleteMeeting = async (req: Request, res: Response): Promise<any> =
             return res.status(404).json({ success: false, message: "Meeting not found" });
         }
 
-        if (meeting.createdById !== userId || (!isComplete && meeting.isPaid)) {
-            return res.status(403).json({ success: false, message: "You are not authorized to delete this meeting or you can't delete paid meetings" });
+        if (meeting.createdById !== userId) {
+            return res.status(403).json({ success: false, message: "Only the meeting host can delete this meeting" });
         }
         await prisma.meeting.update({
             where: { id: meeting.id },
@@ -268,9 +175,9 @@ export const deleteMeeting = async (req: Request, res: Response): Promise<any> =
 export const isProtectedMeetingValidation = async (req: Request, res: Response): Promise<any> => {
     try {
         const meetingCode = req.query.meetingCode as string;
-        const userId = req.query.userId as string;
+        const userId = (req as any).user?.id as string | undefined;
 
-        if (!meetingCode) {
+        if (!meetingCode || !userId) {
             throw new Error("meetingCode or userId is missing");
         }
 
@@ -284,9 +191,14 @@ export const isProtectedMeetingValidation = async (req: Request, res: Response):
                 meetingCode: meetingCode,
             }
         })
+
+        if (!meeting) {
+            return res.status(404).json({ success: false, message: "Meeting not found" });
+        }
+
         let isProtected = meeting?.isProtected;
         if (userId === meeting?.createdById) isProtected = false;
-        res.status(201).json({ success: true, isProtected });
+        res.status(200).json({ success: true, isProtected });
     } catch (err) {
         res.status(500).json({ success: false, message: "Failed to validate meeting" });
     }
@@ -295,7 +207,7 @@ export const isProtectedMeetingValidation = async (req: Request, res: Response):
 export const validateProtectedPassword = async (req: Request, res: Response): Promise<any> => {
     try {
         const { meetingPassword, meetingCode } = req.body;
-        if (!meetingCode || !meetingCode) {
+        if (!meetingCode || !meetingPassword) {
             return res.status(400).json({ success: false, message: "meetingCode, meetingPassword or userId is missing" });
         }
 
@@ -323,31 +235,22 @@ export const validateProtectedPassword = async (req: Request, res: Response): Pr
 }
 
 export const validateJoinAccess = async (req: Request, res: Response): Promise<any> => {
-    const { userId, meetingCode } = req.query
+    const { meetingCode } = req.query
 
     try {
-        if (!userId || !meetingCode) throw new Error("userId or meetingCode not found");
+        if (!meetingCode) {
+            return res.status(400).json({ success: false, message: "Meeting code is required" });
+        }
 
         const meeting = await prisma.meeting.findUnique({
             where: { meetingCode: String(meetingCode) }
         })
-        if (!meeting) {
-            return res.json({ success: false, message: "Meeting does not exists" });
+        if (!meeting || meeting.isDeleted) {
+            return res.status(404).json({ success: false, message: "Meeting does not exist" });
         }
 
-        if (meeting.isPaid && meeting.createdById != userId) {
-            const purchase = await prisma.meetingPurchase.findFirst({
-                where: {
-                    userId: String(userId),
-                    meeting: {
-                        meetingCode: String(meetingCode)
-                    }
-                }
-            });
-
-            if(!purchase) {
-                return res.json({ success: false, message: "Meeting is not purchased" });
-            }
+        if (meeting.isComplete) {
+            return res.status(409).json({ success: false, message: "Meeting has already ended" });
         }
 
         res.status(200).json({ success: true, message: "Can join" });
@@ -355,6 +258,115 @@ export const validateJoinAccess = async (req: Request, res: Response): Promise<a
     } catch (err) {
         console.log("Failed to validate the access to join the meeting", err);
         return res.status(500).json({ success: false, message: "Failed to validate join access" });
+    }
+}
+
+export const addMeetingParticipant = async (req: Request, res: Response): Promise<any> => {
+    try {
+        const meetingCode = String(req.params.meetingCode || "");
+        const userId = (req as any).user?.id as string | undefined;
+
+        if (!userId) {
+            return res.status(401).json({ success: false, message: "User is not authenticated" });
+        }
+
+        if (!meetingCode) {
+            return res.status(400).json({ success: false, message: "Meeting code is required" });
+        }
+
+        const meeting = await prisma.meeting.findUnique({
+            where: { meetingCode },
+            select: {
+                id: true,
+                isDeleted: true,
+                isComplete: true
+            }
+        });
+
+        if (!meeting || meeting.isDeleted) {
+            return res.status(404).json({ success: false, message: "Meeting not found" });
+        }
+
+        if (meeting.isComplete) {
+            return res.status(409).json({ success: false, message: "Meeting has already ended" });
+        }
+
+        const call = client.video.call("default", meetingCode);
+        const connectedParticipants = await call.queryCallParticipants({
+            filter_conditions: {
+                user_id: { $eq: userId }
+            },
+            limit: 1
+        });
+        const connectedParticipant = connectedParticipants.participants.find(
+            (participant) => participant.user.id === userId
+        );
+
+        if (!connectedParticipant) {
+            return res.status(403).json({
+                success: false,
+                message: "Join the meeting before attendance can be recorded"
+            });
+        }
+
+        const joinedAt = new Date(connectedParticipant.joined_at);
+        const participantKey = {
+            meetingId_userId: {
+                meetingId: meeting.id,
+                userId
+            }
+        };
+
+        let participant = await prisma.meetingParticipant.findUnique({
+            where: participantKey
+        });
+
+        if (!participant) {
+            try {
+                participant = await prisma.meetingParticipant.create({
+                    data: {
+                        meetingId: meeting.id,
+                        userId,
+                        firstJoinedAt: joinedAt,
+                        lastJoinedAt: joinedAt
+                    }
+                });
+            } catch (error) {
+                const isConcurrentInsert = error instanceof Prisma.PrismaClientKnownRequestError
+                    && error.code === "P2002";
+
+                if (!isConcurrentInsert) {
+                    throw error;
+                }
+            }
+        }
+
+        if (!participant || joinedAt > participant.lastJoinedAt) {
+            await prisma.meetingParticipant.updateMany({
+                where: {
+                    meetingId: meeting.id,
+                    userId,
+                    lastJoinedAt: { lt: joinedAt }
+                },
+                data: {
+                    lastJoinedAt: joinedAt,
+                    joinCount: { increment: 1 }
+                }
+            });
+
+            participant = await prisma.meetingParticipant.findUnique({
+                where: participantKey
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Meeting participant recorded",
+            participant
+        });
+    } catch (err) {
+        console.log("Failed to record meeting participant", err);
+        return res.status(500).json({ success: false, message: "Failed to record meeting participant" });
     }
 }
 

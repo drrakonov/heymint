@@ -18,7 +18,7 @@ const Help = () => {
                     <AccordionTrigger>What is HeyMint?</AccordionTrigger>
                     <AccordionContent className="flex flex-col gap-4 text-balance">
                         <p>
-                            HeyMint is a platform that lets you create, schedule, and manage both free and paid meetings with ease. Whether you're a coach, educator, or professional, HeyMint simplifies hosting and monetizing your time.
+                            HeyMint lets you create, schedule, and review video meetings with AI-generated summaries and meeting-aware chat.
                         </p>
                     </AccordionContent>
                 </AccordionItem>
@@ -27,16 +27,16 @@ const Help = () => {
                     <AccordionTrigger>How do I create a meeting?</AccordionTrigger>
                     <AccordionContent className="flex flex-col gap-4 text-balance">
                         <p>
-                            After logging in, go to the dashboard and click on "Create Meeting". You can choose between an instant meeting or schedule one for later. Set the meeting title, type (free or paid), and meeting time.
+                            After logging in, click "Create Meeting." Choose an instant or scheduled meeting, then decide whether it should be free or password-protected.
                         </p>
                     </AccordionContent>
                 </AccordionItem>
 
                 <AccordionItem value="item-3">
-                    <AccordionTrigger>How do paid meetings work?</AccordionTrigger>
+                    <AccordionTrigger>How do protected meetings work?</AccordionTrigger>
                     <AccordionContent className="flex flex-col gap-4 text-balance">
                         <p>
-                            Paid meetings allow hosts to charge attendees. Users must purchase access before joining the meeting. Payments are securely processed, and only verified buyers can join the session.
+                            Protected meetings require a password to join. After the meeting, only the host and people who actually participated can access its summary and chatbot.
                         </p>
                     </AccordionContent>
                 </AccordionItem>
@@ -52,10 +52,10 @@ const Help = () => {
                 </AccordionItem>
 
                 <AccordionItem value="item-6">
-                    <AccordionTrigger>What if I miss a meeting?</AccordionTrigger>
+                    <AccordionTrigger>Who can access meeting insights?</AccordionTrigger>
                     <AccordionContent className="flex flex-col gap-4 text-balance">
                         <p>
-                            Missed meetings won’t be refunded automatically. If a meeting was recorded (feature coming soon), you may be able to request access to the recording from the host.
+                            Any logged-in user can access insights for a free meeting. Protected meeting insights are limited to the host and recorded participants.
                         </p>
                     </AccordionContent>
                 </AccordionItem>
@@ -64,7 +64,7 @@ const Help = () => {
                     <AccordionTrigger>How do I join a meeting?</AccordionTrigger>
                     <AccordionContent className="flex flex-col gap-4 text-balance">
                         <p>
-                            If you've created or purchased access to a meeting, you’ll find it under “My Meetings.” Click "Join" when the meeting is live. You can also join instant meetings directly from a shared link.
+                            Open a shared meeting link or select a meeting from the Meetings page. Protected meetings ask for the password before connecting.
                         </p>
                     </AccordionContent>
                 </AccordionItem>

@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, type ReactNode } from "react";
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useCallback, useContext, useEffect, type ReactNode } from "react";
 import api from "../lib/axios";
 import { useAuthStore } from "@/store/authStore";
 import { useUserStore } from "@/store/userStore";
@@ -6,7 +7,7 @@ import toast from 'react-hot-toast';
 
 type AuthContextType = {
   accessToken: string | null;
-  user: any;
+  user: User | null;
   signup: (email: string, password: string, otp: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -30,13 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const setAccessToken = useAuthStore((state) => state.setAccessToken);
   const { user, clearUser, setUser } = useUserStore();
 
-  useEffect(() => {
-    if (accessToken) {
-      getUserInfo();
-    }
-  }, [accessToken]);
-
-  const getUserInfo = async () => {
+  const getUserInfo = useCallback(async () => {
     try {
       const res = await api.get("/api/user/me");
       const userData = res.data;
@@ -62,7 +57,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (err) {
       console.error("Error fetching user info:", err);
     }
-  };
+  }, [setUser]);
+
+  useEffect(() => {
+    if (accessToken) {
+      getUserInfo();
+    }
+  }, [accessToken, getUserInfo]);
 
   const signup = async (email: string, password: string, otp: string) => {
     if (!email || !password) {

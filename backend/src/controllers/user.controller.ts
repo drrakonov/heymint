@@ -30,46 +30,36 @@ export const getDashboardStats = async (req: any, res: Response): Promise<any> =
 
         }
 
-        const totalEarningResult = await prisma.meetingPurchase.aggregate({
-            where: {
-                meeting: {
-                    createdById: String(userId)
+        const [totalMeetings, myTotalMeetings, completedMeetings, protectedMeetings, activeUsers] = await Promise.all([
+            prisma.meeting.count({
+                where: { isDeleted: false }
+            }),
+            prisma.meeting.count({
+                where: {
+                    createdById: userId,
+                    isDeleted: false
                 }
-            },
-            _sum: {
-                amountPaid: true
-            }
-        });
-
-
-        const totalEarning = totalEarningResult._sum.amountPaid || 0;
-
-        const totalMeetings = await prisma.meeting.count({
-            where: {
-                isDeleted: false
-            }
-        });
-
-        const myTotalMeetings = await prisma.meeting.count({
-            where: {
-                createdById: userId,
-                isDeleted: false
-            }
-        });
-
-        const completedMeetings = await prisma.meeting.count({
-            where: {
-                createdById: userId,
-                isComplete: true   
-            }
-        });
-
-        const activeUsers = await prisma.user.count();
+            }),
+            prisma.meeting.count({
+                where: {
+                    createdById: userId,
+                    isComplete: true
+                }
+            }),
+            prisma.meeting.count({
+                where: {
+                    createdById: userId,
+                    isProtected: true,
+                    isDeleted: false
+                }
+            }),
+            prisma.user.count()
+        ]);
 
         const dashboardStats: DashboardStats = {
             completedMeetings,
             myTotalMeetings,
-            totalEarning,
+            protectedMeetings,
             totalMeetings,
             activeUsers
         }
@@ -99,7 +89,7 @@ export const getAllMeetingToDashboard = async (req: any, res: Response): Promise
                 isDeleted: false
             },
             select: {
-                isPaid: true,
+                isProtected: true,
                 title: true,
                 id: true
             }
@@ -108,7 +98,7 @@ export const getAllMeetingToDashboard = async (req: any, res: Response): Promise
         const myMeetings: DashboardMyMeetings[] = meetingsResult.map((meeting : any) => ({
             title: meeting.title,
             id: meeting.id,
-            type: meeting.isPaid ? "paid" : "free"
+            type: meeting.isProtected ? "protected" : "free"
         }));
 
         return res.status(200).json({ success: true, message: "all my meetings", myMeetings });

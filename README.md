@@ -3,7 +3,7 @@
 <table>
 <tr>
 <td>
-  HeyMint is a modern platform designed to make meetings more meaningful and effortless. Whether you're hosting a paid session or a free instant meeting, HeyMint gives users a smooth experience from joining to interacting — without the friction of complicated tools or confusing workflows. With a clean interface, secure authentication, and structured flow, it helps creators, mentors, consultants, and communities run effective sessions that actually feel personal and valuable.
+  HeyMint is a modern video conferencing platform designed to make meetings more meaningful and effortless. Hosts can create free or protected meetings, while Stream-powered recording and transcription produce speaker-aware summaries and grounded conversational insights after each call.
 </td>
 </tr>
 </table>
@@ -14,9 +14,11 @@
  
 - 🧑 User management (Sign up / Login)
 
-- 📅 Paid and unpaid meeting scheduling
+- 📅 Free and protected meeting scheduling
 
-- 💳 Payments and purchase tracking
+- 🧠 Speaker-aware summaries and meeting chatbot
+
+- 🛡️ Participant-based access to protected insights
 
 - ⚡ Fast Vite-based React frontend
 

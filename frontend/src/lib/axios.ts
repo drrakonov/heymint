@@ -132,7 +132,7 @@ if (token) {
     } else {
       localStorage.removeItem("accessToken");
     }
-  } catch (err) {
+  } catch {
     localStorage.removeItem("accessToken");
   }
 }

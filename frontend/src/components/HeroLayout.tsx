@@ -62,7 +62,7 @@ const HeroLayout = () => {
                             alt="HeyMint"
                             className="w-24"
                         />
-                        <p className="mt-3 text-sm leading-relaxed">Smart meetings, simple bookings, and clear insights.</p>
+                        <p className="mt-3 text-sm leading-relaxed">Smart meetings, protected access, and clear insights.</p>
                     </div>
                     <div className="flex gap-6 text-sm">
                         <a href="#feature" className="transition-colors hover:text-text-primary">Features</a>

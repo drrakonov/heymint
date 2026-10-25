@@ -27,11 +27,24 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
     }
 
     const joinCallAndStartRecording = async () => {
+        if (!id) {
+            throw new Error("Meeting code is missing");
+        }
+
         await call.join();
+
+        try {
+            await api.post(`/api/meeting/${id}/participants`);
+        } catch (error) {
+            await call.leave().catch((leaveError) => {
+                console.error("Failed to leave after participant registration failed", leaveError);
+            });
+            throw error;
+        }
 
         const isHost = call.state.createdBy?.id === user?.id;
 
-        if (isHost && id) {
+        if (isHost) {
             try {
                 await api.post(`/api/meeting/${id}/recording/start`);
                 toast.success("Meeting recording started");

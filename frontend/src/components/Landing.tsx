@@ -5,7 +5,7 @@ import {
   ArrowRight,
   BrainCircuit,
   CalendarDays,
-  IndianRupee,
+  ShieldCheck,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -99,9 +99,9 @@ const WhyHeyMint = () => {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:col-span-5 lg:grid-cols-4">
-          <FeatureItem icon={<CalendarDays size={20} />} title="Smart scheduling" description="Create meetings and manage every booking in one place." />
+          <FeatureItem icon={<CalendarDays size={20} />} title="Smart scheduling" description="Create and manage instant or scheduled meetings in one place." />
           <FeatureItem icon={<Users size={20} />} title="Easy collaboration" description="Invite people and meet through one simple link." />
-          <FeatureItem icon={<IndianRupee size={20} />} title="Paid sessions" description="Turn your expertise into bookable, paid time." />
+          <FeatureItem icon={<ShieldCheck size={20} />} title="Protected meetings" description="Control entry and keep insights limited to participants." />
           <FeatureItem icon={<BrainCircuit size={20} />} title="AI meeting insights" description="Review transcripts, summaries, and key moments after calls." />
         </div>
       </div>
@@ -165,7 +165,7 @@ const Landing = () => (
       >
         <span>HeyMint, just</span>
         <RotatingText
-          texts={["Host", "Meet", "Share", "Earn"]}
+          texts={["Host", "Meet", "Share", "Review"]}
           mainClassName="min-w-[2.8em] justify-center rounded-xl bg-accent px-3 py-1 text-[#07110d] shadow-[0_12px_45px_rgba(52,211,153,0.18)]"
           staggerFrom="last"
           initial={{ y: "100%" }}
@@ -185,7 +185,7 @@ const Landing = () => (
         transition={{ duration: 0.65, delay: 0.12 }}
         className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-text-secondary sm:text-lg"
       >
-        Schedule, host, and earn from meetings—all in one place.
+        Schedule, host, and revisit every meeting—all in one place.
       </motion.p>
 
       <motion.div

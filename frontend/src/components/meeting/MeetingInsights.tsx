@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowLeft, CheckCircle2, Clock3, Lightbulb, Send, Sparkles, Target } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, Clock3, Lightbulb, LockKeyhole, Send, Sparkles, Target } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "../ui/button";
@@ -16,7 +16,7 @@ interface SummaryJSON {
 interface MeetingDetails {
     title?: string;
     startingTime?: string;
-    isPaid?: boolean;
+    isProtected?: boolean;
 }
 
 function parseSummary(raw: string): SummaryJSON | null {
@@ -76,7 +76,7 @@ export default function MeetingInsights() {
     const [rawSummary, setRawSummary] = useState<string>("");
     const [summary, setSummary] = useState<SummaryJSON | null>(null);
     const [meetingDetails, setMeetingDetails] = useState<MeetingDetails | null>(null);
-    const [insightStatus, setInsightStatus] = useState<"processing" | "ready" | "failed">("processing");
+    const [insightStatus, setInsightStatus] = useState<"processing" | "ready" | "failed" | "forbidden" | "not-found">("processing");
 
     // Chat state
     const [isChatLoading, setIsChatLoading] = useState(false);
@@ -111,7 +111,11 @@ export default function MeetingInsights() {
                 if (cancelled) return;
                 console.error("Failed to fetch summary:", err);
 
-                if (axios.isAxiosError(err) && err.response?.data?.status === "failed") {
+                if (axios.isAxiosError(err) && err.response?.status === 403) {
+                    setInsightStatus("forbidden");
+                } else if (axios.isAxiosError(err) && err.response?.status === 404) {
+                    setInsightStatus("not-found");
+                } else if (axios.isAxiosError(err) && err.response?.data?.status === "failed") {
                     setMeetingDetails(err.response.data.meeting as MeetingDetails);
                     setInsightStatus("failed");
                 } else {
@@ -161,6 +165,28 @@ export default function MeetingInsights() {
 
     if (isLoading) return <Loader />
 
+    if (insightStatus === "forbidden" || insightStatus === "not-found") {
+        const isForbidden = insightStatus === "forbidden";
+        return (
+            <div className="min-h-screen bg-background p-4 text-text-primary flex items-center justify-center">
+                <div className="w-full max-w-md rounded-xl border border-border bg-cardbg p-8 text-center shadow-sm">
+                    <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        {isForbidden ? <LockKeyhole size={22} /> : <AlertCircle size={22} />}
+                    </div>
+                    <h1 className="text-xl font-bold">{isForbidden ? "Participant access required" : "Meeting not found"}</h1>
+                    <p className="mt-3 text-sm leading-relaxed text-text-secondary">
+                        {isForbidden
+                            ? "Only the host and past participants can access insights for this protected meeting."
+                            : "This meeting may have been removed or the link is incorrect."}
+                    </p>
+                    <Button onClick={() => navigate('/dashboard/meetings')} className="mt-6 bg-primary text-black hover:bg-primary/90">
+                        Back to meetings
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-background text-text-primary p-4 md:p-8 font-sans">
             <div className="max-w-7xl mx-auto mb-8 flex items-center justify-between">
@@ -194,7 +220,7 @@ export default function MeetingInsights() {
                             </div>
                             <div>
                                 <span className="block mb-1 opacity-70">Type</span>
-                                <span className="text-text-primary font-medium">{meetingDetails?.isPaid ? "Paid" : "Free"}</span>
+                                <span className="text-text-primary font-medium">{meetingDetails?.isProtected ? "Protected" : "Free"}</span>
                             </div>
                         </div>
                     </div>

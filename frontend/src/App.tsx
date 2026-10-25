@@ -7,8 +7,6 @@ import Signup from './components/Signup'
 import Landing from './components/Landing'
 import Dashboard from './components/dashboard/Dashboard'
 import HeroLayout from './components/HeroLayout'
-import Payments from './components/dashboard/Payments'
-import Bookings from './components/dashboard/Bookings'
 import Help from './components/dashboard/Help'
 import AddMeetingModal from './components/dashboard/AddMeetingModal'
 import JoinMeetingModal from './components/dashboard/JoinMeetingModal'
@@ -57,8 +55,6 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path='profile' element={<Profile />} />
             <Route path='meetings' element={<Meetings />} />
-            <Route path='bookings' element={<Bookings />} />
-            <Route path='payments' element={<Payments />} />
             <Route path='help' element={<Help />} />
             <Route path='addmeeting' element={<AddMeetingModal />} />
             <Route path='joinmeeting' element={<JoinMeetingModal />} />

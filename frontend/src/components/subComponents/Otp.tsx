@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import api from "@/lib/axios";
+import axios from "axios";
 
 interface OtpTimerProps {
     expiryMinutes: number;
@@ -82,11 +83,11 @@ const Otp = ({ email, password }: { email: string; password: string }) => {
                 toast.error("Try again");
                 navigate("/auth/signup");
             }
-        } catch (err: any) {
-            if(err.response?.status === 409) {
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error) && error.response?.status === 409) {
                 toast.success("User already exists");
             }
-            console.log("Failed to resend OTP", err);
+            console.error("Failed to resend OTP", error);
         }
     };
 
