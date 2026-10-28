@@ -4,6 +4,8 @@ import { PrismaClient } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { generateAndStoreMeetingSummary } from "../services/meetingSummary.service";
 
+import { meetingTrace, traceError, traceRuntime } from "../utils/meetingTrace";
+
 const prisma = new PrismaClient();
 
 const pollIntervalMs = Number(process.env.TRANSCRIPTION_WORKER_POLL_MS || 5000);
@@ -199,8 +201,12 @@ const formatElapsedTime = (milliseconds: number) => {
 };
 
 const processJob = async (job: TranscriptionJobRow) => {
+    const trace = { jobId: job.id, meetingId: job.meetingId, sessionId: job.sessionId, attempt: job.attempts };
+    meetingTrace("worker.download_started", trace);
     const rawTranscript = await downloadTranscript(job.transcriptionUrl);
+    meetingTrace("worker.download_finished", { ...trace, characters: rawTranscript.length });
     const segments = await parseTranscript(job, rawTranscript);
+    meetingTrace("worker.transcript_parsed", { ...trace, segments: segments.length });
     await renewLease(job);
 
     await prisma.$transaction(async (transaction) => {
@@ -214,6 +220,7 @@ const processJob = async (job: TranscriptionJobRow) => {
         });
     });
 
+    meetingTrace("worker.segments_stored", { ...trace, segments: segments.length });
     const meetingSegments = await prisma.transcriptSegment.findMany({
         where: { meetingId: job.meetingId },
         orderBy: [{ startedAt: "asc" }, { sequence: "asc" }]
@@ -229,7 +236,9 @@ const processJob = async (job: TranscriptionJobRow) => {
     }).join("\n");
 
     await renewLease(job);
+    meetingTrace("worker.summary_started", trace);
     await generateAndStoreMeetingSummary(job.meetingId, formattedTranscript);
+    meetingTrace("worker.summary_and_index_finished", trace);
 
     const completed = await prisma.transcriptionJob.updateMany({
         where: { id: job.id, status: "PROCESSING", leaseToken: job.leaseToken },
@@ -240,12 +249,13 @@ const processJob = async (job: TranscriptionJobRow) => {
             lastError: null
         }
     });
+    meetingTrace("worker.completion_update", { ...trace, updatedRows: completed.count });
     if (completed.count !== 1) throw new Error(`Lease lost before completing transcription job ${job.id}`);
 };
 
 const markFailed = async (job: TranscriptionJobRow, error: unknown) => {
     const retryDelayMinutes = Math.min(60, 2 ** Math.max(0, job.attempts - 1));
-    await prisma.transcriptionJob.updateMany({
+    const updated = await prisma.transcriptionJob.updateMany({
         where: { id: job.id, leaseToken: job.leaseToken },
         data: {
             status: "FAILED",
@@ -255,35 +265,42 @@ const markFailed = async (job: TranscriptionJobRow, error: unknown) => {
             availableAt: new Date(Date.now() + retryDelayMinutes * 60_000)
         }
     });
+    meetingTrace("worker.failure_saved", { jobId: job.id, meetingId: job.meetingId, updatedRows: updated.count, attempt: job.attempts, willRetry: job.attempts < maxAttempts, retryDelayMinutes });
 };
 
 let stopping = false;
-const stop = () => { stopping = true; };
+const stop = () => { stopping = true; meetingTrace("worker.stopping"); };
 process.on("SIGINT", stop);
 process.on("SIGTERM", stop);
 
 const main = async () => {
     validateConfiguration();
-    console.log("Transcription worker started");
+    traceRuntime("worker");
+    meetingTrace("worker.started", { pollIntervalMs, maxAttempts, leaseDurationMs, downloadTimeoutMs });
+    let lastIdleLog = 0;
 
     while (!stopping) {
         const job = await claimNextJob();
         if (!job) {
+            if (Date.now() - lastIdleLog >= 60_000) {
+                meetingTrace("worker.idle", { reason: "no_claimable_job" });
+                lastIdleLog = Date.now();
+            }
             await delay(pollIntervalMs);
             continue;
         }
 
         const heartbeat = setInterval(() => {
-            void renewLease(job).catch((error) => console.error(`Failed to renew job ${job.id}`, error));
+            void renewLease(job).catch((error) => meetingTrace("worker.lease_renewal_failed", { jobId: job.id, ...traceError(error) }));
         }, heartbeatIntervalMs);
         heartbeat.unref();
 
         try {
-            console.log(`Processing transcription job ${job.id} (attempt ${job.attempts}/${maxAttempts})`);
+            meetingTrace("worker.job_claimed", { jobId: job.id, meetingId: job.meetingId, sessionId: job.sessionId, attempt: job.attempts });
             await processJob(job);
-            console.log(`Completed transcription job ${job.id}`);
+            meetingTrace("worker.job_completed", { jobId: job.id, meetingId: job.meetingId });
         } catch (error) {
-            console.error(`Transcription job ${job.id} failed`, error);
+            meetingTrace("worker.job_failed", { jobId: job.id, meetingId: job.meetingId, attempt: job.attempts, ...traceError(error) });
             await markFailed(job, error);
         } finally {
             clearInterval(heartbeat);
@@ -293,7 +310,7 @@ const main = async () => {
 
 main()
     .catch((error) => {
-        console.error("Transcription worker stopped unexpectedly", error);
+        meetingTrace("worker.fatal", traceError(error));
         process.exitCode = 1;
     })
     .finally(async () => {

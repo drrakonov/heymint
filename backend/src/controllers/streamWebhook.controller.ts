@@ -2,6 +2,8 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 import { streamClient } from "../utils/streamClient";
 
+import { meetingTrace, traceError } from "../utils/meetingTrace";
+
 const prisma = new PrismaClient();
 
 const getCallId = (callCid: string) => {
@@ -16,6 +18,7 @@ const getMeetingId = async (callCid: string) => {
         select: { id: true }
     });
 
+    meetingTrace("webhook.meeting_lookup", { callCid, meetingCode, found: Boolean(meeting), meetingId: meeting?.id });
     if (!meeting) throw new Error(`Meeting ${meetingCode} was not found for Stream transcription`);
     return meeting.id;
 };
@@ -24,11 +27,15 @@ const createWaitingJob = async (callCid: string, sourceId: string) => {
     const meetingId = await getMeetingId(callCid);
 
     try {
-        await prisma.transcriptionJob.create({
+        const job = await prisma.transcriptionJob.create({
             data: { sourceId, meetingId, status: "WAITING" }
         });
+        meetingTrace("job.created", { callCid, meetingId, sourceId, jobId: job.id, status: job.status });
     } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return;
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+            meetingTrace("job.waiting_duplicate", { callCid, meetingId, sourceId });
+            return;
+        }
         throw error;
     }
 };
@@ -45,7 +52,7 @@ const enqueueReadyTranscript = async (
     const meetingId = await getMeetingId(callCid);
 
     try {
-        await prisma.transcriptionJob.create({
+        const job = await prisma.transcriptionJob.create({
             data: {
                 sourceId,
                 meetingId,
@@ -55,6 +62,7 @@ const enqueueReadyTranscript = async (
                 status: "PENDING"
             }
         });
+        meetingTrace("job.created", { callCid, meetingId, sourceId, jobId: job.id, sessionId: job.sessionId, status: job.status });
         return;
     } catch (error) {
         if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
@@ -62,7 +70,7 @@ const enqueueReadyTranscript = async (
         }
     }
 
-    await prisma.transcriptionJob.updateMany({
+    const updated = await prisma.transcriptionJob.updateMany({
         where: { sourceId, status: { in: ["WAITING", "FAILED"] } },
         data: {
             meetingId,
@@ -76,12 +84,15 @@ const enqueueReadyTranscript = async (
             lastError: null
         }
     });
+    meetingTrace("job.ready_update", { callCid, meetingId, sourceId, sessionId: transcription.session_id, updatedRows: updated.count, outcome: updated.count ? "PENDING" : "existing_job_not_waiting_or_failed" });
 };
 
 export const handleStreamWebhook = async (req: Request, res: Response): Promise<any> => {
+    const requestId = res.locals.meetingTraceId as string | undefined;
     const signature = req.headers["x-signature"];
 
     if (typeof signature !== "string") {
+        meetingTrace("webhook.signature_missing", { requestId });
         return res.status(401).json({ success: false, message: "Missing Stream signature" });
     }
 
@@ -89,23 +100,27 @@ export const handleStreamWebhook = async (req: Request, res: Response): Promise<
 
     try {
         event = streamClient.verifyAndParseWebhook(req.body, signature);
+        meetingTrace("webhook.verified", { requestId, type: event.type, callCid: "call_cid" in event ? event.call_cid : undefined, rawBody: Buffer.isBuffer(req.body) });
     } catch (error) {
-        console.error("Failed to verify Stream webhook", error);
+        meetingTrace("webhook.verification_failed", { requestId, rawBody: Buffer.isBuffer(req.body), ...traceError(error) });
         return res.status(401).json({ success: false, message: "Invalid Stream signature" });
     }
 
     try {
         if (event.type === "call.transcription_started") {
+            meetingTrace("transcription.started", { requestId, callCid: event.call_cid, sourceId: event.egress_id });
             await createWaitingJob(event.call_cid, event.egress_id);
             return res.sendStatus(200);
         }
 
         if (event.type === "call.transcription_ready") {
+            meetingTrace("transcription.ready", { requestId, callCid: event.call_cid, sourceId: event.egress_id, sessionId: event.call_transcription?.session_id, hasTranscriptUrl: Boolean(event.call_transcription?.url) });
             await enqueueReadyTranscript(event.call_cid, event.egress_id, event.call_transcription);
             return res.sendStatus(200);
         }
 
         if (event.type === "call.transcription_failed") {
+            meetingTrace("transcription.failed", { requestId, callCid: event.call_cid, sourceId: event.egress_id, hasProviderError: Boolean(event.error) });
             const meetingId = await getMeetingId(event.call_cid);
             const maximumAttempts = Number(process.env.TRANSCRIPTION_WORKER_MAX_ATTEMPTS || 5);
 
@@ -137,10 +152,14 @@ export const handleStreamWebhook = async (req: Request, res: Response): Promise<
             return res.sendStatus(200);
         }
 
-        if (event.type !== "call.session_ended") return res.sendStatus(200);
+        if (event.type !== "call.session_ended") {
+            meetingTrace("webhook.ignored", { requestId, type: event.type });
+            return res.sendStatus(200);
+        }
 
         const call = streamClient.video.call(event.call.type, event.call.id);
         const callResponse = await call.get();
+        meetingTrace("session.ended", { requestId, callCid: event.call_cid, recordingStatus: callResponse.call.egress.individual_recording?.status, transcribing: callResponse.call.transcribing });
         const stopOperations: Promise<unknown>[] = [];
 
         if (callResponse.call.egress.individual_recording?.status === "active") {
@@ -151,9 +170,10 @@ export const handleStreamWebhook = async (req: Request, res: Response): Promise<
         }
 
         await Promise.all(stopOperations);
+        meetingTrace("session.stop_finished", { requestId, callCid: event.call_cid, operations: stopOperations.length });
         return res.sendStatus(200);
     } catch (error) {
-        console.error(`Failed to handle Stream webhook ${event.type}`, error);
+        meetingTrace("webhook.handler_failed", { requestId, type: event.type, callCid: "call_cid" in event ? event.call_cid : undefined, ...traceError(error) });
         return res.sendStatus(500);
     }
 };

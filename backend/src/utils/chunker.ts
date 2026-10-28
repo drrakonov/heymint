@@ -2,6 +2,8 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { PrismaClient } from "@prisma/client";
 import { GoogleGenerativeAI, TaskType } from "@google/generative-ai"
 
+import { meetingTrace, traceError } from "./meetingTrace";
+
 const prisma = new PrismaClient();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -56,11 +58,14 @@ export async function chunkTheTranscription(meetingId: string) {
         })
 
         const chunks = await splitter.splitText(summaryRecord.transcription);
+        meetingTrace("index.chunks_created", { meetingId, chunks: chunks.length });
         const embeddings: number[][] = []
 
         for(let i = 0; i < chunks.length; i += BATCH_SIZE) {
             const batch = chunks.slice(i, i + BATCH_SIZE);
+            meetingTrace("index.embedding_batch_started", { meetingId, offset: i, count: batch.length });
             embeddings.push(...(await withRetry(() => embedBatch(batch))))
+            meetingTrace("index.embedding_batch_finished", { meetingId, offset: i, count: batch.length });
         }
         
         try {
@@ -76,12 +81,13 @@ export async function chunkTheTranscription(meetingId: string) {
                 }
             })
         }catch(err) {
-            console.error("Failed to store embeddings into vector database: ", err);
+            meetingTrace("index.storage_failed", { meetingId, ...traceError(err) });
             throw new Error("Failed to store transcript embeddings")
         }
 
+        meetingTrace("index.completed", { meetingId, chunks: chunks.length });
     }catch(err) {
-        console.error(err);
+        meetingTrace("index.failed", { meetingId, ...traceError(err) });
         throw err
     } 
 }
