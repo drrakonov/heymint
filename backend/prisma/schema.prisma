@@ -107,7 +107,7 @@ enum TranscriptionJobStatus {
 
 model TranscriptionJob {
   id               String                 @id @default(uuid())
-  sourceId         String                 @unique
+  sourceId         String
   meetingId        String
   sessionId        String?
   transcriptionUrl String?
@@ -123,6 +123,7 @@ model TranscriptionJob {
   meeting          Meeting                @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   segments         TranscriptSegment[]
 
+  @@unique([meetingId, sourceId])
   @@index([status, availableAt])
   @@index([meetingId])
 }
