@@ -1,58 +1,12 @@
-import appLogo from "@/assets/logo/heyMintLogo.png"
-import { LogIn, Plus } from "lucide-react"
-import { useNavigate } from "react-router-dom"
-import { GreenButton } from "../subComponents/Greenbutton";
+import { ArrowDownLeft, Plus, ChevronRight, Leaf } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import ProfileLogo from "../subComponents/ProfileLogo";
-
-
-const DashNav = () => {
-    const navigate = useNavigate();
-
-    const handleAddMeetingOpen = () => {
-        navigate("addmeeting");
-    };
-
-    const handleJoinMeetingOpen = () => {
-        navigate("joinmeeting")
-    };
-
-    return (
-        <nav className="fixed top-0 left-0 right-0 z-50 h-16 py-2 px-4 flex justify-between items-center bg-surface text-text-primary border-b border-gray-200/5">
-            <div className="flex flex-col items-center">
-                <a href="/">
-                    <img src={appLogo}
-                        alt="app logo"
-                        className="w-25"
-                    />
-                </a>
-            </div>
-            <div className="flex gap-3">
-                <div className="flex gap-3">
-                    <GreenButton
-                    onClick={() => handleAddMeetingOpen()}
-                        variant="primary"
-                        label={<span className="flex text-sm items-center justify-center gap-0.5">
-                            <Plus className="text-black" size={20} />
-                            <span
-                                className="hidden sm:block text-black font-bold/30 tracking-tighter">
-                                Create Meeting
-                            </span>
-                        </span>}
-                    />
-                    <GreenButton
-                        onClick={() => {handleJoinMeetingOpen()}}
-                        variant="ghost"
-                        label={<span className="flex text-sm items-center justify-center gap-1">
-                            <LogIn size={20} />
-                            <span
-                                className="hidden sm:block">
-                                Join Meeting
-                            </span>
-                        </span>} />
-                </div>
-                <ProfileLogo />
-            </div>
-        </nav>
-    )
+const names: Record<string,string> = { profile:"My profile", meetings:"Meetings", help:"Help center", addmeeting:"Create a meeting", joinmeeting:"Join a meeting", "profile-update":"Edit profile" };
+export default function DashNav() {
+  const {pathname} = useLocation();
+  return <header className="workspace-topbar">
+    <Link to="/dashboard" className="flex shrink-0 items-center gap-2 text-xl font-semibold tracking-tight" aria-label="HeyMint home"><span className="brand-mark"><Leaf size={19}/></span><span>hey<span className="text-primary">Mint</span><span className="text-primary">.</span></span></Link>
+    <div className="ml-8 hidden items-center gap-3 text-xs text-text-secondary lg:flex"><span>Workspace</span><ChevronRight size={13}/><span className="text-white/80">{names[pathname.split('/')[2]] || "Overview"}</span></div>
+    <div className="ml-auto flex items-center gap-2 sm:gap-3"><Link to="/dashboard/joinmeeting" className="topbar-action glass-control" aria-label="Join meeting"><ArrowDownLeft size={16}/><span className="hidden sm:inline">Join</span></Link><Link to="/dashboard/addmeeting" className="topbar-action mint-button" aria-label="Create meeting"><Plus size={16}/><span className="hidden sm:inline">New meeting</span></Link><span className="mx-1 hidden h-6 w-px bg-white/10 sm:block"/><ProfileLogo/></div>
+  </header>;
 }
-export default DashNav

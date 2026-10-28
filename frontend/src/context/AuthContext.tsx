@@ -8,8 +8,8 @@ import toast from 'react-hot-toast';
 type AuthContextType = {
   accessToken: string | null;
   user: User | null;
-  signup: (email: string, password: string, otp: string) => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, otp: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   handleGoogleAuth: () => Promise<void>;
   setAccessToken: (token: string) => void;
@@ -68,25 +68,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signup = async (email: string, password: string, otp: string) => {
     if (!email || !password) {
       toast.error("Please fill all the entries");
-      return;
+      return false;
     }
 
     try {
       const res = await api.post("/api/auth/signup", { email, password, otp });
       const { accessToken } = res.data;
       setAccessToken(accessToken);
+      localStorage.setItem("accessToken", accessToken);
       api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
-      
+      return true;
     } catch (err) {
       console.error(err);
       toast.error("Signup failed");
+      return false;
     }
   };
 
   const login = async (email: string, password: string) => {
     if (!email || !password) {
       toast.error("Please fill all the entries");
-      return;
+      return false;
     }
 
     try {
@@ -96,9 +98,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem("accessToken", accessToken);
 
       api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+      return true;
     } catch (err) {
       console.error(err);
       toast.error("Login failed");
+      return false;
     }
   };
 

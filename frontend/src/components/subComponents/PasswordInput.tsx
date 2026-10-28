@@ -1,11 +1,14 @@
 import { useState } from "react";
 
 type PasswordInputProps = {
+  required?: boolean;
+  autoComplete?: string;
+  minLength?: number;
   value: string
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export default function PasswordInput({value, onChange}: PasswordInputProps) {
+export default function PasswordInput({value, onChange, required, autoComplete, minLength}: PasswordInputProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -13,8 +16,12 @@ export default function PasswordInput({value, onChange}: PasswordInputProps) {
       <div className="relative w-full">
         <input
           id="password"
+          aria-label="Password"
+          required={required}
+          autoComplete={autoComplete}
+          minLength={minLength}
           type={showPassword ? "text" : "password"}
-          className="w-full px-2 py-2 bg-surface focus:border-2 rounded-sm border-border focus:outline-none"
+          className="glass-input w-full px-4 py-2 pr-11"
           placeholder="Password"
           value={value}
           onChange={onChange}
@@ -22,6 +29,8 @@ export default function PasswordInput({value, onChange}: PasswordInputProps) {
 
         <button
           type="button"
+          aria-label={showPassword ? "Hide password" : "Show password"}
+          aria-pressed={showPassword}
           onClick={() => setShowPassword(!showPassword)}
           className="absolute inset-y-0 end-0 flex items-center z-20 p-3 cursor-pointer text-gray-400 rounded-e-md focus:outline-hidden"
         >

@@ -8,7 +8,7 @@ import {
 
 
 export const CustomCallControls = () => (
-  <div className="str-video__call-controls">
+  <div className="str-video__call-controls meeting-media-controls" role="group" aria-label="Microphone, camera, screen sharing and reactions">
     <SpeakingWhileMutedNotification>
       <ToggleAudioPublishingButton />
     </SpeakingWhileMutedNotification>

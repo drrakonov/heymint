@@ -23,8 +23,16 @@ function parseSummary(raw: string): SummaryJSON | null {
     try {
         const cleaned = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
         const parsed = JSON.parse(cleaned);
-        if (parsed.overview && Array.isArray(parsed.keyPoints)) {
-            return parsed as SummaryJSON;
+        if (typeof parsed.overview === 'string' && Array.isArray(parsed.keyPoints)) {
+            const strings = (value: unknown): string[] => Array.isArray(value)
+                ? value.filter((item): item is string => typeof item === 'string')
+                : [];
+            return {
+                overview: parsed.overview,
+                keyPoints: strings(parsed.keyPoints),
+                actionItems: strings(parsed.actionItems),
+                decisions: strings(parsed.decisions),
+            };
         }
     } catch {
         return null;
@@ -48,7 +56,7 @@ function FallbackSummary({ raw }: { raw: string }) {
 
 function SectionCard({ icon, title, items, emptyText, accent = false }: { icon: React.ReactNode, title: string, items: string[], emptyText: string, accent?: boolean }) {
     return (
-        <div className={`rounded-lg p-5 ${accent ? 'bg-primary/5 border border-primary/10' : 'bg-surface/50 border border-border'}`}>
+        <div className={`rounded-2xl p-5 ${accent ? 'bg-primary/[.07] border border-primary/15' : 'bg-white/[.035] border border-white/8'}`}>
             <h3 className={`text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2 ${accent ? 'text-primary' : 'text-text-secondary'}`}>
                 {icon} {title}
             </h3>
@@ -76,7 +84,8 @@ export default function MeetingInsights() {
     const [rawSummary, setRawSummary] = useState<string>("");
     const [summary, setSummary] = useState<SummaryJSON | null>(null);
     const [meetingDetails, setMeetingDetails] = useState<MeetingDetails | null>(null);
-    const [insightStatus, setInsightStatus] = useState<"processing" | "ready" | "failed" | "forbidden" | "not-found">("processing");
+    const [insightStatus, setInsightStatus] = useState<"processing" | "ready" | "failed" | "forbidden" | "not-found" | "connection-error">("processing");
+    const [retryCount, setRetryCount] = useState(0);
 
     // Chat state
     const [isChatLoading, setIsChatLoading] = useState(false);
@@ -90,6 +99,8 @@ export default function MeetingInsights() {
     useEffect(() => {
         let cancelled = false;
         let retryTimer: ReturnType<typeof setTimeout> | undefined;
+        setIsLoading(true);
+        setInsightStatus("processing");
 
         const fetchSummary = async (isFirstRequest = false) => {
             try {
@@ -105,6 +116,10 @@ export default function MeetingInsights() {
                 }
 
                 setMeetingDetails(res.data.meeting);
+                if (res.data.status === "failed") {
+                    setInsightStatus("failed");
+                    return;
+                }
                 setInsightStatus("processing");
                 retryTimer = setTimeout(() => fetchSummary(), 5000);
             } catch (err: unknown) {
@@ -119,7 +134,7 @@ export default function MeetingInsights() {
                     setMeetingDetails(err.response.data.meeting as MeetingDetails);
                     setInsightStatus("failed");
                 } else {
-                    retryTimer = setTimeout(() => fetchSummary(), 5000);
+                    setInsightStatus("connection-error");
                 }
             } finally {
                 if (isFirstRequest && !cancelled) setIsLoading(false);
@@ -131,7 +146,7 @@ export default function MeetingInsights() {
             cancelled = true;
             if (retryTimer) clearTimeout(retryTimer);
         };
-    }, [id]);
+    }, [id, retryCount]);
 
     // Scroll to bottom whenever messages change
     useEffect(() => {
@@ -141,7 +156,7 @@ export default function MeetingInsights() {
     }, [messages, isChatLoading]);
 
     const handleSendMessage = async () => {
-        if (!chatInput.trim() || isChatLoading) return;
+        if (!chatInput.trim() || isChatLoading || insightStatus !== "ready") return;
         
         const userText = chatInput.trim();
         setChatInput("");
@@ -168,8 +183,8 @@ export default function MeetingInsights() {
     if (insightStatus === "forbidden" || insightStatus === "not-found") {
         const isForbidden = insightStatus === "forbidden";
         return (
-            <div className="min-h-screen bg-background p-4 text-text-primary flex items-center justify-center">
-                <div className="w-full max-w-md rounded-xl border border-border bg-cardbg p-8 text-center shadow-sm">
+            <div className="mint-app-bg flex min-h-screen items-center justify-center p-4 text-text-primary">
+                <div className="liquid-glass w-full max-w-md rounded-[28px] p-8 text-center">
                     <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                         {isForbidden ? <LockKeyhole size={22} /> : <AlertCircle size={22} />}
                     </div>
@@ -179,7 +194,7 @@ export default function MeetingInsights() {
                             ? "Only the host and past participants can access insights for this protected meeting."
                             : "This meeting may have been removed or the link is incorrect."}
                     </p>
-                    <Button onClick={() => navigate('/dashboard/meetings')} className="mt-6 bg-primary text-black hover:bg-primary/90">
+                    <Button onClick={() => navigate('/dashboard/meetings')} className="mint-button mt-6 rounded-full">
                         Back to meetings
                     </Button>
                 </div>
@@ -188,30 +203,31 @@ export default function MeetingInsights() {
     }
 
     return (
-        <div className="min-h-screen bg-background text-text-primary p-4 md:p-8 font-sans">
+        <div className="mint-app-bg min-h-screen p-4 font-sans text-text-primary md:p-8">
             <div className="max-w-7xl mx-auto mb-8 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <Button 
+                        aria-label="Back to meetings"
                         variant="ghost" 
                         onClick={() => navigate('/dashboard/meetings')}
-                        className="text-text-secondary hover:text-text-primary hover:bg-surface rounded-md p-2 h-auto"
+                        className="glass-control h-auto rounded-full p-2 text-text-secondary hover:text-text-primary"
                     >
                         <ArrowLeft size={20} />
                     </Button>
-                    <h1 className="text-2xl font-bold tracking-tight">Meeting Insights</h1>
+                    <div><span className="eyebrow">Meeting memory</span><h1 className="mt-1 text-2xl font-semibold tracking-tight">Insights</h1></div>
                 </div>
             </div>
 
             <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
                 
                 {/* LEFT PANEL */}
-                <div className="lg:col-span-7 space-y-6">
+                <div className="min-w-0 break-words lg:col-span-7 space-y-6">
                     {/* Details */}
-                    <div className="bg-cardbg border border-border rounded-xl p-8 shadow-sm">
+                    <div className="liquid-glass rounded-[26px] p-5 sm:p-8">
                         <h2 className="text-text-secondary text-xs font-bold uppercase tracking-widest mb-3">Details</h2>
                         <h3 className="text-xl font-bold mb-5">{meetingDetails?.title || "Meeting"}</h3>
                         
-                        <div className="flex gap-8 text-sm text-text-secondary">
+                        <div className="flex flex-wrap gap-8 text-sm text-text-secondary">
                             <div>
                                 <span className="block mb-1 opacity-70">Date</span>
                                 <span className="text-text-primary font-medium">
@@ -226,13 +242,19 @@ export default function MeetingInsights() {
                     </div>
 
                     {/* Summary */}
-                    <div className="bg-cardbg border border-border rounded-xl p-8 shadow-sm">
+                    <div className="liquid-glass rounded-[26px] p-5 sm:p-8">
                         <h2 className="text-text-secondary text-xs font-bold uppercase tracking-widest mb-6 flex items-center gap-2">
                             <Sparkles size={14} className="text-primary" /> 
                             AI Summary
                         </h2>
                         
-                        {insightStatus === "processing" ? (
+                        {insightStatus === "connection-error" ? (
+                            <div role="alert" className="rounded-xl border border-white/10 bg-white/[.03] p-5">
+                                <p className="text-sm font-semibold">We couldn’t load these insights.</p>
+                                <p className="mt-2 text-sm text-text-secondary">Check your connection and try again.</p>
+                                <Button onClick={() => setRetryCount(count => count + 1)} className="glass-control mt-4">Try again</Button>
+                            </div>
+                        ) : insightStatus === "processing" ? (
                             <div className="flex items-start gap-3 rounded-lg border border-primary/15 bg-primary/5 p-5">
                                 <Clock3 size={18} className="mt-0.5 shrink-0 text-primary animate-pulse" />
                                 <div>
@@ -245,7 +267,7 @@ export default function MeetingInsights() {
                                 <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-400" />
                                 <div>
                                     <p className="text-sm font-semibold text-text-primary">Insights could not be generated</p>
-                                    <p className="mt-1 text-sm leading-relaxed text-text-secondary">The recording could not be processed after several attempts. Please contact support.</p>
+                                    <p className="mt-1 text-sm leading-relaxed text-text-secondary">Processing failed for this meeting. Its summary and chat are unavailable.</p>
                                 </div>
                             </div>
                         ) : !rawSummary ? (
@@ -289,10 +311,10 @@ export default function MeetingInsights() {
                 </div>
 
                 {/* RIGHT PANEL: Chat */}
-                <div className="lg:col-span-5">
-                    <div className="bg-cardbg border border-border rounded-xl shadow-sm h-[600px] flex flex-col overflow-hidden sticky top-8">
+                <div className="min-w-0 lg:col-span-5">
+                    <div className="liquid-glass sticky top-8 flex h-[600px] flex-col overflow-hidden rounded-[26px]">
                         
-                        <div className="p-4 border-b border-border bg-surface flex items-center justify-between">
+                        <div className="flex items-center justify-between border-b border-white/8 bg-white/[.025] p-4">
                             <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
                                 <Sparkles size={16} className="text-primary" /> Ask AI
                             </h2>
@@ -300,14 +322,14 @@ export default function MeetingInsights() {
 
                         <div 
                             ref={chatContainerRef}
-                            className="flex-1 overflow-y-auto p-6 space-y-6 bg-background/50 scroll-smooth"
+                            className="flex-1 space-y-6 overflow-y-auto bg-black/10 p-6 scroll-smooth"
                         >
                             {insightStatus !== "ready" ? (
                                 <div className="flex h-full items-center justify-center text-center">
                                     <div className="max-w-xs">
                                         <Sparkles size={22} className="mx-auto mb-3 text-primary/70" />
                                         <p className="text-sm text-text-secondary">
-                                            {insightStatus === "failed" ? "Meeting chat is unavailable because processing failed." : "Meeting chat will be ready when the transcript has finished processing."}
+                                            {insightStatus === "failed" ? "Meeting chat is unavailable because processing failed." : insightStatus === "connection-error" ? "Reconnect and load the insights to use meeting chat." : "Meeting chat will be ready when the transcript has finished processing."}
                                         </p>
                                     </div>
                                 </div>
@@ -316,7 +338,7 @@ export default function MeetingInsights() {
                                     <div className={`h-8 w-8 rounded-md flex items-center justify-center shrink-0 text-xs font-bold ${msg.sender === 'user' ? 'bg-surface border border-border text-text-primary' : 'bg-primary text-black'}`}>
                                         {msg.sender === 'user' ? 'U' : <Sparkles size={14} />}
                                     </div>
-                                    <div className={`p-3 rounded-lg max-w-[85%] text-sm leading-relaxed whitespace-pre-wrap ${
+                                    <div className={`min-w-0 p-3 rounded-lg max-w-[85%] break-words text-sm leading-relaxed whitespace-pre-wrap ${
                                         msg.sender === 'user' 
                                             ? 'bg-surface border border-border text-text-primary' 
                                             : 'bg-primary/10 border border-primary/20 text-primary'
@@ -340,7 +362,8 @@ export default function MeetingInsights() {
                             )}
                         </div>
 
-                        <div className="p-4 bg-surface border-t border-border">
+                        {insightStatus === "ready" && messages.length === 1 && <div className="flex flex-wrap gap-2 px-4 pb-4">{["What did we decide?", "What are the next steps?", "Summarize the key points"].map(question=><button key={question} onClick={()=>setChatInput(question)} className="rounded-full border border-primary/15 bg-primary/5 px-3 py-2 text-xs text-text-secondary hover:text-primary">{question}</button>)}</div>}
+                        <div className="border-t border-white/8 bg-white/[.025] p-4">
                             <div className="relative">
                                 <input 
                                     type="text" 
@@ -350,10 +373,12 @@ export default function MeetingInsights() {
                                         if (e.key === 'Enter') handleSendMessage();
                                     }}
                                     placeholder={insightStatus === "ready" ? "Ask anything about the meeting..." : "Waiting for meeting insights..."}
-                                    className="w-full bg-background border border-border rounded-lg py-3 pl-4 pr-12 text-sm text-text-primary focus:outline-none focus:border-primary/50 transition-colors"
+                                    aria-label="Ask about this meeting"
+                                    className="glass-input w-full py-3 pl-4 pr-12 text-sm"
                                     disabled={isChatLoading || insightStatus !== "ready"}
                                 />
                                 <button 
+                                    aria-label="Send message"
                                     onClick={handleSendMessage}
                                     disabled={!chatInput.trim() || isChatLoading || insightStatus !== "ready"}
                                     className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary text-black rounded-md disabled:opacity-50 disabled:bg-surface disabled:text-text-secondary transition-colors"

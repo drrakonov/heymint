@@ -1,76 +1,23 @@
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from "../ui/accordion";
-
-const Help = () => {
-    return (
-        <div className="flex flex-col items-center justify-center px-4 py-10 text-text-primary w-full max-w-3xl mx-auto">
-            <Accordion
-                type="single"
-                collapsible
-                className="w-full space-y-3"
-                defaultValue="item-1"
-            >
-                <AccordionItem value="item-1">
-                    <AccordionTrigger>What is HeyMint?</AccordionTrigger>
-                    <AccordionContent className="flex flex-col gap-4 text-balance">
-                        <p>
-                            HeyMint lets you create, schedule, and review video meetings with AI-generated summaries and meeting-aware chat.
-                        </p>
-                    </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="item-2">
-                    <AccordionTrigger>How do I create a meeting?</AccordionTrigger>
-                    <AccordionContent className="flex flex-col gap-4 text-balance">
-                        <p>
-                            After logging in, click "Create Meeting." Choose an instant or scheduled meeting, then decide whether it should be free or password-protected.
-                        </p>
-                    </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="item-3">
-                    <AccordionTrigger>How do protected meetings work?</AccordionTrigger>
-                    <AccordionContent className="flex flex-col gap-4 text-balance">
-                        <p>
-                            Protected meetings require a password to join. After the meeting, only the host and people who actually participated can access its summary and chatbot.
-                        </p>
-                    </AccordionContent>
-                </AccordionItem>
-
-
-                <AccordionItem value="item-5">
-                    <AccordionTrigger>Can I update my profile?</AccordionTrigger>
-                    <AccordionContent className="flex flex-col gap-4 text-balance">
-                        <p>
-                            Yes, go to the profile page to update your name, profile picture, and personal information. These details help personalize your presence in meetings.
-                        </p>
-                    </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="item-6">
-                    <AccordionTrigger>Who can access meeting insights?</AccordionTrigger>
-                    <AccordionContent className="flex flex-col gap-4 text-balance">
-                        <p>
-                            Any logged-in user can access insights for a free meeting. Protected meeting insights are limited to the host and recorded participants.
-                        </p>
-                    </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="item-7">
-                    <AccordionTrigger>How do I join a meeting?</AccordionTrigger>
-                    <AccordionContent className="flex flex-col gap-4 text-balance">
-                        <p>
-                            Open a shared meeting link or select a meeting from the Meetings page. Protected meetings ask for the password before connecting.
-                        </p>
-                    </AccordionContent>
-                </AccordionItem>
-            </Accordion>
-        </div>
-    );
-};
-
-export default Help;
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowUpRight, Search, Video, LockKeyhole, Sparkles, Mic } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
+import PageHeader from "../workspace/PageHeader";
+const questions = [
+  {category:"Meetings",q:"How do I start or schedule a meeting?",a:"Choose New meeting, add a title, and select whether to meet now or schedule a time. Scheduled rooms appear in your meeting library. Use Start Session when you’re ready."},
+  {category:"Meetings",q:"Where do I find my invitation link?",a:"Use Copy joining link on a meeting card or Copy invite link in the waiting room and live meeting. You can also copy the meeting code from the library. Both work on the Join page."},
+  {category:"Access",q:"What is the difference between free and protected rooms?",a:"Free rooms can be joined by signed-in users, who can also access their insights. Protected rooms require a password; their insights are available to the host and verified past participants."},
+  {category:"Insights",q:"When will my summary and meeting chat be ready?",a:"After recording and transcription finish, HeyMint processes the conversation into insights. Open the meeting from Past meetings to see its status. The insights page updates automatically while processing."},
+  {category:"Insights",q:"What can I ask the meeting chatbot?",a:"Ask about decisions, action items, or topics discussed in that meeting. Answers use the available meeting transcript. AI can make mistakes, so check important details against the conversation."},
+  {category:"Devices",q:"Why can’t anyone hear me?",a:"The microphone starts off in the waiting room. Turn it on and choose the correct input in device settings. Allow microphone access in your browser. If Default isn’t capturing sound, select the specific headset or microphone."},
+  {category:"Devices",q:"Can I join without a camera or microphone?",a:"Yes. Both start off so you can choose before joining. You can enable available devices from the meeting controls whenever you’re ready."},
+  {category:"Account",q:"What can I change on my profile?",a:"You can update your display name and choose a local avatar. The avatar is a preference for this browser session; it does not change your video-call identity or your email address."},
+];
+export default function Help() {
+  const [search,setSearch]=useState('');
+  const filtered=questions.filter(item=>`${item.q} ${item.a} ${item.category}`.toLowerCase().includes(search.toLowerCase()));
+  return <div className="page-shell"><PageHeader eyebrow="Help center" title="A little clarity goes a long way." description="Quick answers to keep your conversations moving."/>
+    <div className="grid gap-4 sm:grid-cols-3">{[{icon:Video,title:'Start a conversation',label:'Create a room',to:'/dashboard/addmeeting'},{icon:LockKeyhole,title:'Find your meetings',label:'Open the library',to:'/dashboard/meetings'},{icon:Sparkles,title:'Revisit the details',label:'Explore past meetings',to:'/dashboard/meetings?tab=past'}].map(({icon:Icon,title,label,to})=><Link key={title} to={to} className="workspace-panel p-5 transition hover:border-primary/25"><span className="section-icon"><Icon size={18}/></span><h2 className="mt-5 text-sm font-semibold">{title}</h2><span className="mt-2 flex items-center gap-2 text-xs text-text-secondary">{label}<ArrowUpRight size={12}/></span></Link>)}</div>
+    <div className="mt-8 grid items-start gap-8 lg:grid-cols-[1fr_2fr]"><div><h2 className="text-xl font-semibold tracking-tight">Good questions.<br/>Straight answers.</h2><p className="mt-3 text-sm leading-6 text-text-secondary">From your first invite to the last action item.</p><div className="mt-7 rounded-2xl border border-primary/10 bg-primary/5 p-5"><Mic size={19} className="text-primary"/><h3 className="mt-3 text-sm font-medium">Before your next call</h3><p className="mt-2 text-xs leading-5 text-text-secondary">Check your input device in the waiting room. A clear recording makes for better meeting insights.</p></div></div><div><div className="relative mb-5"><Search size={16} className="absolute left-4 top-4 text-text-secondary"/><input aria-label="Search help" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search for an answer…" className="glass-input w-full py-3 pl-11 pr-4 text-sm"/></div><Accordion type="single" collapsible className="space-y-2">{filtered.map(item=><AccordionItem key={item.q} value={item.q} className="!rounded-xl"><AccordionTrigger className="text-sm font-medium">{item.q}</AccordionTrigger><AccordionContent className="leading-6 text-text-secondary">{item.a}</AccordionContent></AccordionItem>)}</Accordion>{!filtered.length&&<div className="workspace-empty workspace-panel"><p className="text-sm">No answers match “{search}”.</p><button onClick={()=>setSearch('')} className="mt-4 text-xs text-primary">Show all questions</button></div>}</div></div>
+  </div>;
+}

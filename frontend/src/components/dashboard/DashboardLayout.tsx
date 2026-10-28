@@ -1,38 +1,25 @@
 import { CalendarClock, LayoutDashboard, LifeBuoy, User } from "lucide-react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
+import { useEffect, useRef } from "react";
 import { useSidebarStore } from "@/store/sidebarStore";
 import DashNav from "./DashNav";
 import Sidebar, { SidebarItems } from "../subComponents/Sidebar";
 import SidebarMobile from "../subComponents/SidebarMobile";
 
-
-const DashboardLayout = () => {
+export default function DashboardLayout() {
   const { expanded } = useSidebarStore();
- 
-
-  return (
-    <main className="relative h-screen flex flex-col">
-      <DashNav />
-      <div className="flex flex-1 pt-16">
-        <div className="fixed hidden sm:block">
-          <Sidebar>
-            <SidebarItems icon={<User size={20} />} text="Profile" to="/dashboard/profile" />
-            <SidebarItems icon={<LayoutDashboard size={20} />} text="Dashboard" to="/dashboard" />
-            <SidebarItems icon={<CalendarClock size={20} />} text="Meetings" to="/dashboard/meetings" />
-            <hr className="my-3 text-slate-400" />
-            <SidebarItems icon={<LifeBuoy size={20} />} text="Help" to="/dashboard/help" />
-          </Sidebar>
-        </div>
-        {/* Main Content */}
-        <section className={`flex-1 flex flex-col bg-surface h-full transition-all overflow-y-auto 
-          ${expanded ? "sm:pl-65" : "sm:pl-20"}
-          `}>
-          <Outlet />
-        </section>
-      </div>
-      <SidebarMobile />
-    </main>
-  );
-};
-
-export default DashboardLayout;
+  const { pathname } = useLocation();
+  const content = useRef<HTMLElement>(null);
+  useEffect(() => { content.current?.scrollTo({top: 0}); }, [pathname]);
+  return <main className={`workspace-app mint-app-bg ${expanded ? "nav-expanded" : "nav-collapsed"}`}>
+    <DashNav />
+    <div className="workspace-rail"><Sidebar>
+      <SidebarItems icon={<LayoutDashboard size={19}/>} text="Overview" to="/dashboard"/>
+      <SidebarItems icon={<CalendarClock size={19}/>} text="Meetings" to="/dashboard/meetings"/>
+      <SidebarItems icon={<User size={19}/>} text="My profile" to="/dashboard/profile"/>
+      <SidebarItems icon={<LifeBuoy size={19}/>} text="Help center" to="/dashboard/help"/>
+    </Sidebar></div>
+    <section ref={content} className="workspace-content"><Outlet/></section>
+    <SidebarMobile/>
+  </main>;
+}

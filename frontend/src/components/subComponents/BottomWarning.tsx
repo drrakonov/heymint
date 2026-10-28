@@ -6,11 +6,11 @@ type BottomWarningProps = {
 }
 
 export function BottomWarning({label, buttonText, to}: BottomWarningProps) {
-    return <div className="py-2 text-sm flex justify-center">
+    return <div className="flex justify-center py-3 text-sm text-text-secondary">
       <div>
         {label}
       </div>
-      <Link className="pointer underline pl-1 cursor-pointer" to={to}>
+      <Link className="cursor-pointer pl-1 font-semibold text-primary hover:underline" to={to}>
         {buttonText}
       </Link>
     </div>
