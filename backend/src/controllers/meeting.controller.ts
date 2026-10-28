@@ -6,6 +6,8 @@ import { streamClient } from "../utils/streamClient";
 
 
 
+import { meetingTrace, traceError } from "../utils/meetingTrace";
+
 const prisma = new PrismaClient();
 
 const getStreamApiKey = process.env.STREAM_API_KEY!;
@@ -372,6 +374,7 @@ export const addMeetingParticipant = async (req: Request, res: Response): Promis
 
 
 export const startMeetingRecording = async (req: any, res: Response): Promise<any> => {
+    meetingTrace("recording.start_requested", { meetingCode: String(req.params.meetingCode), authenticated: Boolean(req.user?.id) });
     try {
         const meetingCode = req.params.meetingCode as string;
         const userId = req.user?.id;
@@ -392,6 +395,7 @@ export const startMeetingRecording = async (req: any, res: Response): Promise<an
             return res.status(404).json({ success: false, message: "Meeting not found" });
         }
 
+        meetingTrace("recording.host_checked", { meetingCode, meetingId: meeting.id, isHost: meeting.createdById === userId });
         if (meeting.createdById !== userId) {
             return res.status(403).json({ success: false, message: "Only the meeting host can start recording" });
         }
@@ -399,6 +403,7 @@ export const startMeetingRecording = async (req: any, res: Response): Promise<an
         const call = client.video.call("default", meetingCode);
         const callResponse = await call.get();
 
+        meetingTrace("recording.call_state", { meetingCode, ended: Boolean(callResponse.call.ended_at), sessionId: callResponse.call.current_session_id, transcribing: callResponse.call.transcribing, recordingStatus: callResponse.call.egress.individual_recording?.status });
         if (callResponse.call.ended_at || !callResponse.call.current_session_id) {
             return res.status(409).json({ success: false, message: "Meeting session is not active" });
         }
@@ -423,13 +428,17 @@ export const startMeetingRecording = async (req: any, res: Response): Promise<an
         let recordingStartedByRequest = false;
 
         if (!isRecording) {
+            meetingTrace("recording.stream_start_requested", { meetingCode });
             await call.startRecording({ recording_type: "individual" });
+            meetingTrace("recording.stream_start_accepted", { meetingCode });
             recordingStartedByRequest = true;
         }
 
         try {
             if (!isTranscribing) {
+                meetingTrace("transcription.stream_start_requested", { meetingCode });
                 await call.startTranscription({ language: "auto" });
+                meetingTrace("transcription.stream_start_accepted", { meetingCode });
             }
         } catch (error) {
             if (recordingStartedByRequest) {
@@ -445,13 +454,14 @@ export const startMeetingRecording = async (req: any, res: Response): Promise<an
                 : "Recording and transcription started successfully"
         });
     } catch (err) {
-        console.log("Failed to start meeting recording", err);
+        meetingTrace("recording.start_failed", { meetingCode: String(req.params.meetingCode), ...traceError(err) });
         return res.status(500).json({ success: false, message: "Failed to start meeting recording" });
     }
 }
 
 
 export const stopMeetingRecording = async (req: any, res: Response): Promise<any> => {
+    meetingTrace("recording.stop_requested", { meetingCode: String(req.params.meetingCode), authenticated: Boolean(req.user?.id) });
     try {
         const meetingCode = req.params.meetingCode as string;
         const userId = req.user?.id;
@@ -478,6 +488,7 @@ export const stopMeetingRecording = async (req: any, res: Response): Promise<any
         const recordingStatus = callResponse.call.egress.individual_recording?.status;
         const isTranscribing = callResponse.call.transcribing;
 
+        meetingTrace("recording.stop_state", { meetingCode, recordingStatus, transcribing: isTranscribing });
         if (recordingStatus !== "active" && !isTranscribing) {
             return res.status(200).json({ success: true, message: "Recording and transcription are already stopped" });
         }
@@ -490,10 +501,11 @@ export const stopMeetingRecording = async (req: any, res: Response): Promise<any
             stopOperations.push(call.stopTranscription());
         }
         await Promise.all(stopOperations);
+        meetingTrace("recording.stop_finished", { meetingCode, operations: stopOperations.length });
 
         return res.status(200).json({ success: true, message: "Recording and transcription stopped successfully" });
     } catch (err) {
-        console.log("Failed to stop meeting recording", err);
+        meetingTrace("recording.stop_failed", { meetingCode: String(req.params.meetingCode), ...traceError(err) });
         return res.status(500).json({ success: false, message: "Failed to stop meeting recording" });
     }
 }

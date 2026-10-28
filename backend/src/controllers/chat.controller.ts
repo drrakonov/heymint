@@ -4,6 +4,8 @@ import { Request, Response } from "express";
 import Groq from "groq-sdk";
 import { getMeetingInsightAccess } from "../services/meetingInsightAccess.service";
 
+import { meetingTrace, traceError } from "../utils/meetingTrace";
+
 const prisma = new PrismaClient()
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
@@ -30,8 +32,10 @@ export const handleSummaryChat = async (req: Request, res: Response): Promise<an
             return res.status(400).json({ success: false, message: "meetingCode and question is required" })
         }
 
+        meetingTrace("chat.requested", { meetingCode: String(meetingCode) });
         const access = await getMeetingInsightAccess(prisma, String(meetingCode), userId);
 
+        meetingTrace("chat.access_checked", { meetingCode: String(meetingCode), found: Boolean(access), allowed: access?.canAccess });
         if(!access) {
             return res.status(404).json({ success: false, message: "Meeting not found" })
         }
@@ -45,6 +49,7 @@ export const handleSummaryChat = async (req: Request, res: Response): Promise<an
             select: { content: true }
         });
 
+        meetingTrace("chat.embedding_started", { meetingId: access.meeting.id });
         const questionEmbedding = await getEmbbedText(question)
         const vectorString = `[${questionEmbedding.join(",")}]`; 
 
@@ -57,6 +62,7 @@ export const handleSummaryChat = async (req: Request, res: Response): Promise<an
             LIMIT 5                                                                                                                                     
         `;
 
+        meetingTrace("chat.context_loaded", { meetingId: access.meeting.id, chunks: relevantChunks.length, hasSummary: Boolean(summary) });
         const chunksExist = relevantChunks && relevantChunks.length > 0;
         const summaryExists = summary && summary.content !== "Empty";
 
@@ -77,6 +83,7 @@ export const handleSummaryChat = async (req: Request, res: Response): Promise<an
         }
                 
         // Ask the LLM to answer based ONLY on the context                                                                                           
+        meetingTrace("chat.answer_started", { meetingId: access.meeting.id });
         const response = await groq.chat.completions.create({                                                                                           
             model: "openai/gpt-oss-20b",                                                                                                                
             temperature: 0.2, // slightly higher to allow natural summarizing                                                                                                                           
@@ -92,13 +99,14 @@ export const handleSummaryChat = async (req: Request, res: Response): Promise<an
             ]                                                                                                                                           
         });   
 
+        meetingTrace("chat.answer_finished", { meetingId: access.meeting.id });
         return res.status(200).json({                                                                                                                   
             success: true,                                                                                                                              
             answer: response.choices[0].message.content                                                                                                 
         });
 
     } catch(err) {
-        console.error("Failed to get chat response: ", err);
+        meetingTrace("chat.failed", { meetingCode: String(req.params.id), ...traceError(err) });
         return res.status(500).json({ success: false, message: "Failed to get chat response" });
     }
 }

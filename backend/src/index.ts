@@ -9,6 +9,9 @@ import passport from './controllers/passport.controller';
 import { handleStreamWebhook } from './controllers/streamWebhook.controller';
 
 
+import { randomUUID } from "crypto";
+import { meetingTrace, traceRuntime } from "./utils/meetingTrace";
+
 const app = express()
 const port = process.env.PORT;
 
@@ -18,6 +21,20 @@ app.use(cors({
 }));
 app.post(
   "/api/webhooks/stream",
+  (req, res, next) => {
+    const requestId = randomUUID();
+    res.locals.meetingTraceId = requestId;
+    const startedAt = Date.now();
+    meetingTrace("webhook.received", {
+      requestId,
+      signaturePresent: typeof req.headers["x-signature"] === "string",
+      contentType: req.get("content-type"),
+    });
+    res.on("finish", () => meetingTrace("webhook.responded", {
+      requestId, status: res.statusCode, durationMs: Date.now() - startedAt,
+    }));
+    next();
+  },
   express.raw({ type: "application/json" }),
   handleStreamWebhook
 );
@@ -48,5 +65,6 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 });
 
 app.listen(port, () => {
+  traceRuntime("api");
   console.log(`App listening on port ${port}`)
 })

@@ -2,6 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { Groq } from "groq-sdk";
 import { chunkTheTranscription } from "../utils/chunker";
 
+import { meetingTrace } from "../utils/meetingTrace";
+
 const prisma = new PrismaClient();
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -38,10 +40,12 @@ export const generateAndStoreMeetingSummary = async (
     }
 
     if (meeting.summary?.transcription === transcription) {
+        meetingTrace("summary.reused", { meetingId: meeting.id });
         await chunkTheTranscription(meeting.id);
         return meeting.summary.content;
     }
 
+    meetingTrace("summary.generation_started", { meetingId: meeting.id });
     const summary = await groq.chat.completions.create({
         model: "openai/gpt-oss-20b",
         temperature: 0,
@@ -50,6 +54,7 @@ export const generateAndStoreMeetingSummary = async (
             { role: "user", content: `Meeting transcript:\n\n${transcription}` },
         ]
     });
+    meetingTrace("summary.generation_finished", { meetingId: meeting.id });
     const content = summary.choices[0].message.content || "Empty";
 
     await prisma.summary.upsert({
@@ -62,6 +67,7 @@ export const generateAndStoreMeetingSummary = async (
         }
     });
 
+    meetingTrace("summary.stored", { meetingId: meeting.id });
     await chunkTheTranscription(meeting.id);
 
     return content;
