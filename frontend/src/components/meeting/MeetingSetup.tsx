@@ -6,25 +6,58 @@ import api from "@/lib/axios";
 import { useUserStore } from "@/store/userStore";
 import { useNavigate, useParams } from "react-router-dom";
 import PasswordInput from "../subComponents/PasswordInput";
+import { Switch } from "../ui/switch";
+import { Copy, MicOff, VideoOff, ArrowLeft, LockKeyhole, Video } from "lucide-react";
+import { getMeetingJoinLink } from "@/lib/meetingLinks";
 
 const MeetingSetup = ({ setIsSetUpComplete }: {
     setIsSetUpComplete: (value: boolean) => void
 }) => {
-    const [isMicToggleOn, setIsMicToggleOn] = useState(false);
-    const [isCamToggleOn, setIsCamToggleOn] = useState(false);
+    const [isMicToggleOn, setIsMicToggleOn] = useState(true);
+    const [isCamToggleOn, setIsCamToggleOn] = useState(true);
     const [isMeetingProtected, setIsMeetingProtected] = useState(true);
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(true);
+    const [isJoining, setIsJoining] = useState(false);
+    const [validationError, setValidationError] = useState(false);
 
     const call = useCall();
     const { user } = useUserStore();
     const { id } = useParams();
     const navigate = useNavigate();
 
+    const copyInviteLink = async () => {
+        if (!id) return;
+        try {
+            await navigator.clipboard.writeText(getMeetingJoinLink(id));
+            toast.success("Joining link copied");
+        } catch { toast.error("Could not copy the invitation link"); }
+    };
+
 
     if (!call) {
         throw new Error("useCall must be in streamCall componenet");
     }
+
+    const recordMeetingParticipant = async (meetingCode: string) => {
+        let lastError: unknown;
+
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+            try {
+                await api.post(`/api/meeting/${meetingCode}/participants`, undefined, {
+                    timeout: 5000,
+                });
+                return;
+            } catch (error) {
+                lastError = error;
+                if (attempt < 4) {
+                    await new Promise((resolve) => window.setTimeout(resolve, 750 * (attempt + 1)));
+                }
+            }
+        }
+
+        console.error("Failed to record meeting attendance", lastError);
+    };
 
     const joinCallAndStartRecording = async () => {
         if (!id) {
@@ -32,15 +65,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
         }
 
         await call.join();
-
-        try {
-            await api.post(`/api/meeting/${id}/participants`);
-        } catch (error) {
-            await call.leave().catch((leaveError) => {
-                console.error("Failed to leave after participant registration failed", leaveError);
-            });
-            throw error;
-        }
+        void recordMeetingParticipant(id);
 
         const isHost = call.state.createdBy?.id === user?.id;
 
@@ -65,6 +90,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
                 return;
             }
             setIsLoading(true);
+            setValidationError(false);
             const res = await api.get("/api/meeting/get-isProtected", {
                 params: {
                     meetingCode: id,
@@ -73,19 +99,22 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
             })
 
             if (!res.data.success) throw new Error(res.data.message);
-            setIsLoading(false);
-            return res.data.isProtected;
+            setIsMeetingProtected(Boolean(res.data.isProtected));
         } catch (err) {
-            toast.error("Failed to join");
+            setValidationError(true);
             console.error("Failed to validate the meeting", err);
+        } finally {
+            setIsLoading(false);
         }
     }, [id, user]);
 
     const handleJoinMeeting = async () => {
+        if (isJoining || validationError || isLoading) return;
         if (!user) {
             toast.error("User not found");
             return;
         }
+        setIsJoining(true);
         try {
             
             if (isMeetingProtected) {
@@ -120,88 +149,66 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
         } catch (err) {
             toast.error("Failed to join")
             console.error("Failed to join the meeting", err);
+        } finally {
+            setIsJoining(false);
         }
 
     }
 
     useEffect(() => {
-        const checkIsProtected = async () => {
-            const isProtected = await handleProtectedMeetingAndValidate();
-
-            setIsMeetingProtected(isProtected);
-        }
-        checkIsProtected();
-    }, [handleProtectedMeetingAndValidate])
+        void handleProtectedMeetingAndValidate();
+    }, [handleProtectedMeetingAndValidate]);
 
 
     useEffect(() => {
         if (isCamToggleOn) {
-            call?.camera.disable();
+            void call.camera.disable().catch(() => toast.error("Could not disable the camera"));
         } else {
-            call?.camera.enable();
+            void call.camera.enable().catch(() => { setIsCamToggleOn(true); toast.error("Camera unavailable. Check browser permissions and device settings."); });
         }
 
     }, [isCamToggleOn, call?.camera])
 
     useEffect(() => {
         if (isMicToggleOn) {
-            call?.microphone.disable();
+            void call.microphone.disable().catch(() => toast.error("Could not mute the microphone"));
         } else {
-            call?.microphone.enable();
+            void call.microphone.enable().catch(() => { setIsMicToggleOn(true); toast.error("Microphone unavailable. Check browser permissions and device settings."); });
         }
     }, [isMicToggleOn, call?.microphone])
 
 
     return (
-        <div className="flex bg-background h-screen w-full flex-col items-center justify-center gap-3 text-text-primary">
-            <div className="flex flex-col items-center justify-center ml-30 mr-30">
-                <h1 className="text-2xl sm:text-4xl font-bold mb-5 sm:mb-10">Setup</h1>
-                <div className="relative w-[300px] sm:w-[400px] md:w-[500px] h-[300px] sm:h-[400px] md:h-[400px]">
-                    <VideoPreview className="absolute inset-0 !w-full !h-full object-cover" />
+        <div className="auth-layout mint-app-bg flex min-h-dvh flex-col items-center justify-center p-4 text-text-primary sm:p-8">
+            <div className="mb-6 flex w-full max-w-5xl items-center justify-between gap-4">
+                <button onClick={()=>navigate('/dashboard/meetings')} className="flex items-center gap-2 text-xs text-text-secondary hover:text-white"><ArrowLeft size={15}/> Back to meetings</button>
+                <button onClick={copyInviteLink} className="glass-control flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs text-primary"><Copy size={14}/> Copy invite</button>
+            </div>
+            <div className="workspace-panel grid w-full max-w-5xl items-center gap-6 p-5 sm:p-8 lg:grid-cols-[1.4fr_1fr] lg:gap-10">
+                <div className="min-w-0">
+                    <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                        {isCamToggleOn ? <div className="text-center"><span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-3xl font-medium text-primary">{user?.name?.charAt(0).toUpperCase() || 'H'}</span><p className="mt-4 text-sm">{user?.name}</p><p className="mt-1 text-xs text-text-secondary">Camera is off</p></div> : <VideoPreview className="absolute inset-0 !h-full !w-full object-cover"/>}
+                    </div>
+                    <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                        <label className="glass-control flex items-center gap-2 rounded-xl px-3 py-3 text-xs"><MicOff size={14}/><span>Mic off</span><Switch disabled={isJoining} checked={isMicToggleOn} onCheckedChange={setIsMicToggleOn}/></label>
+                        <label className="glass-control flex items-center gap-2 rounded-xl px-3 py-3 text-xs"><VideoOff size={14}/><span>Camera off</span><Switch disabled={isJoining} checked={isCamToggleOn} onCheckedChange={setIsCamToggleOn}/></label>
+                        <div className="glass-control flex min-h-11 items-center rounded-xl"><DeviceSettings/></div>
+                    </div>
                 </div>
-                <div className="flex space-x-2 h-14">
-                    <label className="flex justify-center items-center space-x-1">
-                        <span className="font-semibold">Mic off</span>
-                        <input
-                            type="checkbox"
-                            checked={isMicToggleOn}
-                            onChange={(e) => setIsMicToggleOn(e.target.checked)}
-                        />
-                    </label>
-                    <label className="flex justify-center items-center space-x-1">
-                        <span className="font-semibold">Camera off</span>
-                        <input
-                            type="checkbox"
-                            checked={isCamToggleOn}
-                            onChange={(e) => setIsCamToggleOn(e.target.checked)}
-                        />
-                    </label>
-                    <div className="rounded-2xl flex items-center"><DeviceSettings /></div>
-                </div>
-                <div className="flex flex-col justify-center gap-2">
-                    {isLoading ? (
-                        <div className="flex justify-center items-center h-16">
-                            <span className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent"></span>
-                            <span className="ml-2">Checking meeting protection...</span>
-                        </div>
-                    ) : (
-                        <>
-                            {isMeetingProtected && (
-                                <PasswordInput
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                />
-                            )}
-                            <Button onClick={handleJoinMeeting}>
-                                Join Meeting
-                            </Button>
-                        </>
-                    )}
-
+                <div className="min-w-0 py-3">
+                    <span className="eyebrow">Your waiting room</span>
+                    <h1 className="mt-3 text-3xl font-semibold tracking-tight">Ready when you are.</h1>
+                    <p className="mt-3 text-sm leading-6 text-text-secondary">Choose your devices, take a moment, and join the conversation.</p>
+                    <div className="mt-6 rounded-xl border border-white/8 bg-white/[.025] px-4 py-3"><p className="text-[10px] uppercase tracking-wider text-text-secondary">Meeting code</p><p className="mt-2 break-all font-mono text-xs text-white/75">{id}</p></div>
+                    {isLoading ? <p role="status" className="mt-6 text-sm text-text-secondary">Checking meeting access…</p> : validationError ? <div role="alert" className="mt-6"><p className="text-sm text-text-secondary">We couldn’t check access to this room.</p><button onClick={()=>void handleProtectedMeetingAndValidate()} className="workspace-action glass-control mt-3">Try again</button></div> : <>
+                        {isMeetingProtected && <div className="mt-5"><label htmlFor="password" className="mb-2 flex items-center gap-2 text-xs text-text-secondary"><LockKeyhole size={13}/> This room requires a password</label><PasswordInput value={password} onChange={e=>setPassword(e.target.value)}/></div>}
+                        <Button onClick={handleJoinMeeting} disabled={isJoining} className="mint-button mt-6 h-12 w-full rounded-xl font-semibold disabled:opacity-50"><Video size={16}/>{isJoining ? 'Joining…' : 'Join meeting'}</Button>
+                    </>}
+                    <p className="mt-4 text-center text-[11px] leading-5 text-text-secondary">You can change your devices during the call.</p>
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};
 
 export default MeetingSetup;

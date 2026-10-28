@@ -11,6 +11,6 @@ export function InputBox({type, placeholder, value, onChange}: InputBoxProps) {
       type={type}
       value={value}
       onChange={onChange}
-      className="w-full px-2 py-2 bg-surface focus:border-2 rounded-sm border-border focus:outline-none" />
+      className="glass-input w-full px-4 py-2" />
     </div>
 }

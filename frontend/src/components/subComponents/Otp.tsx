@@ -1,8 +1,6 @@
 import { useAuth } from "@/context/AuthContext";
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "../ui/input-otp";
 import { AuthBotton } from "./AuthButton";
-import { Heading } from "./Heading";
-import { SubHeading } from "./SubHeading";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -41,7 +39,7 @@ const OtpTimer = ({ expiryMinutes, onExpire, resetKey }: OtpTimerProps) => {
     const seconds = timeLeft % 60;
 
     return (
-        <p className="text-sm text-gray-600 pt-2">
+        <p className="pt-3 text-xs text-text-secondary">
             Code expires in{" "}
             <span className="font-semibold">
                 {minutes}:{seconds.toString().padStart(2, "0")}
@@ -56,13 +54,21 @@ const Otp = ({ email, password }: { email: string; password: string }) => {
     const [otp, setOtp] = useState("");
     const [resetKey, setResetKey] = useState(0);
     const [expired, setExpired] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleOtpVerificaton = async () => {
+        if (otp.length !== 6 || isSubmitting) {
+            if (otp.length !== 6) toast.error("Enter the complete six-digit code");
+            return;
+        }
+        setIsSubmitting(true);
         try {
-            await signup(email, password, otp);
-            navigate("/dashboard");
+            const success = await signup(email, password, otp);
+            if (success) navigate("/dashboard");
         } catch (err) {
             console.log("Failed to signup", err);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -85,16 +91,17 @@ const Otp = ({ email, password }: { email: string; password: string }) => {
             }
         } catch (error: unknown) {
             if (axios.isAxiosError(error) && error.response?.status === 409) {
-                toast.success("User already exists");
+                toast.error("An account with this email already exists");
             }
             console.error("Failed to resend OTP", error);
         }
     };
 
     return (
-        <div className="w-full w-20vh text-center p-5 flex flex-col justify-center items-center border-2 border-surface-2 shadow-inner shadow-surface-2 rounded-2xl">
-            <Heading label={"Enter OTP"} />
-            <SubHeading label={`code sent to ${email}`} />
+        <div className="liquid-glass flex w-full flex-col items-center justify-center rounded-[28px] p-6 text-center sm:p-8">
+            <span className="eyebrow">One last step</span>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight">Verify your email</h1>
+            <p className="mb-6 mt-2 text-sm text-text-secondary">We sent a six-digit code to <span className="text-white/85">{email}</span>.</p>
 
             <InputOTP maxLength={6} value={otp} onChange={setOtp}>
                 <InputOTPGroup>
@@ -114,17 +121,17 @@ const Otp = ({ email, password }: { email: string; password: string }) => {
                 <OtpTimer expiryMinutes={3} onExpire={() => setExpired(true)} resetKey={resetKey} />
             ) : (
                 <>
-                    <p className="text-text-secondary text-xs mt-2">Didn't recieved the code?</p>
+                    <p className="mt-3 text-xs text-text-secondary">Didn't receive the code?</p>
                     <button
                         onClick={resendOtp}
-                        className="text-text-secondary text-xs hover:underline"
+                        className="text-xs font-medium text-primary hover:underline"
                     >
-                        resend
+                        Send another code
                     </button></>
             )}
 
-            <div className="pt-4">
-                <AuthBotton onClick={handleOtpVerificaton} label={"Submit"} />
+            <div className="w-full pt-5">
+                <AuthBotton disabled={otp.length !== 6 || isSubmitting} onClick={handleOtpVerificaton} label={isSubmitting ? "Verifying…" : "Verify and continue"} />
             </div>
         </div>
     );

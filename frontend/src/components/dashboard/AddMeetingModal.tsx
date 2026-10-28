@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Calendar, Copy, LockKeyhole } from "lucide-react"
+import { Calendar, Copy, LockKeyhole, Video, Globe2, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,9 +8,12 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { useUserStore } from "@/store/userStore"
 import { useStreamVideoClient } from "@stream-io/video-react-sdk"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import api from "@/lib/axios"
 import toast from "react-hot-toast"
+import { getMeetingJoinLink } from "@/lib/meetingLinks"
+
+import PageHeader from "../workspace/PageHeader";
 
 type MeetingType = "quick-meeting" | "scheduled-meeting";
 
@@ -33,30 +36,32 @@ interface MeetingFormProps {
 }
 
 
-const MeetingCreated = ({meetingCode, copyMeetingCode}: {meetingCode: string, copyMeetingCode: () => void}) => {
+const MeetingCreated = ({meetingCode, copyMeetingLink}: {meetingCode: string, copyMeetingLink: () => void}) => {
+  const joinLink = getMeetingJoinLink(meetingCode);
   return (
-    <div className="space-y-4 rounded-lg border border-green-600/40 bg-green-600/10 p-4">
+    <div className="space-y-5 text-center">
                 <div className="space-y-2 text-center">
-                  <h3 className="font-semibold text-green-400">
-                    Meeting Created Successfully!
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-2xl text-primary">✓</div>
+                  <h3 className="mt-4 text-xl font-semibold text-text-primary">
+                    Your meeting is ready
                   </h3>
-                  <p className="text-sm text-green-300">
-                    Share this code with attendees:
+                  <p className="text-sm text-text-secondary">
+                    Share this link with everyone you want to invite.
                   </p>
                 </div>
 
-                <div className="flex items-center justify-center gap-3 rounded-lg border border-green-600/40 bg-[var(--color-surface-2)] p-3">
-                  <code className="font-mono text-lg font-bold tracking-wider text-green-300">
-                    {meetingCode}
+                <div className="glass-control flex flex-col items-center justify-center gap-3 rounded-2xl p-4 sm:flex-row">
+                  <code className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs text-primary sm:text-sm">
+                    {joinLink}
                   </code>
                   <Button
-                    onClick={copyMeetingCode}
+                    onClick={copyMeetingLink}
                     variant="outline"
                     size="sm"
-                    className="border-green-500 text-green-300 hover:bg-green-600/20"
+                    className="glass-control rounded-full border-primary/20 text-primary"
                   >
                     <Copy className="mr-1 h-4 w-4" />
-                    Copy Code
+                    Copy link
                   </Button>
                 </div>
 
@@ -92,24 +97,26 @@ const MeetingForm = ({
                   value={meetingTitle}
                   onChange={(e) => setMeetingTitle(e.target.value)}
                   placeholder="Enter meeting title"
-                  className="w-full border border-[var(--color-surface-2)] bg-[var(--color-surface-2)] placeholder:text-[var(--color-text-secondary)] focus:ring-2 focus:ring-[var(--color-accent)]"
+                  className="glass-input w-full"
+                  aria-label="Meeting title"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Description</Label>
                 <Textarea
+                  aria-label="Meeting description"
                   value={meetingDescription}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Enter meeting description (optional)"
-                  className="w-full min-h-[100px] resize-none border border-[var(--color-surface-2)] bg-[var(--color-surface-2)] placeholder:text-[var(--color-text-secondary)] focus:ring-2 focus:ring-[var(--color-accent)]"
+                  className="glass-input min-h-[100px] w-full resize-none"
                 />
               </div>
             </div>
 
             {/* ---------- isPROTECTED FIELDS ---------- */}
 
-            <div className="flex items-center justify-between rounded-lg bg-[var(--color-surface-2)] p-4">
+            <div className="glass-control flex items-center justify-between rounded-2xl p-4">
               <div className="flex gap-3">
                 <LockKeyhole className="mt-0.5 h-4 w-4 text-[var(--color-accent)]" />
                 <div>
@@ -122,6 +129,7 @@ const MeetingForm = ({
                 </div>
               </div>
               <Switch
+                aria-label="Protected meeting"
                 checked={isProtected}
                 onCheckedChange={setIsProtected}
                 className="data-[state=checked]:bg-[var(--color-accent)] data-[state=unchecked]:bg-gray-600"
@@ -137,16 +145,18 @@ const MeetingForm = ({
                   Password <span className="text-red-500">*</span>
                 </Label>
                 <Input
+                  aria-label="Meeting password"
+                  type="password"
                   value={meetingPassword}
                   onChange={(e) => setMeetingPassword(e.target.value)}
                   placeholder="Set meeting password"
-                  className="w-full border border-[var(--color-surface-2)] bg-[var(--color-surface-2)] placeholder:text-[var(--color-text-secondary)] focus:ring-2 focus:ring-[var(--color-accent)]"
+                  className="glass-input w-full"
                 />
               </div>
             )}
 
             {/* ---------- SCHEDULE TOGGLE ---------- */}
-            <div className="flex items-center justify-between rounded-lg bg-[var(--color-surface-2)] p-4">
+            <div className="glass-control flex items-center justify-between rounded-2xl p-4">
               <div>
                 <Label className="text-sm font-medium">
                   Schedule this meeting?
@@ -156,6 +166,7 @@ const MeetingForm = ({
                 </p>
               </div>
               <Switch
+                aria-label="Schedule meeting"
                 checked={isScheduled}
                 onCheckedChange={setIsScheduled}
                 className="data-[state=checked]:bg-[var(--color-accent)] data-[state=unchecked]:bg-gray-600"
@@ -165,7 +176,7 @@ const MeetingForm = ({
 
             {/* ---------- SCHEDULED FIELDS ---------- */}
             {isScheduled && (
-              <div className="space-y-4 rounded-lg border border-[var(--color-surface-2)] bg-[var(--color-surface-1)] p-4">
+              <div className="glass-control space-y-4 rounded-2xl p-4">
                 <h3 className="text-sm font-medium uppercase tracking-wide text-[var(--color-text-secondary)]">
                   Meeting Schedule
                 </h3>
@@ -179,9 +190,11 @@ const MeetingForm = ({
                     </Label>
                     <Input
                       type="datetime-local"
+                      aria-label="Meeting date and time"
                       value={meetingDate}
                       onChange={(e) => setMeetingDate(e.target.value)}
-                      className="border border-[var(--color-surface-2)] bg-[var(--color-surface-2)] focus:ring-2 focus:ring-[var(--color-accent)]"
+                      onInput={(e) => setMeetingDate(e.currentTarget.value)}
+                      className="glass-input"
                     />
                   </div>
 
@@ -195,7 +208,7 @@ const MeetingForm = ({
             <Button
               onClick={setUpMeeting}
               disabled={isCreating}
-              className="h-12 w-full bg-[var(--color-accent)] text-[var(--color-surface)] font-medium hover:bg-[var(--color-accent-hover)] active:bg-[var(--color-accent-active)]"
+              className="mint-button h-12 w-full rounded-full font-semibold"
             >
               {isCreating ? "Creating Meeting..." : "Create Meeting"}
             </Button>
@@ -217,10 +230,10 @@ export default function CreateMeeting() {
   const [isCreated, setIsCreated] = useState(false);
 
 
- const copyMeetingCode = async () => { 
+ const copyMeetingLink = async () => {
     try {
-      await navigator.clipboard.writeText(meetingCode);
-      toast.success("Code copied to clipboard!")
+      await navigator.clipboard.writeText(getMeetingJoinLink(meetingCode));
+      toast.success("Joining link copied")
     } catch {
       console.log("Failed to copy code in clipboard");
     }
@@ -248,6 +261,7 @@ export default function CreateMeeting() {
     if (!user) { toast.error("User not authenticated"); return; }
     if (meetingTitle.trim().length < 2) { toast.error("Enter a meeting title"); return; }
     if (isProtected && meetingPassword.length < 2) { toast.error("Set a valid meeting password"); return; }
+    if (isScheduled && meetingDate && new Date(meetingDate).getTime() <= Date.now()) { toast.error("Choose a time in the future"); return; }
     if (isScheduled && !meetingDate) { toast.error("Choose a meeting date and time"); return; }
 
     try {
@@ -319,19 +333,20 @@ export default function CreateMeeting() {
 
 
   return (
-    <div className="min-h-full">
-      <div className="mx-auto max-w-2xl pt-10 space-y-6 p-4 text-[var(--color-text-primary)]">
-        <Card className="bg-[var(--color-surface-1)] ring-1 ring-[var(--color-surface-2)]">
-          <CardHeader>
-            <CardTitle className="text-center text-2xl font-bold">
-              Create Meeting
+    <div className="page-shell">
+      <PageHeader eyebrow="Create a room" title="Bring your people together." description="A few details, then you’re ready to share the invitation."/>
+      <div className="grid items-start gap-6 lg:grid-cols-[1.5fr_1fr]">
+        <Card className="workspace-panel gap-0">
+          <CardHeader className="border-b border-white/8 pb-5">
+            <CardTitle className="text-base font-semibold">
+              Create a meeting
             </CardTitle>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 pt-6">
             {/* ---------- BASIC INFO ---------- */}
             {isCreated ? 
-            <MeetingCreated meetingCode={meetingCode} copyMeetingCode={copyMeetingCode} /> 
+            <MeetingCreated meetingCode={meetingCode} copyMeetingLink={copyMeetingLink} />
               : 
             <MeetingForm
                 meetingTitle={meetingTitle}
@@ -352,6 +367,14 @@ export default function CreateMeeting() {
             }
           </CardContent>
         </Card>
+        <aside className="workspace-panel p-6 lg:sticky lg:top-8">
+          <p className="eyebrow">{isCreated ? "Ready to share" : "Your room at a glance"}</p>
+          <span className="section-icon mt-6"><Video size={20}/></span>
+          <h2 className="mt-4 break-words text-xl font-semibold tracking-tight">{meetingTitle.trim() || "Your next conversation"}</h2>
+          <p className="mt-2 break-words text-sm leading-6 text-text-secondary">{meetingDescription.trim() || "Give your meeting a name people will recognize."}</p>
+          <div className="mt-6 space-y-5 border-t border-white/8 pt-5"><div className="flex gap-3">{isProtected ? <LockKeyhole size={17} className="mt-1 shrink-0 text-primary"/> : <Globe2 size={17} className="mt-1 shrink-0 text-primary"/>}<div><p className="text-sm font-medium">{isProtected ? "Protected room" : "Free room"}</p><p className="mt-1 text-xs leading-5 text-text-secondary">{isProtected ? "Password to join. Insights for the host and past participants." : "Signed-in users can join and access the meeting insights."}</p></div></div><div className="flex gap-3"><Calendar size={17} className="mt-1 shrink-0 text-primary"/><div><p className="text-sm font-medium">{isScheduled ? "Scheduled for later" : "Meet right away"}</p><p className="mt-1 text-xs leading-5 text-text-secondary">{isScheduled && meetingDate ? new Date(meetingDate).toLocaleString() : isScheduled ? "Choose your date and time." : "Check your devices before you enter."}</p></div></div></div>
+          {isCreated && <Link to="/dashboard/meetings" className="workspace-action mint-button mt-6 w-full">View in meetings <ArrowRight size={15}/></Link>}
+        </aside>
       </div>
     </div>
   )

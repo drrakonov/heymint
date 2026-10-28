@@ -1,34 +1,28 @@
-import { CalendarClock, LayoutDashboard, User } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { CalendarClock, LayoutDashboard, LifeBuoy, User } from "lucide-react";
+import { NavLink } from "react-router-dom";
 
-const SidebarMobile = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
+const items = [
+  { icon: LayoutDashboard, label: "Home", to: "/dashboard", end: true },
+  { icon: CalendarClock, label: "Meetings", to: "/dashboard/meetings", end: false },
+  { icon: User, label: "Profile", to: "/dashboard/profile", end: false },
+  { icon: LifeBuoy, label: "Help", to: "/dashboard/help", end: false },
+];
 
-  const items = [
-    { icon: <LayoutDashboard size={20} />, to: "/dashboard" },
-    { icon: <CalendarClock size={20} />, to: "/dashboard/meetings" },
-    { icon: <User size={20} />, to: "/dashboard/profile" },
-  ];
-
-  return (
-    <div className="fixed bottom-0 left-0 right-0 h-14 bg-surface border-t border-gray-700 flex justify-around items-center sm:hidden z-50">
-      {items.map(({ icon, to }, i) => {
-        const isActive = location.pathname === to;
-        return (
-          <button
-            key={i}
-            onClick={() => navigate(to)}
-            className={`p-2 rounded-md ${
-              isActive ? "text-primary" : "text-gray-400"
-            }`}
-          >
-            {icon}
-          </button>
-        );
-      })}
-    </div>
-  );
-};
+const SidebarMobile = () => (
+  <nav aria-label="Dashboard navigation" className="mobile-navigation liquid-glass fixed bottom-3 left-1/2 z-50 flex h-16 w-[calc(100%-24px)] -translate-x-1/2 items-center justify-around rounded-full px-2 sm:hidden">
+    {items.map(({ icon: Icon, label, to, end }) => (
+      <NavLink
+        key={to}
+        to={to}
+        end={end}
+        aria-label={label}
+        className={({ isActive }) => `flex h-11 min-w-13 flex-col items-center justify-center gap-0.5 rounded-full px-2 transition-all ${isActive ? "bg-primary/15 text-primary" : "text-white/45"}`}
+      >
+        <Icon size={18} />
+        <span className="text-[9px] font-medium">{label}</span>
+      </NavLink>
+    ))}
+  </nav>
+);
 
 export default SidebarMobile;

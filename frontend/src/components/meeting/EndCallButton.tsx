@@ -5,6 +5,7 @@ import { Button } from "../ui/button";
 import toast from 'react-hot-toast';
 import api from "@/lib/axios";
 import { useUserStore } from "@/store/userStore";
+import { PhoneOff } from "lucide-react";
 
 const EndCallButton = () => {
     const call = useCall();
@@ -73,15 +74,16 @@ const EndCallButton = () => {
 
     if (!isMeetingOwner) {
         return (
-            <Button onClick={leaveCall} className="bg-danger hover:bg-danger/80 text-white font-bold">
-                Leave
+            <Button onClick={leaveCall} aria-label="Leave meeting" title="Leave meeting" className="h-10 w-10 shrink-0 rounded-xl bg-danger p-0 font-semibold text-white hover:bg-danger/85 sm:h-11 sm:w-auto sm:px-4">
+                <PhoneOff size={18}/><span className="hidden sm:inline">Leave</span>
             </Button>
         );
     }
 
     return (
-        <Button onClick={endCall} disabled={isEnding} className="bg-danger hover:bg-danger/80 text-white font-bold">
-            {isEnding ? "Ending..." : "End Call for everyone"}
+        <Button onClick={endCall} disabled={isEnding} aria-label={isEnding ? "Ending meeting" : "End meeting for everyone"} title="End meeting for everyone" className="h-10 w-10 shrink-0 rounded-xl bg-danger p-0 font-semibold text-white hover:bg-danger/85 sm:h-11 sm:w-auto sm:px-4">
+            <PhoneOff size={18}/>
+            <span className="hidden sm:inline">{isEnding ? "Ending…" : "End for everyone"}</span>
         </Button>
     )
 }

@@ -1,21 +1,19 @@
 
 const Errorpage = () => {
     return (
-        <section className="min-h-screen bg-[#101010] flex items-center">
+        <section className="mint-app-bg flex min-h-screen items-center">
             <div className="py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6 w-full">
-                <div className="mx-auto max-w-screen-sm text-center">
-                    <h1 className="mb-4 text-5xl sm:text-7xl tracking-tight font-extrabold lg:text-9xl text-accent-hover">
-                        404 Error
+                <div className="liquid-glass mx-auto max-w-xl rounded-[36px] p-8 text-center sm:p-12">
+                    <p className="eyebrow">404 · Off the map</p>
+                    <h1 className="text-gradient mt-4 text-5xl font-semibold tracking-[-.06em] sm:text-7xl">
+                        Lost in conversation?
                     </h1>
-                    <p className="mb-4 text-xl sm:text-3xl tracking-tight font-bold text-white md:text-4xl">
-                        Something's missing.
-                    </p>
-                    <p className="mb-4 text-xs sm:text-xl font-light text-gray-400">
-                        Sorry, we can't find that page. You'll find lots to explore on the home page.
+                    <p className="mx-auto mt-5 max-w-md text-sm leading-6 text-text-secondary">
+                        The page you requested is no longer here, or the link may be incorrect.
                     </p>
                     <a
                         href="/"
-                        className="inline-flex text-white bg-accent-active hover:bg-accent/40 focus:ring-4 focus:outline-none focus:ring-accent font-medium rounded-lg text-sm px-3 py-1.5 sm:px-5 sm:py-2.5 text-center my-4"
+                        className="mint-button mt-7 inline-flex rounded-full px-5 py-2.5 text-sm font-semibold"
                     >
                         Back to Homepage
                     </a>

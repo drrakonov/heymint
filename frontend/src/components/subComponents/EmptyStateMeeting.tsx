@@ -15,11 +15,11 @@ export function EmptyState({ hasSearch, onClearSearch }: EmptyStateProps) {
 
   // Responsive card container
   const containerClass =
-    "text-center py-8 sm:py-12 flex flex-col items-center px-4";
+    "liquid-glass rounded-[26px] text-center py-10 sm:py-14 flex flex-col items-center px-4";
 
   // Responsive circle + icon
   const circleClass =
-    "mx-auto h-20 w-20 sm:h-24 sm:w-24 bg-surface-1 rounded-full flex items-center justify-center mb-4";
+    "mx-auto h-20 w-20 sm:h-24 sm:w-24 bg-primary/10 border border-primary/15 rounded-full flex items-center justify-center mb-4";
   const iconClass = "h-10 w-10 sm:h-12 sm:w-12";
 
   // Responsive heading & text
@@ -45,7 +45,7 @@ export function EmptyState({ hasSearch, onClearSearch }: EmptyStateProps) {
           onClick={onClearSearch}
           className={
             buttonClass +
-            " border-custom text-text-secondary hover:bg-surface-1 hover:text-text-primary bg-transparent"
+            " glass-control rounded-full text-text-secondary hover:text-text-primary bg-transparent"
           }
         >
           Clear Search
@@ -65,7 +65,7 @@ export function EmptyState({ hasSearch, onClearSearch }: EmptyStateProps) {
       </p>
       <Button
         className={
-          "bg-primary hover:bg-accent-hover text-text-primary font-semibold " +
+          "mint-button rounded-full font-semibold " +
           buttonClass
         }
         onClick={handleAddMeetingbutton}

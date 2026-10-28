@@ -1,21 +1,20 @@
 import { useState } from "react";
-import { Video } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Video, Link2, ArrowRight, ShieldCheck, Mic } from "lucide-react";
+import PageHeader from "../workspace/PageHeader";
 import { Input } from "../ui/input";
-import { Label } from "../ui/label";
 import { Button } from "../ui/button";
 import { useStreamVideoClient } from "@stream-io/video-react-sdk";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from "@/store/userStore";
+import { extractMeetingCode } from "@/lib/meetingLinks";
 
 export default function JoinMeetingModal() {
   const [meetingId, setMeetingId] = useState("");
-  const [name, setName] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const { user } = useUserStore();
 
-  const isFormValid = meetingId.trim() !== "" && name.trim() !== "";
+  const isFormValid = meetingId.trim() !== "";
   const client = useStreamVideoClient();
   const navigate = useNavigate();
 
@@ -29,12 +28,17 @@ export default function JoinMeetingModal() {
       }
       setIsJoining(true);
 
-      const call = client.call("default", meetingId);
+      const code = extractMeetingCode(meetingId);
+      if (!code) {
+        toast.error("Enter a valid meeting link or code");
+        return;
+      }
+      const call = client.call("default", code);
       if (!call) throw new Error("Failed to create call");
 
       try {
         await call.get();
-        navigate(`/meeting/${meetingId}`);
+        navigate(`/meeting/${code}`);
       } catch {
         toast.error("Meeting not available yet. Wait for the host to start.");
       }
@@ -47,62 +51,20 @@ export default function JoinMeetingModal() {
   };
 
   return (
-    <div className=" pt-10 md:pt-45 flex items-center justify-center p-4 text-[var(--color-text-primary)]">
-      <Card className="w-full max-w-2xl bg-[var(--color-surface-1)] ring-1 ring-[var(--color-surface-2)]">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl font-bold">
-            Join Meeting
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
-          {/* Meeting ID Field */}
-          <div className="space-y-2">
-            <Label htmlFor="meeting-id" className="text-sm font-medium">
-              Meeting ID <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="meeting-id"
-              value={meetingId}
-              onChange={(e) => setMeetingId(e.target.value)}
-              placeholder="e.g., 123-456-789"
-              className="w-full text-center font-mono border border-[var(--color-surface-2)] bg-[var(--color-surface-2)] placeholder:text-[var(--color-text-secondary)] focus:ring-2 focus:ring-[var(--color-accent)]"
-            />
-          </div>
-
-          {/* Name Field */}
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-medium">
-              Your Name <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your name"
-              className="w-full border border-[var(--color-surface-2)] bg-[var(--color-surface-2)] placeholder:text-[var(--color-text-secondary)] focus:ring-2 focus:ring-[var(--color-accent)]"
-            />
-          </div>
-
-          {/* Join Button */}
-          <Button
-            onClick={handleJoinMeeting}
-            className="w-full h-12 bg-accent text-surface font-medium hover:bg-accent/40 active:bg-accent"
-          >
-            {isJoining ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                Joining Meeting...
-              </>
-            ) : (
-              <>
-                <Video className="h-4 w-4 mr-2" />
-                Join Meeting
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
+    <div className="page-shell">
+      <PageHeader eyebrow="Join a conversation" title="Your seat is waiting." description="Paste an invitation link or meeting code to find your room."/>
+      <div className="grid items-start gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <form onSubmit={e=>{e.preventDefault();void handleJoinMeeting();}} className="workspace-panel p-6 sm:p-8">
+          <span className="section-icon"><Link2 size={20}/></span>
+          <h2 className="mb-7 mt-5 text-xl font-semibold tracking-tight">Let’s find your meeting.</h2>
+          <label htmlFor="meeting-id" className="text-sm font-medium">Meeting link or code</label>
+          <Input id="meeting-id" value={meetingId} onChange={e=>setMeetingId(e.target.value)} placeholder="Paste your invite here" className="glass-input mt-3 w-full text-sm" autoComplete="off" required/>
+          <p className="mt-3 text-xs leading-5 text-text-secondary">You’ll find the invite in the meeting library or from your host.</p>
+          <Button type="submit" disabled={!isFormValid || isJoining} className="workspace-action mint-button mt-7 w-full disabled:opacity-45">{isJoining ? 'Finding your room…' : <><Video size={16}/> Continue to meeting <ArrowRight size={15}/></>}</Button>
+          <p className="mt-4 text-center text-xs text-text-secondary">Your camera and microphone stay off until you choose.</p>
+        </form>
+        <aside className="workspace-panel p-6 sm:p-8"><p className="eyebrow">Before you join</p><div className="mt-6 space-y-7">{[{icon:Link2,title:'Open your invitation',text:'Use the full link or just the meeting code.'},{icon:ShieldCheck,title:'Enter the room password',text:'Only needed if your host made the meeting protected.'},{icon:Mic,title:'Check your devices',text:'Choose your microphone and camera in the waiting room.'}].map(({icon:Icon,title,text},i)=><div key={title} className="flex gap-4"><span className="section-icon"><Icon size={17}/></span><div><p className="text-[10px] text-text-secondary">0{i+1}</p><h3 className="mt-1 text-sm font-medium">{title}</h3><p className="mt-1 text-xs leading-5 text-text-secondary">{text}</p></div></div>)}</div></aside>
+      </div>
     </div>
   );
 }
