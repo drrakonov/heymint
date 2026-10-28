@@ -71,7 +71,7 @@ const enqueueReadyTranscript = async (
     }
 
     const updated = await prisma.transcriptionJob.updateMany({
-        where: { sourceId, status: { in: ["WAITING", "FAILED"] } },
+        where: { meetingId, sourceId, status: { in: ["WAITING", "FAILED"] } },
         data: {
             meetingId,
             sessionId: transcription.session_id,
@@ -139,7 +139,7 @@ export const handleStreamWebhook = async (req: Request, res: Response): Promise<
                     throw error;
                 }
                 await prisma.transcriptionJob.updateMany({
-                    where: { sourceId: event.egress_id, status: { not: "COMPLETED" } },
+                    where: { meetingId, sourceId: event.egress_id, status: { not: "COMPLETED" } },
                     data: {
                         status: "FAILED",
                         attempts: maximumAttempts,
