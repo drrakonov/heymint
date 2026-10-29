@@ -1,3 +1,4 @@
+import { isMeetingExpired } from "../utils/meetingLifecycle";
 import { PrismaClient } from "@prisma/client"
 import { Response, Request } from "express"
 import { DashboardMyMeetings, DashboardStats } from "../utils/Types";
@@ -90,12 +91,16 @@ export const getAllMeetingToDashboard = async (req: any, res: Response): Promise
             },
             select: {
                 isProtected: true,
+                isScheduled: true,
+                startingTime: true,
+                startedAt: true,
+                isComplete: true,
                 title: true,
                 id: true
             }
         });
 
-        const myMeetings: DashboardMyMeetings[] = meetingsResult.map((meeting : any) => ({
+        const myMeetings: DashboardMyMeetings[] = meetingsResult.filter(meeting => !isMeetingExpired(meeting)).map((meeting : any) => ({
             title: meeting.title,
             id: meeting.id,
             type: meeting.isProtected ? "protected" : "free"

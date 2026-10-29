@@ -32,6 +32,8 @@ export type Meeting = {
   meetingCode: string
   createdById: string
   isComplete: boolean
+  isExpired: boolean
+  isDraft: boolean
   canAccessInsights: boolean
 }
 

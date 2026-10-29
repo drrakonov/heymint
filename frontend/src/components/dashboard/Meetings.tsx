@@ -6,7 +6,6 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import api from "@/lib/axios";
-import { useStreamVideoClient } from "@stream-io/video-react-sdk";
 import toast from "react-hot-toast";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useUserStore } from "@/store/userStore";
@@ -25,31 +24,18 @@ interface MeetingCardProps {
     meetingCode: string
     createdById: string
     isComplete?: boolean;
+    isExpired?: boolean;
+    isDraft?: boolean;
     canAccessInsights: boolean;
     setMeetings: React.Dispatch<React.SetStateAction<Meeting[]>>;
 }
 
-export function MeetingCard({ title, hostName, description, type, meetingTime, isInstant = false, participantCount, meetingCode, createdById, isComplete = false, canAccessInsights, setMeetings }: MeetingCardProps) {
+export function MeetingCard({ title, hostName, description, type, meetingTime, isInstant = false, participantCount, meetingCode, createdById, isComplete = false, isExpired = false, isDraft = false, canAccessInsights, setMeetings }: MeetingCardProps) {
     const navigate = useNavigate();
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const client = useStreamVideoClient();
     const { user } = useUserStore();
-    const handleJoinMeeting = async () => {
-        try {
-            if (!client || !user) return toast.error("Failed to join");
-            const call = client.call("default", meetingCode);
-            if (!call) throw new Error("Failed to create call");
-
-            if (user.id === createdById) {
-                await call.getOrCreate({ data: { starts_at: new Date().toISOString(), custom: { description: "scheduled" } } });
-                navigate(`/meeting/${call.id}`);
-                return;
-            }
-            try { await call.get(); navigate(`/meeting/${call.id}`); }
-            catch { toast.error("Meeting not available yet.") }
-        } catch { toast.error("Unable to join meeting"); }
-    }
+    const handleJoinMeeting = () => navigate(`/meeting/${meetingCode}`);
 
     const handleDeleteMeeting = async () => {
         if (!user || user.id !== createdById) return;
@@ -89,7 +75,7 @@ export function MeetingCard({ title, hostName, description, type, meetingTime, i
                     </div>
                 </div>
                 
-                {!isComplete && <button onClick={async()=>{try{await navigator.clipboard.writeText(meetingCode);toast.success("Meeting code copied");}catch{toast.error("Could not copy the code");}}} className="mt-5 flex w-full items-center gap-2 rounded-lg border border-dashed border-white/10 px-3 py-2 text-left text-text-secondary hover:border-primary/30" title="Copy meeting code"><span className="shrink-0 text-[10px] uppercase tracking-wider">Code</span><code className="min-w-0 flex-1 truncate text-[11px]">{meetingCode}</code><Copy size={12}/></button>}
+                {!isComplete && !isExpired && <button onClick={async()=>{try{await navigator.clipboard.writeText(meetingCode);toast.success("Meeting code copied");}catch{toast.error("Could not copy the code");}}} className="mt-5 flex w-full items-center gap-2 rounded-lg border border-dashed border-white/10 px-3 py-2 text-left text-text-secondary hover:border-primary/30" title="Copy meeting code"><span className="shrink-0 text-[10px] uppercase tracking-wider">Code</span><code className="min-w-0 flex-1 truncate text-[11px]">{meetingCode}</code><Copy size={12}/></button>}
                 {confirmDelete && <div className="mt-4 rounded-xl border border-danger/25 bg-danger/5 p-4" role="alert"><p className="text-sm">Delete this meeting?</p><p className="mt-1 text-xs text-text-secondary">The invite will no longer be available.</p><div className="mt-3 flex gap-3"><button disabled={isDeleting} onClick={handleDeleteMeeting} className="text-xs font-medium text-danger">{isDeleting ? "Deleting…" : "Delete meeting"}</button><button onClick={()=>setConfirmDelete(false)} className="text-xs text-text-secondary">Keep meeting</button></div></div>}
                 <div className="mt-5 flex flex-col justify-between gap-4 border-t border-white/8 pt-4 sm:flex-row sm:items-center">
                     <div className="flex items-center gap-4 text-xs font-medium text-text-secondary">
@@ -98,7 +84,7 @@ export function MeetingCard({ title, hostName, description, type, meetingTime, i
                     </div>
                     
                     <div>
-                        {isComplete && canAccessInsights ? (
+                        {isExpired ? <span className="text-xs text-text-secondary">Expired · never started</span> : isComplete && canAccessInsights ? (
                             <Button onClick={() => navigate(`/meeting/${meetingCode}/insights`)} className="mint-button rounded-full px-4 py-2 text-sm font-semibold">
                                 <Sparkles size={14} className="mr-2" /> View Insights
                             </Button>
@@ -108,7 +94,7 @@ export function MeetingCard({ title, hostName, description, type, meetingTime, i
                             </span>
                         ) : (
                             <Button onClick={handleJoinMeeting} className="glass-control rounded-full px-4 py-2 text-sm font-semibold text-text-primary">
-                                {user?.id === createdById ? "Start Session" : "Join Now"}
+                                {user?.id === createdById ? (isDraft ? "Open draft" : "Start Session") : "Join Now"}
                             </Button>
                         )}
                     </div>
@@ -118,7 +104,7 @@ export function MeetingCard({ title, hostName, description, type, meetingTime, i
     )
 }
 
-type Meeting = { meetingId: string, title: string, hostName: string, description: string, type: "Free" | "Protected", isProtected: boolean, meetingTime?: string, isInstant?: boolean, meetingCode: string, createdById: string, isComplete?: boolean, canAccessInsights: boolean }
+type Meeting = { meetingId: string, title: string, hostName: string, description: string, type: "Free" | "Protected", isProtected: boolean, meetingTime?: string, isInstant?: boolean, meetingCode: string, createdById: string, isComplete?: boolean, isExpired?: boolean, isDraft?: boolean, canAccessInsights: boolean }
 
 const Meetings = () => {
     const [params] = useSearchParams();
@@ -127,17 +113,18 @@ const Meetings = () => {
     const [reload, setReload] = useState(0);
     const [searchQuery, setSearchQuery] = useState(params.get("search") || "");
     const [filterType, setFilterType] = useState<"all" | "free" | "protected" | "instant">("all");
-    const [activeTab, setActiveTab] = useState<"upcoming" | "past">(params.get("tab") === "past" ? "past" : "upcoming");
+    const [activeTab, setActiveTab] = useState<"upcoming" | "past" | "drafts">(params.get("tab") === "past" ? "past" : "upcoming");
     const [meetings, setMeetings] = useState<Meeting[]>([]);
 
+    const user = useUserStore(state => state.user);
     const filteredMeetings = useMemo(() => {
         return meetings.filter(m => {
-            const isTabMatch = activeTab === "upcoming" ? !m.isComplete : m.isComplete;
+            const isTabMatch = activeTab === "drafts" ? m.isDraft && m.createdById === user?.id : activeTab === "upcoming" ? !m.isComplete && !m.isExpired && !m.isDraft : m.isComplete || m.isExpired;
             const matchesSearch = m.title.toLowerCase().includes(searchQuery.toLowerCase()) || m.hostName.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesFilter = filterType === "all" || (filterType === "free" && m.type === "Free") || (filterType === "protected" && m.type === "Protected") || (filterType === "instant" && m.isInstant);
             return isTabMatch && matchesSearch && matchesFilter;
         });
-    }, [searchQuery, filterType, meetings, activeTab]);
+    }, [searchQuery, filterType, meetings, activeTab, user?.id]);
 
     useEffect(() => {
         let cancelled = false;
@@ -162,8 +149,9 @@ const Meetings = () => {
             <div>
                 <PageHeader eyebrow="Meeting library" title="Every conversation, together." description="Find a room, share an invite, or revisit a past meeting." action={<Link to="/dashboard/addmeeting" className="workspace-action mint-button"><Plus size={16}/> New meeting</Link>}/>
                 <div className="mb-6 flex w-fit max-w-full gap-1 rounded-full border border-white/10 bg-white/[.045] p-1">
-                    <button onClick={() => setActiveTab("upcoming")} className={`flex items-center whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold ${activeTab === "upcoming" ? "bg-primary text-[#052019]" : "text-text-secondary hover:text-text-primary"}`}>Upcoming <span className="ml-2 opacity-60">{meetings.filter(m=>!m.isComplete).length}</span></button>
-                    <button onClick={() => setActiveTab("past")} className={`flex items-center whitespace-nowrap gap-1.5 rounded-full px-3 py-2 text-xs font-semibold ${activeTab === "past" ? "bg-primary text-[#052019]" : "text-text-secondary hover:text-text-primary"}`}><Sparkles size={14}/> Past meetings <span className="ml-1 opacity-60">{meetings.filter(m=>m.isComplete).length}</span></button>
+                    <button onClick={() => setActiveTab("upcoming")} className={`flex items-center whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold ${activeTab === "upcoming" ? "bg-primary text-[#052019]" : "text-text-secondary hover:text-text-primary"}`}>Upcoming <span className="ml-2 opacity-60">{meetings.filter(m=>!m.isComplete && !m.isExpired && !m.isDraft).length}</span></button>
+                    <button onClick={() => setActiveTab("drafts")} className={`rounded-full px-3 py-2 text-xs font-semibold ${activeTab === "drafts" ? "bg-primary text-[#052019]" : "text-text-secondary"}`}>Drafts <span className="ml-2 opacity-60">{meetings.filter(m => m.isDraft && m.createdById === user?.id).length}</span></button>
+                    <button onClick={() => setActiveTab("past")} className={`flex items-center whitespace-nowrap gap-1.5 rounded-full px-3 py-2 text-xs font-semibold ${activeTab === "past" ? "bg-primary text-[#052019]" : "text-text-secondary hover:text-text-primary"}`}><Sparkles size={14}/> Past meetings <span className="ml-1 opacity-60">{meetings.filter(m=>m.isComplete || m.isExpired).length}</span></button>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 mb-8">
@@ -186,8 +174,8 @@ const Meetings = () => {
                     ) : (
                         <div className="workspace-panel workspace-empty col-span-full min-h-72">
                             <span className="section-icon mb-5"><Video size={22}/></span>
-                            <h2 className="text-lg font-semibold">{searchQuery || filterType !== 'all' ? 'No matching meetings' : activeTab === 'upcoming' ? 'Make room for a conversation.' : 'Your meeting memory starts here.'}</h2>
-                            <p className="mt-2 text-sm leading-6 text-text-secondary">{searchQuery || filterType !== 'all' ? 'Try a different title, host, or meeting type.' : activeTab === 'upcoming' ? 'Create a room or join one with an invite.' : 'Completed meetings appear here with access to their insights.'}</p>
+                            <h2 className="text-lg font-semibold">{searchQuery || filterType !== 'all' ? 'No matching meetings' : activeTab === 'drafts' ? 'No unfinished rooms.' : activeTab === 'upcoming' ? 'Make room for a conversation.' : 'Your meeting memory starts here.'}</h2>
+                            <p className="mt-2 text-sm leading-6 text-text-secondary">{searchQuery || filterType !== 'all' ? 'Try a different title, host, or meeting type.' : activeTab === 'drafts' ? 'Instant rooms you create but never join are kept here.' : activeTab === 'upcoming' ? 'Create a room or join one with an invite.' : 'Completed meetings appear here with access to their insights.'}</p>
                             {!(searchQuery || filterType !== 'all') && <Link to="/dashboard/addmeeting" className="workspace-action glass-control mt-6">Create a meeting <ArrowRight size={14}/></Link>}
                         </div>
                     )}

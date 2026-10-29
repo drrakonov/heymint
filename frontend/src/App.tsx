@@ -31,7 +31,6 @@ function App() {
     <BrowserRouter>
     <Toaster position="top-center" toastOptions={{duration: 3000, style: { background: "#10211c", color: "#f4fbf8", border: "1px solid rgba(255,255,255,.1)", borderRadius: "14px", boxShadow: "0 18px 50px rgba(0,0,0,.35)" }}} />
       <AuthProvider>
-        <StreamVideoProvider>
         <Suspense fallback={<Loader />}>
         <Routes>
 
@@ -65,12 +64,11 @@ function App() {
             <Route path='profile-update' element={<Profileupdate />} />
           </Route>
 
-          <Route path='/meeting/:id' element={<MeetingShower />} />
-          <Route path='/meeting/:id/insights' element={<MeetingInsights />} />
+          <Route path='/meeting/:id' element={<ProtectedRoute><StreamVideoProvider><MeetingShower /></StreamVideoProvider></ProtectedRoute>} />
+          <Route path='/meeting/:id/insights' element={<ProtectedRoute><MeetingInsights /></ProtectedRoute>} />
 
         </Routes>
         </Suspense>
-        </StreamVideoProvider>
       </AuthProvider>
     </BrowserRouter>
   );

@@ -29,6 +29,7 @@ model Meeting {
   createdAt          DateTime             @default(now())
   isDeleted          Boolean              @default(false)
   isComplete         Boolean              @default(false)
+  startedAt          DateTime?
   startingTime       DateTime
   isProtected        Boolean
   password           String?

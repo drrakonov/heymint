@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useCallback, useContext, useEffect, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { jwtDecode } from "jwt-decode";
 import api from "../lib/axios";
 import { useAuthStore } from "@/store/authStore";
 import { useUserStore } from "@/store/userStore";
@@ -8,6 +9,9 @@ import toast from 'react-hot-toast';
 type AuthContextType = {
   accessToken: string | null;
   user: User | null;
+  isLoading: boolean;
+  error: string | null;
+  retry: () => void;
   signup: (email: string, password: string, otp: string) => Promise<boolean>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -31,39 +35,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const setAccessToken = useAuthStore((state) => state.setAccessToken);
   const { user, clearUser, setUser } = useUserStore();
 
-  const getUserInfo = useCallback(async () => {
-    try {
-      const res = await api.get("/api/user/me");
-      const userData = res.data;
-
-      if (!userData) {
-        toast.error("User not found");
-        return;
-      }
-      const tokenRes = await api.post("/api/meeting/token", { userId: userData.id, name: userData.name });
-      const tokenAndAPIkey = tokenRes.data
-
-      const UserGot: User = {
-        name: userData.name,
-        id: userData.id,
-        email: userData.email,
-        provider: userData.provider,
-        streamToken: tokenAndAPIkey.token,
-        apiKey: tokenAndAPIkey.apiKey
-      }
-
-      
-      setUser(UserGot);
-    } catch (err) {
-      console.error("Error fetching user info:", err);
-    }
-  }, [setUser]);
-
+  const [isLoading, setIsLoading] = useState(Boolean(accessToken));
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => setAttempt(value => value + 1), []);
+  // Token rotation keeps the same session; don't replace the user or reset a live call.
+  let sessionId: string | null = null;
+  if (accessToken) {
+    try { sessionId = jwtDecode<{ userId: string }>(accessToken).userId || "unknown"; }
+    catch { sessionId = "unknown"; }
+  }
   useEffect(() => {
-    if (accessToken) {
-      getUserInfo();
-    }
-  }, [accessToken, getUserInfo]);
+    if (!sessionId) { clearUser(); setIsLoading(false); setError(null); return; }
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+    Promise.all([api.get("/api/user/me"), api.post("/api/meeting/token")])
+      .then(([profile, credentials]) => {
+        if (!cancelled) setUser({ ...profile.data, streamToken: credentials.data.token, apiKey: credentials.data.apiKey });
+      })
+      .catch(() => { if (!cancelled) setError("We couldn’t load your account. Check your connection and try again."); })
+      .finally(() => { if (!cancelled) setIsLoading(false); });
+    return () => { cancelled = true; };
+  }, [sessionId, attempt, clearUser, setUser]);
 
   const signup = async (email: string, password: string, otp: string) => {
     if (!email || !password) {
@@ -75,8 +69,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const res = await api.post("/api/auth/signup", { email, password, otp });
       const { accessToken } = res.data;
       setAccessToken(accessToken);
-      localStorage.setItem("accessToken", accessToken);
-      api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
       return true;
     } catch (err) {
       console.error(err);
@@ -95,9 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const res = await api.post("/api/auth/login", { email, password });
       const { accessToken } = res.data;
       setAccessToken(accessToken);
-      localStorage.setItem("accessToken", accessToken);
 
-      api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
       return true;
     } catch (err) {
       console.error(err);
@@ -130,15 +120,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setAccessToken(null);
       clearUser();
-      localStorage.removeItem("accessToken");
-      delete api.defaults.headers.common["Authorization"];
     }
   };
 
 
 
   return (
-    <AuthContext.Provider value={{ accessToken, signup, user, logout, login, handleGoogleAuth, setAccessToken }}>
+    <AuthContext.Provider value={{ accessToken, isLoading, error, retry, signup, user, logout, login, handleGoogleAuth, setAccessToken }}>
       {children}
     </AuthContext.Provider>
   );

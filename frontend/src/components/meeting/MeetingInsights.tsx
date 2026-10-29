@@ -84,7 +84,7 @@ export default function MeetingInsights() {
     const [rawSummary, setRawSummary] = useState<string>("");
     const [summary, setSummary] = useState<SummaryJSON | null>(null);
     const [meetingDetails, setMeetingDetails] = useState<MeetingDetails | null>(null);
-    const [insightStatus, setInsightStatus] = useState<"processing" | "ready" | "failed" | "forbidden" | "not-found" | "connection-error">("processing");
+    const [insightStatus, setInsightStatus] = useState<"processing" | "ready" | "failed" | "forbidden" | "not-found" | "expired" | "connection-error">("processing");
     const [retryCount, setRetryCount] = useState(0);
 
     // Chat state
@@ -128,6 +128,8 @@ export default function MeetingInsights() {
 
                 if (axios.isAxiosError(err) && err.response?.status === 403) {
                     setInsightStatus("forbidden");
+                } else if (axios.isAxiosError(err) && err.response?.status === 410) {
+                    setInsightStatus("expired");
                 } else if (axios.isAxiosError(err) && err.response?.status === 404) {
                     setInsightStatus("not-found");
                 } else if (axios.isAxiosError(err) && err.response?.data?.status === "failed") {
@@ -164,7 +166,7 @@ export default function MeetingInsights() {
         setIsChatLoading(true);
 
         try {
-            const res = await api.post(`/api/meeting/chat/${id}`, { question: userText });
+            const res = await api.post(`/api/meeting/chat/${id}`, { question: userText }, { timeout: 60_000 });
             if (res.data.success) {
                 setMessages(prev => [...prev, { sender: "ai", text: res.data.answer }]);
             } else {
@@ -180,7 +182,7 @@ export default function MeetingInsights() {
 
     if (isLoading) return <Loader />
 
-    if (insightStatus === "forbidden" || insightStatus === "not-found") {
+    if (insightStatus === "forbidden" || insightStatus === "not-found" || insightStatus === "expired") {
         const isForbidden = insightStatus === "forbidden";
         return (
             <div className="mint-app-bg flex min-h-screen items-center justify-center p-4 text-text-primary">
@@ -188,11 +190,11 @@ export default function MeetingInsights() {
                     <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                         {isForbidden ? <LockKeyhole size={22} /> : <AlertCircle size={22} />}
                     </div>
-                    <h1 className="text-xl font-bold">{isForbidden ? "Participant access required" : "Meeting not found"}</h1>
+                    <h1 className="text-xl font-bold">{isForbidden ? "Participant access required" : insightStatus === "expired" ? "Meeting expired" : "Meeting not found"}</h1>
                     <p className="mt-3 text-sm leading-relaxed text-text-secondary">
                         {isForbidden
                             ? "Only the host and past participants can access insights for this protected meeting."
-                            : "This meeting may have been removed or the link is incorrect."}
+                            : insightStatus === "expired" ? "Nobody started this meeting within 24 hours of its scheduled time, so there are no insights." : "This meeting may have been removed or the link is incorrect."}
                     </p>
                     <Button onClick={() => navigate('/dashboard/meetings')} className="mint-button mt-6 rounded-full">
                         Back to meetings

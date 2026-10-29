@@ -25,6 +25,10 @@ export const getMeetingSummary = async (req: any, res: any) => {
             return res.status(403).json({ success: false, message: "Only past participants can access these meeting insights" });
         }
 
+        if (access.isExpired) {
+            return res.status(410).json({ success: false, status: "expired", message: "This meeting expired without starting. There are no meeting insights." });
+        }
+
         const insightData = await prisma.meeting.findUnique({
             where: { id: access.meeting.id },
             select: {

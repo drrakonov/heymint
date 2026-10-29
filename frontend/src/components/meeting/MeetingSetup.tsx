@@ -1,5 +1,5 @@
 import { DeviceSettings, useCall, VideoPreview } from "@stream-io/video-react-sdk";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import toast from "react-hot-toast";
 import api from "@/lib/axios";
@@ -10,16 +10,14 @@ import { Switch } from "../ui/switch";
 import { Copy, MicOff, VideoOff, ArrowLeft, LockKeyhole, Video } from "lucide-react";
 import { getMeetingJoinLink } from "@/lib/meetingLinks";
 
-const MeetingSetup = ({ setIsSetUpComplete }: {
+const MeetingSetup = ({ setIsSetUpComplete, isMeetingProtected }: {
+    isMeetingProtected: boolean;
     setIsSetUpComplete: (value: boolean) => void
 }) => {
     const [isMicToggleOn, setIsMicToggleOn] = useState(true);
     const [isCamToggleOn, setIsCamToggleOn] = useState(true);
-    const [isMeetingProtected, setIsMeetingProtected] = useState(true);
     const [password, setPassword] = useState("");
-    const [isLoading, setIsLoading] = useState(true);
     const [isJoining, setIsJoining] = useState(false);
-    const [validationError, setValidationError] = useState(false);
 
     const call = useCall();
     const { user } = useUserStore();
@@ -66,12 +64,13 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
 
         await call.join();
         void recordMeetingParticipant(id);
+        setIsSetUpComplete(true);
 
         const isHost = call.state.createdBy?.id === user?.id;
 
         if (isHost) {
             try {
-                await api.post(`/api/meeting/${id}/recording/start`);
+                await api.post(`/api/meeting/${id}/recording/start`, undefined, { timeout: 45_000 });
                 toast.success("Meeting recording started");
             } catch (error) {
                 console.error("Failed to start meeting recording", error);
@@ -79,37 +78,10 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
             }
         }
 
-        setIsSetUpComplete(true);
     };
 
-    const handleProtectedMeetingAndValidate = useCallback(async () => {
-        try {
-
-            if (!user || !id) {
-                toast.error("User not found");
-                return;
-            }
-            setIsLoading(true);
-            setValidationError(false);
-            const res = await api.get("/api/meeting/get-isProtected", {
-                params: {
-                    meetingCode: id,
-                    userId: user.id
-                }
-            })
-
-            if (!res.data.success) throw new Error(res.data.message);
-            setIsMeetingProtected(Boolean(res.data.isProtected));
-        } catch (err) {
-            setValidationError(true);
-            console.error("Failed to validate the meeting", err);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [id, user]);
-
     const handleJoinMeeting = async () => {
-        if (isJoining || validationError || isLoading) return;
+        if (isJoining) return;
         if (!user) {
             toast.error("User not found");
             return;
@@ -155,9 +127,6 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
 
     }
 
-    useEffect(() => {
-        void handleProtectedMeetingAndValidate();
-    }, [handleProtectedMeetingAndValidate]);
 
 
     useEffect(() => {
@@ -200,7 +169,7 @@ const MeetingSetup = ({ setIsSetUpComplete }: {
                     <h1 className="mt-3 text-3xl font-semibold tracking-tight">Ready when you are.</h1>
                     <p className="mt-3 text-sm leading-6 text-text-secondary">Choose your devices, take a moment, and join the conversation.</p>
                     <div className="mt-6 rounded-xl border border-white/8 bg-white/[.025] px-4 py-3"><p className="text-[10px] uppercase tracking-wider text-text-secondary">Meeting code</p><p className="mt-2 break-all font-mono text-xs text-white/75">{id}</p></div>
-                    {isLoading ? <p role="status" className="mt-6 text-sm text-text-secondary">Checking meeting access…</p> : validationError ? <div role="alert" className="mt-6"><p className="text-sm text-text-secondary">We couldn’t check access to this room.</p><button onClick={()=>void handleProtectedMeetingAndValidate()} className="workspace-action glass-control mt-3">Try again</button></div> : <>
+                    {<>
                         {isMeetingProtected && <div className="mt-5"><label htmlFor="password" className="mb-2 flex items-center gap-2 text-xs text-text-secondary"><LockKeyhole size={13}/> This room requires a password</label><PasswordInput value={password} onChange={e=>setPassword(e.target.value)}/></div>}
                         <Button onClick={handleJoinMeeting} disabled={isJoining} className="mint-button mt-6 h-12 w-full rounded-xl font-semibold disabled:opacity-50"><Video size={16}/>{isJoining ? 'Joining…' : 'Join meeting'}</Button>
                     </>}

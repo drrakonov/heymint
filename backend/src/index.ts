@@ -14,6 +14,13 @@ import { meetingTrace, traceRuntime } from "./utils/meetingTrace";
 
 const app = express()
 const port = process.env.PORT;
+// Set this to the verified number of reverse proxies in front of this server.
+// Do not use `true`: that would trust arbitrary forwarded client IPs.
+const proxyHops = Number(process.env.TRUST_PROXY_HOPS || 0);
+if (!Number.isInteger(proxyHops) || proxyHops < 0 || proxyHops > 10) {
+  throw new Error("TRUST_PROXY_HOPS must be an integer between 0 and 10");
+}
+app.set("trust proxy", proxyHops);
 
 app.use(cors({
   origin: process.env.CORS_ORIGIN,

@@ -76,3 +76,39 @@ Configure Stream to send video webhooks to `https://<backend-host>/api/webhooks/
 
 
 © [Abhay Pratap Singh ](https://github.com/drrakonov)
+
+## Session and meeting lifecycle deployment
+
+Deploy the API and frontend together. Run `npx prisma migrate deploy` before the API
+starts; the lifecycle migration adds `Meeting.startedAt`, backfills existing attendance,
+and separates previously completed meetings from deleted meetings. The worker should
+also use the regenerated Prisma client (`npm run build`). No live database is changed
+by building or running the unit tests.
+
+- Set `BACKEND_URL` to the public HTTPS API origin and `CORS_ORIGIN` to the exact
+  frontend origin (no path). Google’s authorized callback remains
+  `<BACKEND_URL>/api/auth/google/callback`. Successful OAuth now returns to
+  `<CORS_ORIGIN>/auth/callback` and exchanges the HTTP-only cookie for an access token;
+  tokens are no longer placed in redirect URLs.
+- HTTPS deployments use host-only `Secure; SameSite=None` refresh cookies. Do not add
+  a frontend domain to the backend cookie. Browsers that block third-party cookies
+  need frontend/API custom domains under the same site or a same-origin API proxy.
+- Set `TRUST_PROXY_HOPS` to the verified number of trusted reverse proxies (normally
+  `1` for a direct Render web service). Keep it `0` locally. Never set blanket proxy trust.
+- Subscribe the Stream video webhook to `call.session_started`, `call.session_ended`,
+  `call.ended`, and the existing transcription started/ready/failed events. The last
+  participant leaving completes a meeting after Stream's session inactivity timeout;
+  the host leaving while others remain does not end it. Delayed events from an older
+  session do not stop capture in a newer one.
+- Scheduled meetings that have never started expire 24 hours after their scheduled
+  time. Expiry is evaluated on requests, so no scheduler is required. Started meetings
+  are exempt. Unstarted instant rooms appear in the host’s Drafts tab and can be reopened
+  or deleted. Expired rooms appear in Past meetings without insight actions.
+
+Validation: run `npm test` in each application, `npm run lint` and
+`npx tsc -p tsconfig.app.json --noEmit` in the frontend, and both production builds.
+Tests use in-memory service stubs and do not connect to Stream or the database.
+After deployment, verify an expired access token refresh, Google login, a two-person
+meeting (including host leaving first), ending a call, and summary processing in the
+existing `[MeetingTrace]` logs. Real microphone, cross-site cookies, and webhook delivery
+still require that deployment test.

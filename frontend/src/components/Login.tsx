@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import PasswordInput from "./subComponents/PasswordInput";
@@ -11,13 +11,16 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login, handleGoogleAuth } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from;
+  const destination = typeof from === "string" && from.startsWith("/") && !from.startsWith("//") ? from : "/dashboard";
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      if (await login(email.trim(), password)) navigate("/dashboard");
+      if (await login(email.trim(), password)) navigate(destination, { replace: true });
     } finally {
       setIsSubmitting(false);
     }

@@ -5,7 +5,7 @@ import api from "@/lib/axios";
 import { useUserStore } from "@/store/userStore";
 import PageHeader from "../workspace/PageHeader";
 
-type Meeting = { meetingId:string; title:string; meetingCode:string; createdById:string; isComplete:boolean; isProtected:boolean; meetingTime:string; canAccessInsights:boolean; hostName:string; isInstant:boolean };
+type Meeting = { meetingId:string; title:string; meetingCode:string; createdById:string; isComplete:boolean; isExpired?:boolean; isDraft?:boolean; isProtected:boolean; meetingTime:string; canAccessInsights:boolean; hostName:string; isInstant:boolean };
 export default function Dashboard() {
   const user=useUserStore(state=>state.user);
   const [meetings,setMeetings]=useState<Meeting[]>([]);
@@ -14,7 +14,7 @@ export default function Dashboard() {
   const [reload,setReload]=useState(0);
   useEffect(()=>{let cancelled=false;setLoading(true);setError(false);api.get('/api/meeting/get-meetings').then(res=>{if(!cancelled)setMeetings(res.data.meetings || []);}).catch(()=>{if(!cancelled)setError(true);}).finally(()=>{if(!cancelled)setLoading(false);});return()=>{cancelled=true;};},[reload]);
   const mine=meetings.filter(m=>m.createdById===user?.id);
-  const upcoming=mine.filter(m=>!m.isComplete).sort((a,b)=>new Date(a.meetingTime).getTime()-new Date(b.meetingTime).getTime());
+  const upcoming=mine.filter(m=>!m.isComplete && !m.isExpired && !m.isDraft).sort((a,b)=>new Date(a.meetingTime).getTime()-new Date(b.meetingTime).getTime());
   const completed=meetings.filter(m=>m.isComplete&&m.canAccessInsights).sort((a,b)=>new Date(b.meetingTime).getTime()-new Date(a.meetingTime).getTime());
   const stats=[{label:"Your meetings",value:mine.length,icon:Video},{label:"Upcoming rooms",value:upcoming.length,icon:CalendarClock},{label:"Past conversations",value:completed.length,icon:CheckCheck}];
   return <div className="page-shell">

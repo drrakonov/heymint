@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import api from "@/lib/axios";
 
 interface AuthState {
   accessToken: string | null;
@@ -11,10 +10,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   setAccessToken: (token) => {
     if (token) {
       localStorage.setItem("accessToken", token);
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     } else {
       localStorage.removeItem("accessToken");
-      delete api.defaults.headers.common["Authorization"];
     }
 
     set({ accessToken: token });

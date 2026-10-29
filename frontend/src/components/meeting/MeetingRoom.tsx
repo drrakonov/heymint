@@ -13,7 +13,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ChevronDown, Copy, LayoutGrid, PanelRight, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import EndCallButton from "./EndCallButton";
-import Loader from "../subComponents/Loader";
+import ConnectionError from "../subComponents/ConnectionError";
+import { useNavigate } from "react-router-dom";
 import { CustomCallControls } from "./CustomCallControls";
 import { getMeetingJoinLink } from "@/lib/meetingLinks";
 
@@ -26,8 +27,11 @@ const MeetingRoom = () => {
   const { useCallCallingState, useParticipants } = useCallStateHooks();
   const callingState = useCallCallingState();
   const participants = useParticipants();
+  const navigate = useNavigate();
 
-  if (callingState !== CallingState.JOINED) return <Loader />;
+  if (callingState !== CallingState.JOINED) return <ConnectionError
+    message={callingState === CallingState.LEFT ? "You’ve left the meeting, or the host ended it." : "Your meeting connection was interrupted. We’re trying to reconnect."}
+    onExit={() => navigate("/dashboard/meetings")} />;
 
   const copyCode = async () => {
     if (!call?.id) return;

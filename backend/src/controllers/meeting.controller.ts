@@ -1,3 +1,4 @@
+import { isMeetingExpired } from "../utils/meetingLifecycle";
 import { UserRequest } from "@stream-io/node-sdk"
 import { Request, Response } from "express";
 import { Prisma, PrismaClient } from "@prisma/client";
@@ -15,8 +16,10 @@ const client = streamClient;
 
 export const createGetStreamToken = async (req: Request, res: Response): Promise<any> => {
     try {
-        const { userId, name } = req.body;
-        if (!userId) {
+        const userId = (req.user as { id?: string })?.id;
+        const account = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
+        const name = account?.name;
+        if (!userId || !account) {
             return res.status(400).json({ success: false, message: "UserId not found" });
         }
 
@@ -51,7 +54,6 @@ export const handleMeetingSetup = async (req: Request, res: Response): Promise<a
             description,
             isScheduled,
             startingTime,
-            createdBy,
             isProtected,
             password,
             meetingCode
@@ -64,7 +66,7 @@ export const handleMeetingSetup = async (req: Request, res: Response): Promise<a
                 desc: description,
                 password: isProtected ? password : null,
                 isProtected: isProtected,
-                createdById: createdBy,
+                createdById: (req.user as { id: string }).id,
                 startingTime: isScheduled ? startingTime : new Date(),
                 isScheduled: isScheduled,
                 meetingCode: meetingCode
@@ -89,8 +91,7 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
 
         const meeting = await prisma.meeting.findMany({
             where: {
-                isComplete: undefined,
-                OR: [ { isDeleted: false }, { isComplete: true } ]
+                isDeleted: false
             },
             select: {
                 id: true,
@@ -100,6 +101,7 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
                 createdAt: true,
                 startingTime: true,
                 isScheduled: true,
+                startedAt: true,
                 createdBy: {
                     select: {
                         name: true
@@ -128,7 +130,9 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
             meetingCode: m.meetingCode,
             createdById: m.createdById,
             isComplete: m.isComplete,
-            canAccessInsights: !m.isProtected || m.createdById === userId || m.participants.length > 0
+            isExpired: isMeetingExpired(m),
+            isDraft: !m.isScheduled && !m.startedAt && !m.isComplete,
+            canAccessInsights: !isMeetingExpired(m) && (!m.isProtected || m.createdById === userId || m.participants.length > 0)
         }))
 
         res.status(200).json({ success: true, message: "Fetched all the meetings", meetings });
@@ -143,6 +147,11 @@ export const getAllMeetings = async (req: Request, res: Response): Promise<any> 
 export const deleteMeeting = async (req: Request, res: Response): Promise<any> => {
     try {
         const { meetingCode, isComplete } = req.body;
+        // Older clients used deletion to end calls. Preserve compatibility without deleting history.
+        if (isComplete === true) {
+            req.params.meetingCode = meetingCode;
+            return endMeeting(req, res);
+        }
         const userId = (req as any).user?.id as string | undefined;
 
         if (!meetingCode || !userId) throw new Error("missing meetingCode or userID");
@@ -158,15 +167,15 @@ export const deleteMeeting = async (req: Request, res: Response): Promise<any> =
         if (meeting.createdById !== userId) {
             return res.status(403).json({ success: false, message: "Only the meeting host can delete this meeting" });
         }
+        if (meeting.startedAt && !meeting.isComplete) {
+            return res.status(409).json({ success: false, message: "End the active meeting before deleting it" });
+        }
         await prisma.meeting.update({
             where: { id: meeting.id },
-            data: {
-                isDeleted: true,
-                isComplete
-            }
+            data: { isDeleted: true }
         })
 
-        res.status(200).json({ success: true, message: "Meeting and related records deleted successfully" });
+        res.status(200).json({ success: true, message: "Meeting deleted" });
     } catch (err) {
         console.log(err);
         res.status(500).json({ success: false, message: "Failed to delete meeting" })
@@ -229,7 +238,7 @@ export const validateProtectedPassword = async (req: Request, res: Response): Pr
         if (meeting.password === meetingPassword) {
             res.status(200).json({ success: true, message: "Password is correct", isMatched: true });
         } else {
-            res.status(401).json({ success: true, message: "Password is incorrect", isMatched: false });
+            res.status(403).json({ success: false, message: "Password is incorrect", isMatched: false });
         }
     } catch (err) {
         return res.status(500).json({ success: false, message: "Failed to validate the protected meeting" })
@@ -255,7 +264,30 @@ export const validateJoinAccess = async (req: Request, res: Response): Promise<a
             return res.status(409).json({ success: false, message: "Meeting has already ended" });
         }
 
-        res.status(200).json({ success: true, message: "Can join" });
+        if (isMeetingExpired(meeting)) {
+            // A delayed start webhook must not expire a call that actually started.
+            try {
+                const { call } = await client.video.call("default", meeting.meetingCode).get();
+                if (call.session?.started_at) {
+                    await prisma.meeting.update({ where: { id: meeting.id }, data: { startedAt: call.session.started_at } });
+                    if (call.ended_at || call.session.ended_at) {
+                        await prisma.meeting.update({ where: { id: meeting.id }, data: { isComplete: true } });
+                        return res.status(409).json({ success: false, message: "Meeting has already ended" });
+                    }
+                } else {
+                    return res.status(410).json({ success: false, message: "This meeting expired 24 hours after its scheduled start" });
+                }
+            } catch (error) {
+                // A missing Stream call is expected for a scheduled meeting nobody started.
+                if ((error as { status?: number }).status === 404 || (error as { code?: number }).code === 16) {
+                    return res.status(410).json({ success: false, message: "This meeting expired 24 hours after its scheduled start" });
+                }
+                throw error;
+            }
+        }
+        const isHost = meeting.createdById === (req.user as { id: string }).id;
+        res.status(200).json({ success: true, message: "Can join", isHost,
+            passwordRequired: meeting.isProtected && !isHost, startingTime: meeting.startingTime });
 
     } catch (err) {
         console.log("Failed to validate the access to join the meeting", err);
@@ -312,6 +344,7 @@ export const addMeetingParticipant = async (req: Request, res: Response): Promis
         }
 
         const joinedAt = new Date(connectedParticipant.joined_at);
+        await prisma.meeting.updateMany({ where: { id: meeting.id, startedAt: null }, data: { startedAt: joinedAt } });
         const participantKey = {
             meetingId_userId: {
                 meetingId: meeting.id,
@@ -509,3 +542,25 @@ export const stopMeetingRecording = async (req: any, res: Response): Promise<any
         return res.status(500).json({ success: false, message: "Failed to stop meeting recording" });
     }
 }
+
+// One server operation owns completion; a verified webhook provides a second durable path.
+export const endMeeting = async (req: Request, res: Response): Promise<any> => {
+    const meetingCode = String(req.params.meetingCode || "");
+    try {
+        const meeting = await prisma.meeting.findUnique({ where: { meetingCode } });
+        if (!meeting || meeting.isDeleted) return res.status(404).json({ success: false, message: "Meeting not found" });
+        if (meeting.createdById !== (req.user as { id: string }).id) {
+            return res.status(403).json({ success: false, message: "Only the host can end the meeting for everyone" });
+        }
+        if (meeting.isComplete) return res.json({ success: true });
+        const call = client.video.call("default", meetingCode);
+        const current = await call.get();
+        if (!current.call.ended_at) await call.end();
+        await prisma.meeting.update({ where: { id: meeting.id }, data: { isComplete: true } });
+        meetingTrace("meeting.completed", { meetingCode, source: "end_request" });
+        return res.json({ success: true, message: "Meeting ended" });
+    } catch (error) {
+        meetingTrace("meeting.end_failed", { meetingCode, ...traceError(error) });
+        return res.status(503).json({ success: false, message: "Could not confirm meeting completion. Please retry." });
+    }
+};

@@ -9,7 +9,7 @@
     "start": "node ./dist/index.js",
     "worker": "node ./dist/workers/transcription.worker.js",
     "dev": "npm run build && npm start",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test tests/*.test.cjs"
   },
   "keywords": [],
   "author": "",

@@ -152,6 +152,24 @@ export const handleStreamWebhook = async (req: Request, res: Response): Promise<
             return res.sendStatus(200);
         }
 
+        if (event.type === "call.session_started") {
+            await prisma.meeting.updateMany({
+                where: { meetingCode: getCallId(event.call_cid), startedAt: null },
+                data: { startedAt: event.created_at }
+            });
+            meetingTrace("meeting.started", { requestId, callCid: event.call_cid });
+            return res.sendStatus(200);
+        }
+
+        if (event.type === "call.ended") {
+            await prisma.meeting.updateMany({
+                where: { meetingCode: getCallId(event.call_cid), isComplete: false },
+                data: { isComplete: true }
+            });
+            meetingTrace("meeting.completed", { requestId, callCid: event.call_cid, source: "call.ended" });
+            return res.sendStatus(200);
+        }
+
         if (event.type !== "call.session_ended") {
             meetingTrace("webhook.ignored", { requestId, type: event.type });
             return res.sendStatus(200);
@@ -160,6 +178,18 @@ export const handleStreamWebhook = async (req: Request, res: Response): Promise<
         const call = streamClient.video.call(event.call.type, event.call.id);
         const callResponse = await call.get();
         meetingTrace("session.ended", { requestId, callCid: event.call_cid, recordingStatus: callResponse.call.egress.individual_recording?.status, transcribing: callResponse.call.transcribing });
+        // Ignore a delayed event belonging to an older session. Never stop a new session.
+        const session = callResponse.call.session;
+        if ((callResponse.call.current_session_id && callResponse.call.current_session_id !== event.session_id)
+            || (session && session.id !== event.session_id)) {
+            meetingTrace("session.stale_end_ignored", { requestId, callCid: event.call_cid });
+            return res.sendStatus(200);
+        }
+        await prisma.meeting.updateMany({
+            where: { meetingCode: getCallId(event.call_cid), isComplete: false },
+            data: { isComplete: true }
+        });
+        meetingTrace("meeting.completed", { requestId, callCid: event.call_cid, source: "session_ended" });
         const stopOperations: Promise<unknown>[] = [];
 
         if (callResponse.call.egress.individual_recording?.status === "active") {

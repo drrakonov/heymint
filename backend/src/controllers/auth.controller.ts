@@ -8,18 +8,20 @@ import { sendOtpEmail } from "../utils/email";
 
 
 
-export const setRefreshToken = (res: Response, token: string) => {
-    res.cookie(process.env.COOKIE_NAME || "refreshToken", token, {
-        httpOnly: true,
-        secure: process.env.COOKIE_SECURE === "true",
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+// Host-only cookies work across frontend/backend origins without sharing the cookie
+// with every subdomain. HTTPS deployments need SameSite=None for cross-site fetches.
+export const refreshCookieOptions = () => {
+    const secure = process.env.COOKIE_SECURE === "true"
+        || process.env.NODE_ENV === "production"
+        || process.env.BACKEND_URL?.startsWith("https://") === true;
+    return { httpOnly: true, secure, sameSite: secure ? "none" as const : "lax" as const, path: "/" };
 };
 
-
-
-
+export const setRefreshToken = (res: Response, token: string) => {
+    res.cookie(process.env.COOKIE_NAME || "refreshToken", token, {
+        ...refreshCookieOptions(), maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+};
 
 const prisma = new PrismaClient();
 
@@ -74,7 +76,7 @@ export const signup = async (req: Request, res: Response): Promise<any> => {
         })
     }
 
-    const isOtpVerified = verifyOtp(email, otp);
+    const isOtpVerified = await verifyOtp(email, otp);
     if (!isOtpVerified) {
         return res.status(400).json({ success: false, message: "Invalid OTP" });
     }
@@ -144,7 +146,12 @@ export const refresh = async (req: Request, res: Response): Promise<any> => {
 
     try {
 
-        const decoded = verifyRefreshToken(token) as { userId: string };
+        let decoded: { userId: string };
+        try {
+            decoded = verifyRefreshToken(token) as { userId: string };
+        } catch {
+            return res.status(401).json({ message: "Session expired. Please sign in again." });
+        }
         const exists = await prisma.refreshToken.findUnique({ where: { token } });
         if (!exists || exists.expiresAt < new Date()) {
             return res.status(403).json({ message: "Invalid refresh token" });
@@ -176,7 +183,7 @@ export const logout = async (req: Request, res: Response): Promise<any> => {
         await prisma.refreshToken.deleteMany({ where: { token } });
     }
 
-    res.clearCookie(process.env.COOKIE_NAME || "refreshToken");
+    res.clearCookie(process.env.COOKIE_NAME || "refreshToken", refreshCookieOptions());
     res.status(200).json({ message: "Logged out" });
 
 }

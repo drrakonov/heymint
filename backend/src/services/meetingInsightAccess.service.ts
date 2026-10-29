@@ -1,3 +1,4 @@
+import { isMeetingExpired } from "../utils/meetingLifecycle";
 import { PrismaClient } from "@prisma/client";
 
 export const getMeetingInsightAccess = async (
@@ -12,6 +13,10 @@ export const getMeetingInsightAccess = async (
             title: true,
             startingTime: true,
             isProtected: true,
+            isDeleted: true,
+            isScheduled: true,
+            startedAt: true,
+            isComplete: true,
             createdById: true,
             participants: {
                 where: { userId },
@@ -21,7 +26,7 @@ export const getMeetingInsightAccess = async (
         }
     });
 
-    if (!meeting) {
+    if (!meeting || meeting.isDeleted) {
         return null;
     }
 
@@ -31,6 +36,7 @@ export const getMeetingInsightAccess = async (
 
     return {
         canAccess,
+        isExpired: isMeetingExpired(meeting),
         meeting: {
             id: meeting.id,
             title: meeting.title,

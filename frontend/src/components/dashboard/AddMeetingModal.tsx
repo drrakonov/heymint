@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { useUserStore } from "@/store/userStore"
-import { useStreamVideoClient } from "@stream-io/video-react-sdk"
 import { Link, useNavigate } from "react-router-dom"
 import api from "@/lib/axios"
 import toast from "react-hot-toast"
@@ -239,7 +238,6 @@ export default function CreateMeeting() {
     }
   }
   const { user } = useUserStore();
-  const client = useStreamVideoClient();
   const navigate = useNavigate();
 
 
@@ -287,7 +285,7 @@ export default function CreateMeeting() {
       }
 
       if(meetingType === "quick-meeting") {
-        await handleCreateMeeting(code, startsAt);
+        navigate(`/meeting/${code}`);
         return;
       }
       toast.success("meeting created successfully!")
@@ -302,33 +300,6 @@ export default function CreateMeeting() {
   }
 
 
-
-
-
-  const handleCreateMeeting = async (id: string, startsAt: Date) => {
-    if (!client) { toast.error("Video client connecting... please try again in a few seconds."); return; }
-    if (!user || !id) return;
-
-    try {
-      const call = client.call("default", id);
-
-      if (!call) throw new Error("Failed to create call");
-
-      await call.getOrCreate({
-        data: {
-          starts_at: startsAt.toISOString(),
-          custom: {
-            description: "quick-meeting"
-          }
-        }
-      })
-      navigate(`/meeting/${call.id}`);
-
-    } catch (err) {
-      console.error("Failed to create meeting", err);
-    }
-
-  }
 
 
 

@@ -1,6 +1,6 @@
 import express from 'express';
 import expressAsyncHandler from 'express-async-handler';
-import { addMeetingParticipant, createGetStreamToken, deleteMeeting, getAllMeetings, handleMeetingSetup, isProtectedMeetingValidation, startMeetingRecording, stopMeetingRecording, validateJoinAccess, validateProtectedPassword } from '../controllers/meeting.controller';
+import { endMeeting, addMeetingParticipant, createGetStreamToken, deleteMeeting, getAllMeetings, handleMeetingSetup, isProtectedMeetingValidation, startMeetingRecording, stopMeetingRecording, validateJoinAccess, validateProtectedPassword } from '../controllers/meeting.controller';
 import { authenticate, validateMeetingInput } from '../middlewares/auth.middleware';
 import { getMeetingSummary } from '../controllers/summarizer.controller';
 import { handleSummaryChat } from "../controllers/chat.controller"
@@ -14,6 +14,7 @@ router.post("/delete-meeting", authenticate, expressAsyncHandler(deleteMeeting))
 router.get("/get-isProtected", authenticate, expressAsyncHandler(isProtectedMeetingValidation));
 router.post("/get-meeting-validation", authenticate, expressAsyncHandler(validateProtectedPassword));
 router.get("/validate-access", authenticate, expressAsyncHandler(validateJoinAccess))
+router.post("/:meetingCode/end", authenticate, expressAsyncHandler(endMeeting));
 router.post("/:meetingCode/participants", authenticate, expressAsyncHandler(addMeetingParticipant));
 
 

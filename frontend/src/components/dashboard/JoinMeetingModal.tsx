@@ -3,7 +3,6 @@ import { Video, Link2, ArrowRight, ShieldCheck, Mic } from "lucide-react";
 import PageHeader from "../workspace/PageHeader";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { useStreamVideoClient } from "@stream-io/video-react-sdk";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from "@/store/userStore";
@@ -15,14 +14,13 @@ export default function JoinMeetingModal() {
   const { user } = useUserStore();
 
   const isFormValid = meetingId.trim() !== "";
-  const client = useStreamVideoClient();
   const navigate = useNavigate();
 
   const handleJoinMeeting = async () => {
     if (!isFormValid || isJoining) return;
 
     try {
-      if (!client || !user) {
+      if (!user) {
         toast.error("unable to join this call");
         return;
       }
@@ -33,15 +31,7 @@ export default function JoinMeetingModal() {
         toast.error("Enter a valid meeting link or code");
         return;
       }
-      const call = client.call("default", code);
-      if (!call) throw new Error("Failed to create call");
-
-      try {
-        await call.get();
-        navigate(`/meeting/${code}`);
-      } catch {
-        toast.error("Meeting not available yet. Wait for the host to start.");
-      }
+      navigate(`/meeting/${code}`);
 
     } catch (error) {
       console.error("Join failed", error);

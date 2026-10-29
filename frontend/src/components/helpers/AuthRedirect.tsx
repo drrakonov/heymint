@@ -1,26 +1,20 @@
-// components/AuthRedirect.tsx
-import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { refreshAccessToken } from "@/lib/axios";
+import Loader from "../subComponents/Loader";
+import ConnectionError from "../subComponents/ConnectionError";
 
-const AuthRedirect = () => {
-  const location = useLocation();
+export default function AuthRedirect() {
   const navigate = useNavigate();
-  const { setAccessToken } = useAuth();
-
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const access = params.get("access");
-    if (access) {
-      setAccessToken(access);
-      localStorage.setItem("accessToken", access);
-      navigate("/dashboard", { replace: true });
-    } else {
-      navigate("/auth/login", { replace: true });
-    }
-  }, [location, setAccessToken, navigate]);
-
-  return null;
-};
-
-export default AuthRedirect;
+    let cancelled = false;
+    setError(false);
+    void refreshAccessToken().then(() => {
+      if (!cancelled) navigate("/dashboard", { replace: true });
+    }).catch(() => { if (!cancelled) setError(true); });
+    return () => { cancelled = true; };
+  }, [navigate, attempt]);
+  return error ? <ConnectionError message="We couldn’t finish signing you in. Allow cookies for this site and try again." onRetry={() => setAttempt(n => n + 1)} onExit={() => navigate("/auth/login")} /> : <Loader />;
+}

@@ -4,13 +4,11 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import toast from 'react-hot-toast';
 import api from "@/lib/axios";
-import { useUserStore } from "@/store/userStore";
 import { PhoneOff } from "lucide-react";
 
 const EndCallButton = () => {
     const call = useCall();
     const navigate = useNavigate();
-    const { user } = useUserStore();
     const { id } = useParams();
 
     if (!call) {
@@ -40,29 +38,7 @@ const EndCallButton = () => {
         setIsEnding(true);
 
         try {
-            try {
-                await api.post(`/api/meeting/${id}/recording/stop`);
-            } catch (error) {
-                console.error("Failed to stop recording before ending the call", error);
-            }
-
-            await call.endCall();
-
-            try {
-                const res = await api.post("/api/meeting/delete-meeting", {
-                    userId: user?.id,
-                    meetingCode: id,
-                    isComplete: true
-                });
-
-                if (!res.data.success) {
-                    throw new Error(res.data.message || "Failed to complete meeting");
-                }
-            } catch (error) {
-                console.error("Meeting ended but could not be marked complete", error);
-                toast.error("Meeting ended, but its status could not be updated");
-            }
-
+            await api.post(`/api/meeting/${id}/end`, undefined, { timeout: 30_000 });
             toast.success("Meeting ended! Generating AI summary...");
             navigate("/dashboard");
         } catch (error) {
