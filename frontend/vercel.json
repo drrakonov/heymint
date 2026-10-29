@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/api/:path*", "destination": "https://heymint.onrender.com/api/:path*" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }

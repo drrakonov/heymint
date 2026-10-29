@@ -1,22 +1,19 @@
-import express, { Request, Response } from "express";
+import { completeGoogleLogin, exchangeGoogleCode, oauthChallengeValid } from "../controllers/oauth.controller";
+import express from "express";
 import {
   login,
   refresh,
   logout,
   signup,
-  setRefreshToken,
   setupOtp,
 } from "../controllers/auth.controller";
 import asyncHandler from 'express-async-handler'
 import { validateLoginAuth, validateSignupAuth,  } from "../middlewares/auth.middleware";
 import passport from "passport";
-import { generateRefreshToken } from "../utils/jwt";
-import { PrismaClient } from "@prisma/client"
 import limiter from "../middlewares/ratelimiter.middleware";
 
 
 const router = express.Router();
-const prisma = new PrismaClient();
 const frontendUrl = (process.env.CORS_ORIGIN || "http://localhost:5173").replace(/\/$/, "");
 // CORS alone does not prevent cross-site cookie-authenticated mutations.
 const requireTrustedOrigin: express.RequestHandler = (req, res, next) => {
@@ -36,26 +33,18 @@ router.post("/logout", requireTrustedOrigin, asyncHandler(logout));
 
 
 
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-
-
-router.get('/google/callback', 
-  passport.authenticate('google', { session: false, failureRedirect: `${frontendUrl}/auth/login?error=google` }),
-  async (req: Request, res: Response) => {
-    const user = req.user as any;
-
-    const refreshToken = generateRefreshToken(user.id);
-
-    await prisma.refreshToken.create({
-      data: {
-        token: refreshToken,
-        userId: user.id,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
-    });
-    setRefreshToken(res, refreshToken);
-    res.redirect(`${frontendUrl}/auth/callback`);
+router.get('/google', (req, res, next) => {
+  const challenge = req.query.challenge;
+  if (!oauthChallengeValid(challenge)) {
+    res.redirect(`${frontendUrl}/auth/login?error=google`);
+    return;
   }
-)
+  passport.authenticate('google', { scope: ['profile', 'email'], state: challenge })(req, res, next);
+});
+router.get('/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: `${frontendUrl}/auth/login?error=google` }),
+  asyncHandler(completeGoogleLogin)
+);
+router.post('/google/exchange', requireTrustedOrigin, limiter, asyncHandler(exchangeGoogleCode));
 
 export default router;

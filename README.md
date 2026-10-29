@@ -88,11 +88,14 @@ by building or running the unit tests.
 - Set `BACKEND_URL` to the public HTTPS API origin and `CORS_ORIGIN` to the exact
   frontend origin (no path). Google’s authorized callback remains
   `<BACKEND_URL>/api/auth/google/callback`. Successful OAuth now returns to
-  `<CORS_ORIGIN>/auth/callback` and exchanges the HTTP-only cookie for an access token;
+  `<CORS_ORIGIN>/auth/callback` and exchanges a two-minute, single-use code bound to the browser’s verifier for an access token;
   tokens are no longer placed in redirect URLs.
 - HTTPS deployments use host-only `Secure; SameSite=None` refresh cookies. Do not add
-  a frontend domain to the backend cookie. Browsers that block third-party cookies
-  need frontend/API custom domains under the same site or a same-origin API proxy.
+  a frontend domain to the backend cookie. Browser API requests use same-origin `/api`:
+  Vite proxies to `VITE_BACKEND_URL` locally; Vercel proxies to `https://heymint.onrender.com`.
+  If the production API moves, update `frontend/vercel.json`. This also keeps refresh
+  cookies first-party when third-party cookies are blocked. Restart Vite after changing
+  its proxy configuration. Google redirects still use `VITE_BACKEND_URL`.
 - Set `TRUST_PROXY_HOPS` to the verified number of trusted reverse proxies (normally
   `1` for a direct Render web service). Keep it `0` locally. Never set blanket proxy trust.
 - Subscribe the Stream video webhook to `call.session_started`, `call.session_ended`,

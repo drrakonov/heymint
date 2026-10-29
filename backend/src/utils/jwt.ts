@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { randomUUID } from 'crypto';
 
 export const generateAccessToken = (userId: string) => {
   try {
@@ -33,7 +34,7 @@ export const generateRefreshToken = (userId: string) => {
     return jwt.sign(
       { userId },
       JWT_REFRESH_SECRET,
-      { expiresIn: JWT_REFRESH_EXPIRES_IN }
+      { expiresIn: JWT_REFRESH_EXPIRES_IN, jwtid: randomUUID() }
     );
   } catch (err) {
     console.error("Failed to generate refresh token", err);

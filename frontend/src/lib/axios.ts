@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
 
-const options = { baseURL: import.meta.env.VITE_BACKEND_URL, withCredentials: true, timeout: 15_000 };
+const options = { baseURL: "/", withCredentials: true, timeout: 15_000 };
 const api = axios.create(options);
 // Refresh must never pass through the interceptor that waits for refresh.
 const sessionApi = axios.create(options);
@@ -39,7 +39,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(response => response, async (error) => {
   const request = error.config;
   // A wrong login or meeting password is not an expired session.
-  const excluded = /\/auth\/(login|signup|refresh|logout|send-otp)/.test(request?.url ?? "");
+  const excluded = /\/auth\/(login|signup|refresh|logout|send-otp|google)/.test(request?.url ?? "");
   if (!request || excluded || error.response?.status !== 401 || request._retry) throw error;
   request._retry = true;
   const currentToken = useAuthStore.getState().accessToken;

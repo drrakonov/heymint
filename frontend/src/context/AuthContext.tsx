@@ -99,7 +99,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const googleOAuth = async () => {
     try {
       const backendURL = import.meta.env.VITE_BACKEND_URL;
-      window.location.href = `${backendURL}/api/auth/google`
+      const bytes = crypto.getRandomValues(new Uint8Array(32));
+      const encode = (value: Uint8Array) => btoa(String.fromCharCode(...value)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      const verifier = encode(bytes);
+      sessionStorage.setItem("googleVerifier", verifier);
+      const challenge = encode(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier))));
+      window.location.href = `${backendURL}/api/auth/google?challenge=${challenge}`;
     } catch (err) {
       console.log(err);
       toast.error("Failed to sign-in with google")
