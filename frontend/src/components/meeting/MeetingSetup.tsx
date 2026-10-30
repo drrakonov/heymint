@@ -1,5 +1,6 @@
 import { enterMeeting } from "@/lib/joinMeeting";
 import { DeviceSettings, useCall, VideoPreview } from "@stream-io/video-react-sdk";
+import BrandLogo from "../BrandLogo";
 import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import toast from "react-hot-toast";
@@ -118,6 +119,7 @@ const MeetingSetup = ({ setIsSetUpComplete, isMeetingProtected }: {
 
     return (
         <div className="auth-layout mint-app-bg flex min-h-dvh flex-col items-center justify-center p-4 text-text-primary sm:p-8">
+            <BrandLogo className="mb-6 w-28"/>
             <div className="mb-6 flex w-full max-w-5xl items-center justify-between gap-4">
                 <button onClick={()=>navigate('/dashboard/meetings')} className="flex items-center gap-2 text-xs text-text-secondary hover:text-white"><ArrowLeft size={15}/> Back to meetings</button>
                 <button onClick={copyInviteLink} className="glass-control flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs text-primary"><Copy size={14}/> Copy invite</button>

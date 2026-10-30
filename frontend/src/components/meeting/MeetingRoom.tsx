@@ -19,6 +19,7 @@ import ConnectionError from "../subComponents/ConnectionError";
 import { useNavigate } from "react-router-dom";
 import { CustomCallControls } from "./CustomCallControls";
 import { getMeetingJoinLink } from "@/lib/meetingLinks";
+import BrandLogo from "../BrandLogo";
 
 type CallLayoutType = "grid" | "speaker-left" | "speaker-right";
 
@@ -72,6 +73,7 @@ const MeetingRoom = () => {
 
       <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-2 p-3 sm:p-5">
         <div className="liquid-glass flex items-center gap-3 rounded-full px-4 py-2">
+          <BrandLogo className="hidden w-20 md:block"/>
           <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-40"/><span className="relative h-2.5 w-2.5 rounded-full bg-primary"/></span>
           <div className="relative hidden sm:block"><p className="text-xs font-medium text-white/90">Meeting in progress</p><p className="text-[10px] text-white/40">{participants.length} participant{participants.length === 1 ? "" : "s"}</p></div>
         </div>

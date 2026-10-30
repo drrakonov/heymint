@@ -1,9 +1,11 @@
 import { motion } from 'motion/react';
+import BrandLogo from '../BrandLogo';
 
 // Loader.jsx
 const Loader = () => {
   return (
     <motion.div className='mint-app-bg flex min-h-[70vh] w-full flex-col items-center justify-center gap-5'>
+        <BrandLogo className="mb-2 w-32"/>
         <div className="flex items-center gap-2">
             <motion.span
                 initial={{
@@ -54,4 +56,3 @@ const Loader = () => {
 };
 
 export default Loader;
-

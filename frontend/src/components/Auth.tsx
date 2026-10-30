@@ -1,11 +1,12 @@
 import { Link, Outlet } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Leaf, Video, FileText, MessageSquare } from "lucide-react";
+import { ArrowLeft, ArrowRight, Video, FileText, MessageSquare } from "lucide-react";
+import BrandLogo from "./BrandLogo";
 
 export default function AuthLayout() {
   return (
     <div className="auth-layout mint-app-bg min-h-dvh text-text-primary">
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 sm:px-10">
-        <Link to="/" className="flex items-center gap-2 text-xl font-semibold tracking-tight" aria-label="HeyMint home"><span className="brand-mark"><Leaf size={19}/></span><span>hey<span className="text-primary">Mint.</span></span></Link>
+        <Link to="/" aria-label="HeyMint home"><BrandLogo className="w-28 sm:w-32"/></Link>
         <Link to="/" className="flex items-center gap-2 text-xs text-text-secondary hover:text-white"><ArrowLeft size={14}/> Back to home</Link>
       </header>
       <main className="mx-auto grid w-full max-w-7xl items-center gap-12 px-6 pb-12 pt-4 sm:px-10 lg:min-h-[calc(100dvh-100px)] lg:grid-cols-2 lg:gap-20 lg:py-12">

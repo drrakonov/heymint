@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="528 32 108 112" fill="none">
+  <title>HeyMint</title>
+  <defs>
+    <linearGradient id="mint" x1="582" y1="41" x2="582" y2="138" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00EFA9"/>
+      <stop offset="1" stop-color="#00CE92"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#mint)" d="M551 130C537 118 537 99 544 83C548 73 555 65 564 60L566 70C572 59 580 53 588 49L589 56C599 48 610 43 622 41C626 51 624 62 620 74L625 71C625 83 622 94 617 102L623 100C615 124 589 142 559 135L578 111L591 96L580 99L612 53Z"/>
+</svg>
