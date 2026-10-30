@@ -1,3 +1,4 @@
+import { readMeetingResume, clearMeetingResume } from "@/lib/meetingResume";
 import { useStreamVideoClient, type Call } from "@stream-io/video-react-sdk";
 import { useEffect, useState } from "react";
 import { useUserStore } from "@/store/userStore";
@@ -25,11 +26,14 @@ export const useGetCallById = (id: string) => {
         const load = async () => {
             try {
                 const { data } = await api.get("/api/meeting/validate-access", {
-                    params: { meetingCode: id }, signal: controller.signal,
+                    params: { meetingCode: id, resume: readMeetingResume(userId, id) ? "1" : undefined }, signal: controller.signal,
                 });
                 if (cancelled) return;
                 room = client.call("default", id);
-                await withTimeout(data.isHost ? room.getOrCreate({ data: { starts_at: data.startingTime } }) : room.get());
+                await withTimeout(data.isHost ? room.getOrCreate({ data: { starts_at: data.startingTime, settings_override: {
+                    session: { inactivity_timeout_seconds: 120 },
+                    transcription: { mode: "auto-on", language: "auto" },
+                } } }) : room.get());
                 if (room.state.endedAt) throw new Error("This meeting has already ended.");
                 if (!cancelled) { setPasswordRequired(data.passwordRequired); setCall(room); }
             } catch (error) {
@@ -43,6 +47,7 @@ export const useGetCallById = (id: string) => {
             cancelled = true;
             controller.abort();
             if (room) {
+                if (room.state.callingState === "joined") clearMeetingResume(userId, id);
                 void room.camera.disable().catch(() => undefined);
                 void room.microphone.disable().catch(() => undefined);
                 void room.leave().catch(() => undefined);

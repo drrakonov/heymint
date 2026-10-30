@@ -35,7 +35,6 @@ export const getMeetingSummary = async (req: any, res: any) => {
                 summary: { select: { content: true } },
                 transcriptionJobs: {
                     orderBy: { createdAt: "desc" },
-                    take: 1,
                     select: { status: true, attempts: true }
                 }
             }
@@ -43,28 +42,25 @@ export const getMeetingSummary = async (req: any, res: any) => {
 
         const meetingDetails = access.meeting;
 
-        const job = insightData?.transcriptionJobs[0];
-        meetingTrace("insights.state", { meetingCode: String(id), meetingId: access.meeting.id, hasSummary: Boolean(insightData?.summary), jobStatus: job?.status || "NO_JOB", attempts: job?.attempts });
-
-        if (!insightData?.summary || (job && job.status !== "COMPLETED")) {
-            const maximumAttempts = Number(process.env.TRANSCRIPTION_WORKER_MAX_ATTEMPTS || 5);
-            const hasPermanentlyFailed = job?.status === "FAILED" && job.attempts >= maximumAttempts;
-
-            if (hasPermanentlyFailed) {
-                return res.status(500).json({
-                    success: false,
-                    status: "failed",
-                    message: "Meeting insights could not be generated",
-                    meeting: meetingDetails
-                });
+        const jobs = insightData?.transcriptionJobs || [];
+        const maximumAttempts = Number(process.env.TRANSCRIPTION_WORKER_MAX_ATTEMPTS || 5);
+        const pending = jobs.find(job => ["WAITING", "PENDING", "PROCESSING"].includes(job.status)
+            || (job.status === "FAILED" && job.attempts < maximumAttempts));
+        const failed = jobs.some(job => job.status === "FAILED" && job.attempts >= maximumAttempts);
+        meetingTrace("insights.state", { meetingCode: String(id), meetingId: access.meeting.id,
+            hasSummary: Boolean(insightData?.summary), jobs: jobs.length, pending: Boolean(pending), failed });
+        // A silent or failed rejoin must not hide an earlier usable summary.
+        if (!insightData?.summary || pending) {
+            if (pending || !jobs.length) {
+                return res.status(202).json({ success: false, status: pending?.status.toLowerCase() || "waiting_for_recording",
+                    message: "Meeting insights are being generated", meeting: meetingDetails });
             }
-
-            return res.status(202).json({
-                success: false,
-                status: job?.status?.toLowerCase() || "waiting_for_recording",
-                message: "Meeting insights are being generated",
-                meeting: meetingDetails
-            });
+            if (failed) {
+                return res.status(500).json({ success: false, status: "failed",
+                    message: "Meeting insights could not be generated", meeting: meetingDetails });
+            }
+            return res.status(200).json({ success: false, status: "no_speech",
+                message: "No speech was detected in this meeting. Summary and chat are unavailable.", meeting: meetingDetails });
         }
 
         return res.status(200).json({ success: true, summary: insightData.summary.content, meeting: meetingDetails });

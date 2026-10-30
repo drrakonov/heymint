@@ -1,3 +1,4 @@
+import { parseStreamSpeech } from "../utils/parseStreamTranscript";
 require("dotenv").config();
 
 import { PrismaClient } from "@prisma/client";
@@ -21,17 +22,6 @@ type TranscriptionJobRow = {
     transcriptionUrl: string;
     attempts: number;
     leaseToken: string;
-};
-
-type StreamTranscriptLine = {
-    type?: string;
-    start_time?: string;
-    stop_time?: string;
-    start_ts?: number | string;
-    stop_ts?: number | string;
-    speaker_id?: string;
-    user_id?: string;
-    text?: string;
 };
 
 type ParsedSegment = {
@@ -130,46 +120,8 @@ const parseTranscript = async (job: TranscriptionJobRow, rawTranscript: string):
     });
     const baseTime = (meeting?.startingTime || meeting?.createdAt || new Date()).getTime();
 
-    const lines = rawTranscript.split(/\r?\n/).filter(Boolean);
-    const speech = lines
-        .map((line) => {
-            try {
-                return JSON.parse(line) as StreamTranscriptLine;
-            } catch {
-                return null;
-            }
-        })
-        .filter((line): line is StreamTranscriptLine => Boolean(line && line.type === "speech" && line.text?.trim()))
-        .map((line) => {
-            let startedAt: Date;
-            let endedAt: Date;
-
-            if (line.start_time && line.stop_time) {
-                startedAt = new Date(line.start_time);
-                endedAt = new Date(line.stop_time);
-            } else if (line.start_ts !== undefined && line.stop_ts !== undefined) {
-                const s = Number(line.start_ts);
-                const e = Number(line.stop_ts);
-                startedAt = new Date(baseTime + s);
-                endedAt = new Date(baseTime + e);
-            } else {
-                startedAt = new Date(NaN);
-                endedAt = new Date(NaN);
-            }
-
-            const speakerId = line.speaker_id || line.user_id || "unknown";
-
-            return {
-                ...line,
-                speaker_id: speakerId,
-                startedAt,
-                endedAt
-            };
-        })
-        .filter((line) => !Number.isNaN(line.startedAt.getTime()) && !Number.isNaN(line.endedAt.getTime()))
-        .sort((first, second) => first.startedAt.getTime() - second.startedAt.getTime());
-
-    if (speech.length === 0) throw new Error("Stream transcript did not contain speech segments");
+    const speech = parseStreamSpeech(rawTranscript, baseTime);
+    if (!speech.length) return [];
 
     const speakerIds = [...new Set(speech.map((line) => line.speaker_id))];
     const users = await prisma.user.findMany({
@@ -200,7 +152,7 @@ const formatElapsedTime = (milliseconds: number) => {
     return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(":");
 };
 
-const processJob = async (job: TranscriptionJobRow) => {
+export const processJob = async (job: TranscriptionJobRow) => {
     const trace = { jobId: job.id, meetingId: job.meetingId, sessionId: job.sessionId, attempt: job.attempts };
     meetingTrace("worker.download_started", trace);
     const rawTranscript = await downloadTranscript(job.transcriptionUrl);
@@ -208,6 +160,15 @@ const processJob = async (job: TranscriptionJobRow) => {
     const segments = await parseTranscript(job, rawTranscript);
     meetingTrace("worker.transcript_parsed", { ...trace, segments: segments.length });
     await renewLease(job);
+    if (!segments.length) {
+        const completed = await prisma.transcriptionJob.updateMany({
+            where: { id: job.id, status: "PROCESSING", leaseToken: job.leaseToken },
+            data: { status: "COMPLETED", leaseToken: null, leaseExpiresAt: null, lastError: null }
+        });
+        if (completed.count !== 1) throw new Error(`Lease lost before completing transcription job ${job.id}`);
+        meetingTrace("worker.no_speech", { ...trace, outcome: "COMPLETED", retry: false });
+        return;
+    }
 
     await prisma.$transaction(async (transaction) => {
         await transaction.transcriptSegment.deleteMany({ where: { transcriptionJobId: job.id } });
@@ -270,8 +231,7 @@ const markFailed = async (job: TranscriptionJobRow, error: unknown) => {
 
 let stopping = false;
 const stop = () => { stopping = true; meetingTrace("worker.stopping"); };
-process.on("SIGINT", stop);
-process.on("SIGTERM", stop);
+
 
 const main = async () => {
     validateConfiguration();
@@ -308,6 +268,9 @@ const main = async () => {
     }
 };
 
+if (require.main === module) {
+process.on("SIGINT", stop);
+process.on("SIGTERM", stop);
 main()
     .catch((error) => {
         meetingTrace("worker.fatal", traceError(error));
@@ -316,3 +279,5 @@ main()
     .finally(async () => {
         await prisma.$disconnect();
     });
+
+}

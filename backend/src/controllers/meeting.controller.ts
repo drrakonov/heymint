@@ -1,3 +1,4 @@
+import { ensureMeetingCapture } from "../services/meetingCapture.service";
 import { isMeetingExpired } from "../utils/meetingLifecycle";
 import { UserRequest } from "@stream-io/node-sdk"
 import { Request, Response } from "express";
@@ -286,8 +287,11 @@ export const validateJoinAccess = async (req: Request, res: Response): Promise<a
             }
         }
         const isHost = meeting.createdById === (req.user as { id: string }).id;
+        const participant = req.query.resume === "1" ? await prisma.meetingParticipant.findUnique({
+            where: { meetingId_userId: { meetingId: meeting.id, userId: (req.user as { id: string }).id } }
+        }) : null;
         res.status(200).json({ success: true, message: "Can join", isHost,
-            passwordRequired: meeting.isProtected && !isHost, startingTime: meeting.startingTime });
+            passwordRequired: meeting.isProtected && !isHost && !participant, startingTime: meeting.startingTime });
 
     } catch (err) {
         console.log("Failed to validate the access to join the meeting", err);
@@ -433,59 +437,12 @@ export const startMeetingRecording = async (req: any, res: Response): Promise<an
             return res.status(403).json({ success: false, message: "Only the meeting host can start recording" });
         }
 
-        const call = client.video.call("default", meetingCode);
-        const callResponse = await call.get();
-
-        meetingTrace("recording.call_state", { meetingCode, ended: Boolean(callResponse.call.ended_at), sessionId: callResponse.call.current_session_id, transcribing: callResponse.call.transcribing, recordingStatus: callResponse.call.egress.individual_recording?.status });
-        if (callResponse.call.ended_at || !callResponse.call.current_session_id) {
-            return res.status(409).json({ success: false, message: "Meeting session is not active" });
+        if (meeting.isDeleted || meeting.isComplete) {
+            return res.status(409).json({ success: false, message: "Meeting has ended" });
         }
+        await ensureMeetingCapture(meetingCode);
+        return res.status(200).json({ success: true, message: "Recording and transcription are active" });
 
-        const isRecording = callResponse.call.egress.individual_recording?.status === "active";
-        const isTranscribing = callResponse.call.transcribing;
-
-        //  Configure the call settings to ensure recording and transcription are available
-        await call.update({
-            settings_override: {
-                individual_recording: {
-                    mode: "available",
-                    output_types: ["audio_only"],
-                },
-                transcription: {
-                    mode: "available",
-                    language: "auto"
-                }
-            },
-        });
-
-        let recordingStartedByRequest = false;
-
-        if (!isRecording) {
-            meetingTrace("recording.stream_start_requested", { meetingCode });
-            await call.startRecording({ recording_type: "individual" });
-            meetingTrace("recording.stream_start_accepted", { meetingCode });
-            recordingStartedByRequest = true;
-        }
-
-        try {
-            if (!isTranscribing) {
-                meetingTrace("transcription.stream_start_requested", { meetingCode });
-                await call.startTranscription({ language: "auto" });
-                meetingTrace("transcription.stream_start_accepted", { meetingCode });
-            }
-        } catch (error) {
-            if (recordingStartedByRequest) {
-                await call.stopRecording({ recording_type: "individual" }).catch(console.error);
-            }
-            throw error;
-        }
-
-        return res.status(200).json({
-            success: true,
-            message: isRecording && isTranscribing
-                ? "Recording and transcription are already active"
-                : "Recording and transcription started successfully"
-        });
     } catch (err) {
         meetingTrace("recording.start_failed", { meetingCode: String(req.params.meetingCode), ...traceError(err) });
         return res.status(500).json({ success: false, message: "Failed to start meeting recording" });

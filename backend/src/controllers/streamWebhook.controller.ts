@@ -78,6 +78,7 @@ const enqueueReadyTranscript = async (
             transcriptionUrl: transcription.url,
             filename: transcription.filename,
             status: "PENDING",
+            attempts: 0,
             availableAt: new Date(),
             leaseToken: null,
             leaseExpiresAt: null,
@@ -139,7 +140,7 @@ export const handleStreamWebhook = async (req: Request, res: Response): Promise<
                     throw error;
                 }
                 await prisma.transcriptionJob.updateMany({
-                    where: { meetingId, sourceId: event.egress_id, status: { not: "COMPLETED" } },
+                    where: { meetingId, sourceId: event.egress_id, status: { in: ["WAITING", "FAILED"] } },
                     data: {
                         status: "FAILED",
                         attempts: maximumAttempts,
@@ -183,6 +184,10 @@ export const handleStreamWebhook = async (req: Request, res: Response): Promise<
         if ((callResponse.call.current_session_id && callResponse.call.current_session_id !== event.session_id)
             || (session && session.id !== event.session_id)) {
             meetingTrace("session.stale_end_ignored", { requestId, callCid: event.call_cid });
+            return res.sendStatus(200);
+        }
+        if (!callResponse.call.ended_at && session && !session.ended_at) {
+            meetingTrace("session.active_end_ignored", { requestId, callCid: event.call_cid });
             return res.sendStatus(200);
         }
         await prisma.meeting.updateMany({

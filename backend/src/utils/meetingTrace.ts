@@ -11,7 +11,10 @@ export const traceError = (error: unknown): TraceFields => {
     const value = error as { name?: unknown; code?: unknown; status?: unknown; statusCode?: unknown } | null;
     const safeLabel = (label: unknown) => typeof label === "string" && /^[a-zA-Z0-9_.-]{1,80}$/.test(label) ? label : undefined;
     const knownReasons = [
-        "Stream transcript did not contain speech segments",
+        "Stream transcript contains invalid JSON",
+        "Stream speech segment has invalid timestamps",
+        "Meeting session is not active",
+        "Recording is still stopping; retry shortly",
         "Meeting transcript is empty after persistence",
         "Failed to store transcript embeddings",
         "Transcription worker timing and retry settings must be positive numbers",

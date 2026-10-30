@@ -115,3 +115,18 @@ After deployment, verify an expired access token refresh, Google login, a two-pe
 meeting (including host leaving first), ending a call, and summary processing in the
 existing `[MeetingTrace]` logs. Real microphone, cross-site cookies, and webhook delivery
 still require that deployment test.
+
+### Refreshing during a meeting
+
+A reload in the same tab can resume a joined meeting for up to two minutes, restoring
+its microphone/camera choices and mute states. An ordinary visit or explicit Leave
+requires joining again. Protected resume is checked against saved attendance on the
+backend. Device permission failures return to device setup. Host room setup gives
+Stream a 120-second inactivity window; explicit End for everyone still ends immediately.
+
+Capture start requests are coalesced, active capture is preserved, and transcription
+failure does not stop healthy audio recording. Delayed failure webhooks cannot overwrite
+an already-ready transcript job. A valid transcript with no speech completes without
+LLM calls or retries and displays “No speech detected”; malformed transcripts remain
+errors. Silent rejoin sessions do not remove existing summaries. Diagnostics remain enabled,
+including `worker.no_speech`. No database migration is needed for these changes.

@@ -84,7 +84,7 @@ export default function MeetingInsights() {
     const [rawSummary, setRawSummary] = useState<string>("");
     const [summary, setSummary] = useState<SummaryJSON | null>(null);
     const [meetingDetails, setMeetingDetails] = useState<MeetingDetails | null>(null);
-    const [insightStatus, setInsightStatus] = useState<"processing" | "ready" | "failed" | "forbidden" | "not-found" | "expired" | "connection-error">("processing");
+    const [insightStatus, setInsightStatus] = useState<"no_speech" | "processing" | "ready" | "failed" | "forbidden" | "not-found" | "expired" | "connection-error">("processing");
     const [retryCount, setRetryCount] = useState(0);
 
     // Chat state
@@ -116,6 +116,7 @@ export default function MeetingInsights() {
                 }
 
                 setMeetingDetails(res.data.meeting);
+                if (res.data.status === "no_speech") { setInsightStatus("no_speech"); return; }
                 if (res.data.status === "failed") {
                     setInsightStatus("failed");
                     return;
@@ -250,7 +251,12 @@ export default function MeetingInsights() {
                             AI Summary
                         </h2>
                         
-                        {insightStatus === "connection-error" ? (
+                        {insightStatus === "no_speech" ? (
+                            <div role="status" className="rounded-xl border border-white/10 p-5">
+                                <p className="font-semibold">No speech detected</p>
+                                <p className="mt-2 text-sm text-text-secondary">There was no usable speech in the transcript. Summary and chat are unavailable. Check your microphone before your next meeting.</p>
+                            </div>
+                        ) : insightStatus === "connection-error" ? (
                             <div role="alert" className="rounded-xl border border-white/10 bg-white/[.03] p-5">
                                 <p className="text-sm font-semibold">We couldn’t load these insights.</p>
                                 <p className="mt-2 text-sm text-text-secondary">Check your connection and try again.</p>
@@ -331,7 +337,7 @@ export default function MeetingInsights() {
                                     <div className="max-w-xs">
                                         <Sparkles size={22} className="mx-auto mb-3 text-primary/70" />
                                         <p className="text-sm text-text-secondary">
-                                            {insightStatus === "failed" ? "Meeting chat is unavailable because processing failed." : insightStatus === "connection-error" ? "Reconnect and load the insights to use meeting chat." : "Meeting chat will be ready when the transcript has finished processing."}
+                                            {insightStatus === "no_speech" ? "Meeting chat is unavailable because no speech was detected." : insightStatus === "failed" ? "Meeting chat is unavailable because processing failed." : insightStatus === "connection-error" ? "Reconnect and load the insights to use meeting chat." : "Meeting chat will be ready when the transcript has finished processing."}
                                         </p>
                                     </div>
                                 </div>
@@ -374,7 +380,7 @@ export default function MeetingInsights() {
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') handleSendMessage();
                                     }}
-                                    placeholder={insightStatus === "ready" ? "Ask anything about the meeting..." : "Waiting for meeting insights..."}
+                                    placeholder={insightStatus === "ready" ? "Ask anything about the meeting..." : insightStatus === "no_speech" ? "No speech detected" : "Waiting for meeting insights..."}
                                     aria-label="Ask about this meeting"
                                     className="glass-input w-full py-3 pl-4 pr-12 text-sm"
                                     disabled={isChatLoading || insightStatus !== "ready"}

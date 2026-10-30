@@ -1,3 +1,4 @@
+import { enterMeeting } from "@/lib/joinMeeting";
 import { DeviceSettings, useCall, VideoPreview } from "@stream-io/video-react-sdk";
 import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
@@ -37,47 +38,15 @@ const MeetingSetup = ({ setIsSetUpComplete, isMeetingProtected }: {
         throw new Error("useCall must be in streamCall componenet");
     }
 
-    const recordMeetingParticipant = async (meetingCode: string) => {
-        let lastError: unknown;
-
-        for (let attempt = 0; attempt < 5; attempt += 1) {
-            try {
-                await api.post(`/api/meeting/${meetingCode}/participants`, undefined, {
-                    timeout: 5000,
-                });
-                return;
-            } catch (error) {
-                lastError = error;
-                if (attempt < 4) {
-                    await new Promise((resolve) => window.setTimeout(resolve, 750 * (attempt + 1)));
-                }
-            }
-        }
-
-        console.error("Failed to record meeting attendance", lastError);
-    };
-
     const joinCallAndStartRecording = async () => {
-        if (!id) {
-            throw new Error("Meeting code is missing");
-        }
-
-        await call.join();
-        void recordMeetingParticipant(id);
+        if (!user) return;
+        // Await the chosen device state before publishing the new participant track.
+        await Promise.all([
+            isMicToggleOn ? call.microphone.disable() : call.microphone.enable(),
+            isCamToggleOn ? call.camera.disable() : call.camera.enable(),
+        ]);
+        await enterMeeting(call, user.id);
         setIsSetUpComplete(true);
-
-        const isHost = call.state.createdBy?.id === user?.id;
-
-        if (isHost) {
-            try {
-                await api.post(`/api/meeting/${id}/recording/start`, undefined, { timeout: 45_000 });
-                toast.success("Meeting recording started");
-            } catch (error) {
-                console.error("Failed to start meeting recording", error);
-                toast.error("Meeting joined, but recording could not start");
-            }
-        }
-
     };
 
     const handleJoinMeeting = async () => {

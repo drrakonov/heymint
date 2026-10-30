@@ -1,3 +1,5 @@
+import { clearMeetingResume } from "@/lib/meetingResume";
+import { useUserStore } from "@/store/userStore";
 import { useCall, useCallStateHooks } from "@stream-io/video-react-sdk";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState } from "react";
@@ -8,6 +10,7 @@ import { PhoneOff } from "lucide-react";
 
 const EndCallButton = () => {
     const call = useCall();
+    const userId = useUserStore(state => state.user!.id);
     const navigate = useNavigate();
     const { id } = useParams();
 
@@ -26,6 +29,7 @@ const EndCallButton = () => {
 
     const leaveCall = async () => {
         try {
+            clearMeetingResume(userId, call.id);
             await call.leave();
         } finally {
             navigate("/dashboard");
@@ -39,6 +43,7 @@ const EndCallButton = () => {
 
         try {
             await api.post(`/api/meeting/${id}/end`, undefined, { timeout: 30_000 });
+            clearMeetingResume(userId, call.id);
             toast.success("Meeting ended! Generating AI summary...");
             navigate("/dashboard");
         } catch (error) {

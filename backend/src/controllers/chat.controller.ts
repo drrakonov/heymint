@@ -53,6 +53,13 @@ export const handleSummaryChat = async (req: Request, res: Response): Promise<an
             select: { content: true }
         });
 
+        if (!summary) {
+            const jobs = await prisma.transcriptionJob.findMany({ where: { meetingId: access.meeting.id }, select: { status: true } });
+            if (jobs.length && jobs.every(job => job.status === "COMPLETED")) {
+                return res.status(409).json({ success: false, status: "no_speech", message: "No speech was detected in this meeting." });
+            }
+        }
+
         meetingTrace("chat.embedding_started", { meetingId: access.meeting.id });
         const questionEmbedding = await getEmbbedText(question)
         const vectorString = `[${questionEmbedding.join(",")}]`; 

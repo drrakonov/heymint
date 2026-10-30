@@ -1,3 +1,5 @@
+import { saveMeetingResume, clearMeetingResume } from "@/lib/meetingResume";
+import { useUserStore } from "@/store/userStore";
 import { cn } from "@/lib/utils";
 import {
   CallingState,
@@ -8,7 +10,7 @@ import {
   useCall,
   useCallStateHooks,
 } from "@stream-io/video-react-sdk";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { ChevronDown, Copy, LayoutGrid, PanelRight, Users } from "lucide-react";
 import toast from "react-hot-toast";
@@ -24,9 +26,22 @@ const MeetingRoom = () => {
   const [layout, setLayout] = useState<CallLayoutType>("speaker-left");
   const [showParticipants, setShowParticipants] = useState(false);
   const call = useCall();
-  const { useCallCallingState, useParticipants } = useCallStateHooks();
+  const { useCallCallingState, useParticipants, useMicrophoneState, useCameraState } = useCallStateHooks();
   const callingState = useCallCallingState();
   const participants = useParticipants();
+  const userId = useUserStore(state => state.user!.id);
+  const mic = useMicrophoneState();
+  const camera = useCameraState();
+  useEffect(() => {
+    if (!call) return;
+    if (callingState === CallingState.LEFT || call.state.endedAt) { clearMeetingResume(userId, call.id); return; }
+    if (callingState !== CallingState.JOINED) return;
+    const save = () => saveMeetingResume(userId, call.id, { micEnabled: !mic.isMute,
+      cameraEnabled: !camera.isMute, micDevice: mic.selectedDevice || mic.mediaStream?.getAudioTracks()[0]?.getSettings().deviceId, cameraDevice: camera.selectedDevice || camera.mediaStream?.getVideoTracks()[0]?.getSettings().deviceId });
+    save();
+    window.addEventListener("pagehide", save);
+    return () => window.removeEventListener("pagehide", save);
+  }, [call, userId, callingState, mic.isMute, camera.isMute, mic.selectedDevice, camera.selectedDevice, mic.mediaStream, camera.mediaStream]);
   const navigate = useNavigate();
 
   if (callingState !== CallingState.JOINED) return <ConnectionError

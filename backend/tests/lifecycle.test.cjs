@@ -105,7 +105,7 @@ test('deletion rejects an active meeting', async () => {
 
 for (const stale of [false, true]) test(`session end ${stale ? 'ignores an older session' : 'completes the meeting and stops capture'}`, async () => {
   let stops = 0;
-  const { mocks, stream, writes } = controller(undefined, { get: async () => ({ call: { current_session_id: stale ? 'new' : 'session', session: { id: stale ? 'new' : 'session' }, egress: { individual_recording: { status: 'active' } }, transcribing: true } }), stopRecording: async () => { stops++; }, stopTranscription: async () => { stops++; } });
+  const { mocks, stream, writes } = controller(undefined, { get: async () => ({ call: { current_session_id: stale ? 'new' : 'session', session: { id: stale ? 'new' : 'session', ended_at: stale ? undefined : new Date() }, egress: { individual_recording: { status: 'active' } }, transcribing: true } }), stopRecording: async () => { stops++; }, stopTranscription: async () => { stops++; } });
   stream.verifyAndParseWebhook = () => ({ type: 'call.session_ended', call_cid: 'default:room', session_id: 'session', call: { type: 'default', id: 'room' } });
   const { handleStreamWebhook } = load('src/controllers/streamWebhook.controller.ts', mocks);
   const res = response();
