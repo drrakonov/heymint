@@ -5,6 +5,7 @@ import { Button } from "../ui/button";
 import api from "@/lib/axios";
 import Loader from "../subComponents/Loader";
 import axios from "axios";
+import ChatAnswer, { type ChatSource } from "./ChatAnswer";
 
 interface SummaryJSON {
     overview: string;
@@ -89,9 +90,20 @@ export default function MeetingInsights() {
 
     // Chat state
     const [isChatLoading, setIsChatLoading] = useState(false);
-    const [messages, setMessages] = useState<{ sender: "ai" | "user", text: string }[]>([
-        { sender: "ai", text: "Hi! I have the context of this meeting. What would you like to know?" }
+    const [messages, setMessages] = useState<{ sender: "ai" | "user", text: string; sources?: ChatSource[]; error?: boolean }[]>([
+        { sender: "ai", text: "Ask about this meeting’s decisions, key points, or next steps. I’ll include sources when available." }
     ]);
+    const chatRequest = useRef<AbortController | null>(null);
+
+    useEffect(() => {
+        setMessages([{ sender: "ai", text: "Ask about this meeting’s decisions, key points, or next steps. I’ll include sources when available." }]);
+        setChatInput("");
+        setIsChatLoading(false);
+        return () => {
+            chatRequest.current?.abort();
+            chatRequest.current = null;
+        };
+    }, [id]);
     
     // Auto-scroll ref
     const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -159,25 +171,36 @@ export default function MeetingInsights() {
     }, [messages, isChatLoading]);
 
     const handleSendMessage = async () => {
-        if (!chatInput.trim() || isChatLoading || insightStatus !== "ready") return;
+        if (!chatInput.trim() || chatInput.trim().length > 2000 || chatRequest.current || isChatLoading || insightStatus !== "ready") return;
         
         const userText = chatInput.trim();
         setChatInput("");
         setMessages(prev => [...prev, { sender: "user", text: userText }]);
         setIsChatLoading(true);
+        const request = new AbortController();
+        chatRequest.current = request;
 
         try {
-            const res = await api.post(`/api/meeting/chat/${id}`, { question: userText }, { timeout: 60_000 });
+            const res = await api.post(`/api/meeting/chat/${id}`, { question: userText }, { timeout: 60_000, signal: request.signal });
+            if (request.signal.aborted) return;
             if (res.data.success) {
-                setMessages(prev => [...prev, { sender: "ai", text: res.data.answer }]);
+                setMessages(prev => [...prev, { sender: "ai", text: res.data.answer, sources: Array.isArray(res.data.sources) ? res.data.sources : [] }]);
             } else {
-                setMessages(prev => [...prev, { sender: "ai", text: "Sorry, I encountered an error." }]);
+                setMessages(prev => [...prev, { sender: "ai", text: "I couldn't produce an answer. Please try again.", error: true }]);
             }
         } catch (err) {
-            console.error("Chat error:", err);
-            setMessages(prev => [...prev, { sender: "ai", text: "Sorry, I couldn't reach the server right now." }]);
+            if (request.signal.aborted) return;
+            const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+            const text = status === 429 ? "Too many questions. Please wait a few minutes before asking again."
+                : status === 403 ? "You no longer have access to this meeting's chat."
+                : status === 502 ? "I couldn't produce a reliable answer. Try rephrasing your question."
+                : "Meeting chat is temporarily unavailable. Please try again shortly.";
+            setMessages(prev => [...prev, { sender: "ai", text, error: true }]);
         } finally {
-            setIsChatLoading(false);
+            if (chatRequest.current === request) {
+                chatRequest.current = null;
+                setIsChatLoading(false);
+            }
         }
     };
 
@@ -346,12 +369,12 @@ export default function MeetingInsights() {
                                     <div className={`h-8 w-8 rounded-md flex items-center justify-center shrink-0 text-xs font-bold ${msg.sender === 'user' ? 'bg-surface border border-border text-text-primary' : 'bg-primary text-black'}`}>
                                         {msg.sender === 'user' ? 'U' : <Sparkles size={14} />}
                                     </div>
-                                    <div className={`min-w-0 p-3 rounded-lg max-w-[85%] break-words text-sm leading-relaxed whitespace-pre-wrap ${
+                                    <div className={`min-w-0 p-4 rounded-2xl max-w-[85%] break-words text-sm leading-relaxed ${
                                         msg.sender === 'user' 
-                                            ? 'bg-surface border border-border text-text-primary' 
-                                            : 'bg-primary/10 border border-primary/20 text-primary'
+                                            ? 'bg-surface border border-border text-text-primary whitespace-pre-wrap'
+                                            : msg.error ? 'bg-red-500/5 border border-red-400/20 text-text-primary' : 'bg-white/[.035] border border-white/10 text-text-primary'
                                     }`}>
-                                        {msg.text}
+                                        {msg.sender === 'user' ? msg.text : <ChatAnswer text={msg.text} sources={msg.sources}/>}
                                     </div>
                                 </div>
                             ))}
@@ -375,10 +398,11 @@ export default function MeetingInsights() {
                             <div className="relative">
                                 <input 
                                     type="text" 
+                                    maxLength={2000}
                                     value={chatInput}
                                     onChange={(e) => setChatInput(e.target.value)}
                                     onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleSendMessage();
+                                        if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleSendMessage();
                                     }}
                                     placeholder={insightStatus === "ready" ? "Ask anything about the meeting..." : insightStatus === "no_speech" ? "No speech detected" : "Waiting for meeting insights..."}
                                     aria-label="Ask about this meeting"
@@ -394,6 +418,7 @@ export default function MeetingInsights() {
                                     <Send size={14} />
                                 </button>
                             </div>
+                            <p className="mt-2 text-[10px] text-text-secondary">Answers use this meeting’s sources. Check important details.{chatInput.length > 1800 && <span className="float-right">{chatInput.length}/2000</span>}</p>
                         </div>
                     </div>
                 </div>

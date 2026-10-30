@@ -4,6 +4,7 @@ import { endMeeting, addMeetingParticipant, createGetStreamToken, deleteMeeting,
 import { authenticate, validateMeetingInput } from '../middlewares/auth.middleware';
 import { getMeetingSummary } from '../controllers/summarizer.controller';
 import { handleSummaryChat } from "../controllers/chat.controller"
+import { chatRateLimit } from "../middlewares/chatRateLimit.middleware";
 
 const router = express.Router();
 
@@ -20,7 +21,7 @@ router.post("/:meetingCode/participants", authenticate, expressAsyncHandler(addM
 
 //Meeting Summary Routes
 router.get("/summary/:id", authenticate, expressAsyncHandler(getMeetingSummary));
-router.post("/chat/:id", authenticate, expressAsyncHandler(handleSummaryChat));
+router.post("/chat/:id", authenticate, chatRateLimit, expressAsyncHandler(handleSummaryChat));
 
 //Meeting Recording Routes
 router.post("/:meetingCode/recording/start", authenticate, expressAsyncHandler(startMeetingRecording));

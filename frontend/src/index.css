@@ -151,3 +151,25 @@ button { cursor: pointer; }
 .auth-layout { font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
 .auth-layout .mint-button { background:linear-gradient(180deg,#a3e5c8,#80cead); box-shadow:inset 0 1px #ffffff55,0 4px 15px #63c69b12; border-color:#b3f5d44d; }
 .auth-layout :is(a,button):focus-visible { outline:2px solid #9ae6c1; outline-offset:4px; }
+
+/* Meeting answers: restrained Markdown typography inside the chat column. */
+.chat-markdown { overflow-wrap:anywhere; line-height:1.75; }
+.chat-markdown > :first-child { margin-top:0; }
+.chat-markdown > :last-child { margin-bottom:0; }
+.chat-markdown p { margin:.65rem 0; }
+.chat-markdown :is(h1,h2,h3,h4,h5,h6) { margin:1rem 0 .4rem; font-size:.875rem; font-weight:600; line-height:1.5; color:#b9efda; }
+.chat-markdown :is(ul,ol) { margin:.6rem 0; padding-left:1.25rem; }
+.chat-markdown ul { list-style:disc; }
+.chat-markdown ol { list-style:decimal; }
+.chat-markdown li { padding-left:.15rem; margin:.3rem 0; }
+.chat-markdown li::marker { color:#79cbaa; }
+.chat-markdown li > p { margin:.25rem 0; }
+.chat-markdown strong { font-weight:600; color:#eefbf5; }
+.chat-markdown blockquote { margin:.75rem 0; padding-left:.8rem; border-left:2px solid #79cbaa66; color:#b2c6bd; }
+.chat-markdown code { border-radius:4px; background:#ffffff0a; padding:.15rem .3rem; font-size:.8em; }
+.chat-markdown pre { overflow-x:auto; margin:.75rem 0; border:1px solid #ffffff12; border-radius:10px; padding:.8rem; background:#020805; }
+.chat-markdown pre code { padding:0; background:none; font-size:.8rem; white-space:pre; }
+.chat-markdown table { width:100%; margin:.6rem 0; border-collapse:collapse; font-size:.75rem; }
+.chat-markdown :is(th,td) { padding:.45rem .6rem; border:1px solid #ffffff18; text-align:left; vertical-align:top; }
+.chat-markdown th { background:#ffffff08; font-weight:600; }
+.chat-markdown hr { margin:1rem 0; border-color:#ffffff18; }

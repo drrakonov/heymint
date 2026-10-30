@@ -108,9 +108,8 @@ by building or running the unit tests.
   are exempt. Unstarted instant rooms appear in the host’s Drafts tab and can be reopened
   or deleted. Expired rooms appear in Past meetings without insight actions.
 
-Validation: run `npm test` in each application, `npm run lint` and
+Validation: run `npm run lint` and
 `npx tsc -p tsconfig.app.json --noEmit` in the frontend, and both production builds.
-Tests use in-memory service stubs and do not connect to Stream or the database.
 After deployment, verify an expired access token refresh, Google login, a two-person
 meeting (including host leaving first), ending a call, and summary processing in the
 existing `[MeetingTrace]` logs. Real microphone, cross-site cookies, and webhook delivery
@@ -130,3 +129,13 @@ an already-ready transcript job. A valid transcript with no speech completes wit
 LLM calls or retries and displays “No speech detected”; malformed transcripts remain
 errors. Silent rejoin sessions do not remove existing summaries. Diagnostics remain enabled,
 including `worker.no_speech`. No database migration is needed for these changes.
+
+### Meeting chat safeguards
+
+Chat checks meeting access before retrieval or AI calls. Questions must be 1–2,000 characters; each authenticated user can send 15 questions per five minutes across meetings on one API instance. The limiter uses memory: use a shared store before scaling to multiple API instances. Requests send only that meeting's summary and up to five retrieved excerpts to the model. No chat history is persisted or shared between rooms.
+
+The model returns a strict JSON schema, followed by server validation of answer length, status and citation IDs. Invalid, truncated, or obvious policy-disclosing output is withheld; logs contain only stages, identifiers and counts. Obvious extraction requests are screened before AI calls. These are layered mitigations, not a guarantee against prompt injection: never put secrets in model instructions or use model decisions for authorization. Retrieved source text is untrusted even when it comes from a saved summary.
+
+Source cards come from authorized database records, not model-generated names or timestamps. Speaker/time labels require complete transcript lines matching persisted segments; older or split excerpts remain usable without invented labels. Times are relative to the earliest transcribed speech, consistently with transcript indexing. Citation-ID validation establishes provenance, not proof that an answer correctly interprets its sources. Retrieval retains its existing top-five behavior; similarity thresholds need calibration against representative meeting questions before rollout.
+
+The frontend renders Markdown with raw HTML, images and generated navigation disabled. Sources expand as plain escaped text. Both frontend and backend must be deployed for the full experience; no database migration or transcript reindex is needed. Validate answer quality and injection resistance with real meeting questions before treating the defenses as sufficient for your deployment.

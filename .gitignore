@@ -1,0 +1,5 @@
+# Local tooling and credentials; exclude at every directory level.
+.codex/
+.aws/
+.agent/
+.agents/
