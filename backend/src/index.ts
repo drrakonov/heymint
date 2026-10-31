@@ -22,6 +22,12 @@ if (!Number.isInteger(proxyHops) || proxyHops < 0 || proxyHops > 10) {
 }
 app.set("trust proxy", proxyHops);
 
+// Lightweight liveness check for external monitoring; no database or AI calls.
+app.get("/health", (_req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.status(200).json({ status: "ok" });
+});
+
 app.use(cors({
   origin: process.env.CORS_ORIGIN,
   credentials: true
