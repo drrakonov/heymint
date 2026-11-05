@@ -136,6 +136,48 @@ Chat checks meeting access before retrieval or AI calls. Questions must be 1–2
 
 The model returns a strict JSON schema, followed by server validation of answer length, status and citation IDs. Invalid, truncated, or obvious policy-disclosing output is withheld; logs contain only stages, identifiers and counts. Obvious extraction requests are screened before AI calls. These are layered mitigations, not a guarantee against prompt injection: never put secrets in model instructions or use model decisions for authorization. Retrieved source text is untrusted even when it comes from a saved summary.
 
-Source cards come from authorized database records, not model-generated names or timestamps. Speaker/time labels require complete transcript lines matching persisted segments; older or split excerpts remain usable without invented labels. Times are relative to the earliest transcribed speech, consistently with transcript indexing. Citation-ID validation establishes provenance, not proof that an answer correctly interprets its sources. Retrieval retains its existing top-five behavior; similarity thresholds need calibration against representative meeting questions before rollout.
+Source cards come from authorized database records, not model-generated names or timestamps. Chunks carry their source segment IDs, session IDs, speakers, and absolute/meeting-relative times as JSON metadata. Retrieval returns these alongside the vector match; no text matching or follow-up segment queries are needed. Overlapping segments are deduplicated, and context budgets only remove complete segments. Times are relative to the earliest transcribed speech across the meeting's sessions. Citation-ID validation establishes provenance, not proof that an answer correctly interprets its sources. Retrieval retains its top-five behavior; similarity thresholds require calibration against representative questions.
 
-The frontend renders Markdown with raw HTML, images and generated navigation disabled. Sources expand as plain escaped text. Both frontend and backend must be deployed for the full experience; no database migration or transcript reindex is needed. Validate answer quality and injection resistance with real meeting questions before treating the defenses as sufficient for your deployment.
+The frontend renders Markdown with raw HTML, images and generated navigation disabled. Sources expand as plain escaped text. The source-card response format remains compatible with the existing frontend; deployment and reindex instructions are below. Validate answer quality and injection resistance with real meeting questions before treating the defenses as sufficient for your deployment.
+
+### Segment-aware embedding index
+
+Chunking reads `TranscriptSegment` directly. It groups whole speech segments around a
+500-token target, with up to two overlapping segments capped at 120 estimated tokens.
+Token counts use a bundled local tokenizer as an estimate (not Gemini's exact tokenizer).
+A conservative 1,900-byte UTF-8 embedding-input ceiling can close chunks earlier.
+Unusually long speech is split at sentence/word boundaries (Unicode code points as a
+last resort); all parts retain the original segment ID and original speech interval.
+No word-level timing is invented. Embeddings contain speaker names and spoken text,
+not formatting timestamps. Query/document retrieval task types are paired explicitly.
+
+The chat source budget is 6,000 estimated tokens, including serialized citation data.
+A summary larger than 1,800 estimated tokens is omitted whole, leaving room for transcript
+sources. Existing meeting authorization, extraction checks, validated source IDs, and
+frontend response fields remain unchanged.
+
+Deploy this change to the API and worker together:
+
+1. Stop the old worker during deployment so it cannot write legacy chunks.
+2. From `backend`, install dependencies, apply migrations, and build:
+
+   ```sh
+   npm install
+   npx prisma migrate deploy
+   npm run build
+   ```
+
+3. Start/deploy the updated API and worker. New transcript jobs automatically use the
+   new indexer.
+
+The one-time rebuild was completed on November 5, 2026 against the database configured
+in the local backend environment: 10 meetings were rebuilt, and one legacy meeting
+without structured transcript rows was preserved and skipped. The temporary rebuild
+utility was then removed. This does not migrate any other database automatically.
+
+The migration adds `TranscriptChunk.segments` without deleting records. Until rebuilt,
+legacy chunks have empty metadata and are excluded from chat retrieval; a saved summary
+can still provide context. Each meeting's index is replaced atomically only after every
+embedding succeeds. The worker and indexer share a meeting lock during persistence; a
+changed transcript snapshot causes indexing to restart instead of overwriting a newer
+index.

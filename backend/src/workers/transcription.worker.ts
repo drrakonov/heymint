@@ -171,6 +171,7 @@ export const processJob = async (job: TranscriptionJobRow) => {
     }
 
     await prisma.$transaction(async (transaction) => {
+        await transaction.$queryRaw`SELECT id FROM "Meeting" WHERE id = ${job.meetingId} FOR UPDATE`;
         await transaction.transcriptSegment.deleteMany({ where: { transcriptionJobId: job.id } });
         await transaction.transcriptSegment.createMany({
             data: segments.map((segment) => ({

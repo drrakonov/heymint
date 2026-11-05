@@ -93,6 +93,7 @@ model Summary {
 model TranscriptChunk {
   id        String                     @id @default(uuid())
   content   String
+  segments  Json                       @default("[]")
   meetingId String
   meeting   Meeting                    @relation(fields: [meetingId], references: [id])
   embedding Unsupported("vector(768)")
