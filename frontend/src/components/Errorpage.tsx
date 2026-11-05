@@ -3,9 +3,9 @@ const Errorpage = () => {
     return (
         <section className="mint-app-bg flex min-h-screen items-center">
             <div className="py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6 w-full">
-                <div className="liquid-glass mx-auto max-w-xl rounded-[36px] p-8 text-center sm:p-12">
+                <div className="matte-panel mx-auto max-w-xl rounded-[36px] p-8 text-center sm:p-12">
                     <p className="eyebrow">404 · Off the map</p>
-                    <h1 className="text-gradient mt-4 text-5xl font-semibold tracking-[-.06em] sm:text-7xl">
+                    <h1 className="text-primary mt-4 text-5xl font-semibold tracking-[-.06em] sm:text-7xl">
                         Lost in conversation?
                     </h1>
                     <p className="mx-auto mt-5 max-w-md text-sm leading-6 text-text-secondary">

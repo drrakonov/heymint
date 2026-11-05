@@ -49,15 +49,15 @@ const MeetingCreated = ({meetingCode, copyMeetingLink}: {meetingCode: string, co
                   </p>
                 </div>
 
-                <div className="glass-control flex flex-col items-center justify-center gap-3 rounded-2xl p-4 sm:flex-row">
-                  <code className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs text-primary sm:text-sm">
+                <div className="surface-control flex flex-col items-center justify-center gap-3 rounded-2xl p-4 sm:flex-row">
+                  <code className="min-w-0 max-w-full break-all font-mono text-xs text-primary sm:text-sm">
                     {joinLink}
                   </code>
                   <Button
                     onClick={copyMeetingLink}
                     variant="outline"
                     size="sm"
-                    className="glass-control rounded-full border-primary/20 text-primary"
+                    className="surface-control shrink-0 rounded-xl border-primary/20 text-primary"
                   >
                     <Copy className="mr-1 h-4 w-4" />
                     Copy link
@@ -96,7 +96,7 @@ const MeetingForm = ({
                   value={meetingTitle}
                   onChange={(e) => setMeetingTitle(e.target.value)}
                   placeholder="Enter meeting title"
-                  className="glass-input w-full"
+                  className="surface-input w-full"
                   aria-label="Meeting title"
                 />
               </div>
@@ -108,14 +108,14 @@ const MeetingForm = ({
                   value={meetingDescription}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Enter meeting description (optional)"
-                  className="glass-input min-h-[100px] w-full resize-none"
+                  className="surface-input min-h-[100px] w-full resize-none"
                 />
               </div>
             </div>
 
             {/* ---------- isPROTECTED FIELDS ---------- */}
 
-            <div className="glass-control flex items-center justify-between rounded-2xl p-4">
+            <div className="surface-control meeting-form-toggle flex items-center justify-between rounded-2xl p-4">
               <div className="flex gap-3">
                 <LockKeyhole className="mt-0.5 h-4 w-4 text-[var(--color-accent)]" />
                 <div>
@@ -149,13 +149,13 @@ const MeetingForm = ({
                   value={meetingPassword}
                   onChange={(e) => setMeetingPassword(e.target.value)}
                   placeholder="Set meeting password"
-                  className="glass-input w-full"
+                  className="surface-input w-full"
                 />
               </div>
             )}
 
             {/* ---------- SCHEDULE TOGGLE ---------- */}
-            <div className="glass-control flex items-center justify-between rounded-2xl p-4">
+            <div className="surface-control meeting-form-toggle flex items-center justify-between rounded-2xl p-4">
               <div>
                 <Label className="text-sm font-medium">
                   Schedule this meeting?
@@ -175,14 +175,14 @@ const MeetingForm = ({
 
             {/* ---------- SCHEDULED FIELDS ---------- */}
             {isScheduled && (
-              <div className="glass-control space-y-4 rounded-2xl p-4">
+              <div className="meeting-schedule surface-control min-w-0 space-y-4 rounded-2xl p-3 sm:p-4">
                 <h3 className="text-sm font-medium uppercase tracking-wide text-[var(--color-text-secondary)]">
                   Meeting Schedule
                 </h3>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid min-w-0 gap-4">
                   {/* Date */}
-                  <div className="space-y-2">
+                  <div className="min-w-0 space-y-2">
                     <Label className="flex items-center gap-2 text-sm font-medium">
                       <Calendar className="h-4 w-4" />
                       Date <span className="text-red-500">*</span>
@@ -193,7 +193,7 @@ const MeetingForm = ({
                       value={meetingDate}
                       onChange={(e) => setMeetingDate(e.target.value)}
                       onInput={(e) => setMeetingDate(e.currentTarget.value)}
-                      className="glass-input"
+                      className="surface-input"
                     />
                   </div>
 
@@ -306,7 +306,7 @@ export default function CreateMeeting() {
   return (
     <div className="page-shell">
       <PageHeader eyebrow="Create a room" title="Bring your people together." description="A few details, then you’re ready to share the invitation."/>
-      <div className="grid items-start gap-6 lg:grid-cols-[1.5fr_1fr]">
+      <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <Card className="workspace-panel gap-0">
           <CardHeader className="border-b border-white/8 pb-5">
             <CardTitle className="text-base font-semibold">

@@ -15,7 +15,7 @@ export function EmptyState({ hasSearch, onClearSearch }: EmptyStateProps) {
 
   // Responsive card container
   const containerClass =
-    "liquid-glass rounded-[26px] text-center py-10 sm:py-14 flex flex-col items-center px-4";
+    "matte-panel rounded-[26px] text-center py-10 sm:py-14 flex flex-col items-center px-4";
 
   // Responsive circle + icon
   const circleClass =
@@ -45,7 +45,7 @@ export function EmptyState({ hasSearch, onClearSearch }: EmptyStateProps) {
           onClick={onClearSearch}
           className={
             buttonClass +
-            " glass-control rounded-full text-text-secondary hover:text-text-primary bg-transparent"
+            " surface-control rounded-full text-text-secondary hover:text-text-primary bg-transparent"
           }
         >
           Clear Search

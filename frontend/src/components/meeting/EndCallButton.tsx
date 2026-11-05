@@ -55,14 +55,14 @@ const EndCallButton = () => {
 
     if (!isMeetingOwner) {
         return (
-            <Button onClick={leaveCall} aria-label="Leave meeting" title="Leave meeting" className="h-10 w-10 shrink-0 rounded-xl bg-danger p-0 font-semibold text-white hover:bg-danger/85 sm:h-11 sm:w-auto sm:px-4">
+            <Button onClick={leaveCall} aria-label="Leave meeting" title="Leave meeting" className="h-11 w-11 shrink-0 rounded-xl bg-[#a84e4e] p-0 font-semibold text-white hover:bg-danger/85 sm:h-11 sm:w-auto sm:px-4">
                 <PhoneOff size={18}/><span className="hidden sm:inline">Leave</span>
             </Button>
         );
     }
 
     return (
-        <Button onClick={endCall} disabled={isEnding} aria-label={isEnding ? "Ending meeting" : "End meeting for everyone"} title="End meeting for everyone" className="h-10 w-10 shrink-0 rounded-xl bg-danger p-0 font-semibold text-white hover:bg-danger/85 sm:h-11 sm:w-auto sm:px-4">
+        <Button onClick={endCall} disabled={isEnding} aria-label={isEnding ? "Ending meeting" : "End meeting for everyone"} title="End meeting for everyone" className="h-11 w-11 shrink-0 rounded-xl bg-[#a84e4e] p-0 font-semibold text-white hover:bg-danger/85 sm:h-11 sm:w-auto sm:px-4">
             <PhoneOff size={18}/>
             <span className="hidden sm:inline">{isEnding ? "Ending…" : "End for everyone"}</span>
         </Button>

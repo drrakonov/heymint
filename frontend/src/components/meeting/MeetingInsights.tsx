@@ -87,6 +87,17 @@ export default function MeetingInsights() {
     const [meetingDetails, setMeetingDetails] = useState<MeetingDetails | null>(null);
     const [insightStatus, setInsightStatus] = useState<"no_speech" | "processing" | "ready" | "failed" | "forbidden" | "not-found" | "expired" | "connection-error">("processing");
     const [retryCount, setRetryCount] = useState(0);
+    const [activePanel, setActivePanel] = useState<"summary" | "chat">("summary");
+    const pageRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const viewport = window.visualViewport;
+        const update = () => pageRef.current?.style.setProperty("--insight-viewport-height", `${viewport?.height ?? window.innerHeight}px`);
+        update();
+        viewport?.addEventListener("resize", update);
+        window.addEventListener("resize", update);
+        return () => { viewport?.removeEventListener("resize", update); window.removeEventListener("resize", update); };
+    }, [isLoading]);
 
     // Chat state
     const [isChatLoading, setIsChatLoading] = useState(false);
@@ -210,7 +221,7 @@ export default function MeetingInsights() {
         const isForbidden = insightStatus === "forbidden";
         return (
             <div className="mint-app-bg flex min-h-screen items-center justify-center p-4 text-text-primary">
-                <div className="liquid-glass w-full max-w-md rounded-[28px] p-8 text-center">
+                <div className="matte-panel w-full max-w-md rounded-[28px] p-8 text-center">
                     <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                         {isForbidden ? <LockKeyhole size={22} /> : <AlertCircle size={22} />}
                     </div>
@@ -229,14 +240,14 @@ export default function MeetingInsights() {
     }
 
     return (
-        <div className="mint-app-bg min-h-screen p-4 font-sans text-text-primary md:p-8">
-            <div className="max-w-7xl mx-auto mb-8 flex items-center justify-between">
+        <div ref={pageRef} className={`insights-page mint-app-bg min-h-dvh p-4 font-sans text-text-primary md:p-8 ${activePanel === "chat" ? "insights-chat-mode" : ""}`}>
+            <div className="insights-header w-full max-w-7xl mx-auto mb-5 flex shrink-0 items-center justify-between">
                 <div className="flex items-center gap-4">
                     <Button 
                         aria-label="Back to meetings"
                         variant="ghost" 
                         onClick={() => navigate('/dashboard/meetings')}
-                        className="glass-control h-auto rounded-full p-2 text-text-secondary hover:text-text-primary"
+                        className="surface-control h-auto rounded-full p-2 text-text-secondary hover:text-text-primary"
                     >
                         <ArrowLeft size={20} />
                     </Button>
@@ -244,12 +255,16 @@ export default function MeetingInsights() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="insights-tabs" aria-label="Insights view">
+                <button aria-pressed={activePanel === "summary"} onClick={() => setActivePanel("summary")}>Summary</button>
+                <button aria-pressed={activePanel === "chat"} onClick={() => setActivePanel("chat")}>Ask the meeting</button>
+            </div>
+            <div className="insights-grid w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8">
                 
                 {/* LEFT PANEL */}
-                <div className="min-w-0 break-words lg:col-span-7 space-y-6">
+                <div className={`min-w-0 break-words lg:col-span-7 space-y-6 ${activePanel !== "summary" ? "insights-hidden-mobile" : ""}`}>
                     {/* Details */}
-                    <div className="liquid-glass rounded-[26px] p-5 sm:p-8">
+                    <div className="matte-panel rounded-[26px] p-5 sm:p-8">
                         <h2 className="text-text-secondary text-xs font-bold uppercase tracking-widest mb-3">Details</h2>
                         <h3 className="text-xl font-bold mb-5">{meetingDetails?.title || "Meeting"}</h3>
                         
@@ -268,7 +283,7 @@ export default function MeetingInsights() {
                     </div>
 
                     {/* Summary */}
-                    <div className="liquid-glass rounded-[26px] p-5 sm:p-8">
+                    <div className="matte-panel rounded-[26px] p-5 sm:p-8">
                         <h2 className="text-text-secondary text-xs font-bold uppercase tracking-widest mb-6 flex items-center gap-2">
                             <Sparkles size={14} className="text-primary" /> 
                             AI Summary
@@ -283,7 +298,7 @@ export default function MeetingInsights() {
                             <div role="alert" className="rounded-xl border border-white/10 bg-white/[.03] p-5">
                                 <p className="text-sm font-semibold">We couldn’t load these insights.</p>
                                 <p className="mt-2 text-sm text-text-secondary">Check your connection and try again.</p>
-                                <Button onClick={() => setRetryCount(count => count + 1)} className="glass-control mt-4">Try again</Button>
+                                <Button onClick={() => setRetryCount(count => count + 1)} className="surface-control mt-4">Try again</Button>
                             </div>
                         ) : insightStatus === "processing" ? (
                             <div className="flex items-start gap-3 rounded-lg border border-primary/15 bg-primary/5 p-5">
@@ -342,10 +357,10 @@ export default function MeetingInsights() {
                 </div>
 
                 {/* RIGHT PANEL: Chat */}
-                <div className="min-w-0 lg:col-span-5">
-                    <div className="liquid-glass sticky top-8 flex h-[600px] flex-col overflow-hidden rounded-[26px]">
+                <div className={`insights-chat-column min-w-0 lg:col-span-5 ${activePanel !== "chat" ? "insights-hidden-mobile" : ""}`}>
+                    <div className="insights-chat matte-panel flex flex-col overflow-hidden rounded-[20px]">
                         
-                        <div className="flex items-center justify-between border-b border-white/8 bg-white/[.025] p-4">
+                        <div className="flex shrink-0 items-center justify-between border-b border-border p-4">
                             <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
                                 <Sparkles size={16} className="text-primary" /> Ask AI
                             </h2>
@@ -353,7 +368,7 @@ export default function MeetingInsights() {
 
                         <div 
                             ref={chatContainerRef}
-                            className="flex-1 space-y-6 overflow-y-auto bg-black/10 p-6 scroll-smooth"
+                            className="chat-scroll flex-1 space-y-5 overflow-y-auto p-3 sm:p-5"
                         >
                             {insightStatus !== "ready" ? (
                                 <div className="flex h-full items-center justify-center text-center">
@@ -369,7 +384,7 @@ export default function MeetingInsights() {
                                     <div className={`h-8 w-8 rounded-md flex items-center justify-center shrink-0 text-xs font-bold ${msg.sender === 'user' ? 'bg-surface border border-border text-text-primary' : 'bg-primary text-black'}`}>
                                         {msg.sender === 'user' ? 'U' : <Sparkles size={14} />}
                                     </div>
-                                    <div className={`min-w-0 p-4 rounded-2xl max-w-[85%] break-words text-sm leading-relaxed ${
+                                    <div className={`min-w-0 flex-1 p-3 sm:p-4 rounded-2xl max-w-[calc(100%_-_44px)] break-words text-sm leading-relaxed ${
                                         msg.sender === 'user' 
                                             ? 'bg-surface border border-border text-text-primary whitespace-pre-wrap'
                                             : msg.error ? 'bg-red-500/5 border border-red-400/20 text-text-primary' : 'bg-white/[.035] border border-white/10 text-text-primary'
@@ -393,8 +408,8 @@ export default function MeetingInsights() {
                             )}
                         </div>
 
-                        {insightStatus === "ready" && messages.length === 1 && <div className="flex flex-wrap gap-2 px-4 pb-4">{["What did we decide?", "What are the next steps?", "Summarize the key points"].map(question=><button key={question} onClick={()=>setChatInput(question)} className="rounded-full border border-primary/15 bg-primary/5 px-3 py-2 text-xs text-text-secondary hover:text-primary">{question}</button>)}</div>}
-                        <div className="border-t border-white/8 bg-white/[.025] p-4">
+                        {insightStatus === "ready" && messages.length === 1 && <div className="chat-suggestions flex shrink-0 flex-wrap gap-2 px-4 pb-4">{["What did we decide?", "What are the next steps?", "Summarize the key points"].map(question=><button key={question} onClick={()=>setChatInput(question)} className="rounded-full border border-primary/15 bg-primary/5 px-3 py-2 text-xs text-text-secondary hover:text-primary">{question}</button>)}</div>}
+                        <div className="chat-composer shrink-0 border-t border-border p-3 sm:p-4">
                             <div className="relative">
                                 <input 
                                     type="text" 
@@ -406,14 +421,14 @@ export default function MeetingInsights() {
                                     }}
                                     placeholder={insightStatus === "ready" ? "Ask anything about the meeting..." : insightStatus === "no_speech" ? "No speech detected" : "Waiting for meeting insights..."}
                                     aria-label="Ask about this meeting"
-                                    className="glass-input w-full py-3 pl-4 pr-12 text-sm"
+                                    className="surface-input w-full py-3 pl-4 pr-12 text-sm"
                                     disabled={isChatLoading || insightStatus !== "ready"}
                                 />
                                 <button 
                                     aria-label="Send message"
                                     onClick={handleSendMessage}
                                     disabled={!chatInput.trim() || isChatLoading || insightStatus !== "ready"}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary text-black rounded-md disabled:opacity-50 disabled:bg-surface disabled:text-text-secondary transition-colors"
+                                    className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center bg-primary text-black rounded-md disabled:opacity-50 disabled:bg-surface disabled:text-text-secondary transition-colors"
                                 >
                                     <Send size={14} />
                                 </button>

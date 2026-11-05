@@ -12,7 +12,7 @@ export default function AuthLayout() {
       <main className="mx-auto grid w-full max-w-7xl items-center gap-12 px-6 pb-12 pt-4 sm:px-10 lg:min-h-[calc(100dvh-100px)] lg:grid-cols-2 lg:gap-20 lg:py-12">
         <div className="mx-auto w-full max-w-[420px]"><Outlet/></div>
         <aside className="hidden lg:block">
-          <div className="workspace-panel overflow-hidden p-9 xl:p-12" style={{background:'radial-gradient(ellipse at 100% 0%, #67c69c26, transparent 70%), #0c1b14'}}>
+          <div className="workspace-panel overflow-hidden p-9 xl:p-12" >
             <span className="eyebrow">Meet. Remember. Move forward.</span>
             <h2 className="mt-6 text-5xl font-semibold leading-[1.08] tracking-[-.05em]">Good conversations<br/><span className="text-primary">stay with you.</span></h2>
             <p className="mt-5 max-w-sm text-sm leading-6 text-text-secondary">A place to meet, capture what matters, and pick up exactly where you left off.</p>

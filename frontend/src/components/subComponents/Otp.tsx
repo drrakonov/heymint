@@ -98,10 +98,10 @@ const Otp = ({ email, password }: { email: string; password: string }) => {
     };
 
     return (
-        <div className="liquid-glass flex w-full flex-col items-center justify-center rounded-[28px] p-6 text-center sm:p-8">
+        <div className="matte-panel flex w-full flex-col items-center justify-center rounded-[28px] p-6 text-center sm:p-8">
             <span className="eyebrow">One last step</span>
             <h1 className="mt-3 text-2xl font-semibold tracking-tight">Verify your email</h1>
-            <p className="mb-6 mt-2 text-sm text-text-secondary">We sent a six-digit code to <span className="text-white/85">{email}</span>.</p>
+            <p className="mb-6 mt-2 break-all text-sm text-text-secondary">We sent a six-digit code to <span className="text-white/85">{email}</span>.</p>
 
             <InputOTP maxLength={6} value={otp} onChange={setOtp}>
                 <InputOTPGroup>

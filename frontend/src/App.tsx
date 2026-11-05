@@ -1,10 +1,10 @@
 import { Route, BrowserRouter, Routes, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
-import './App.css'
 import { AuthProvider } from './context/AuthContext'
 import AuthRedirect from './components/helpers/AuthRedirect'
 import ProtectedRoute from './components/helpers/ProtectedRoute'
 import "@stream-io/video-react-sdk/dist/css/styles.css";
+import "./App.css";
 import { Toaster } from 'react-hot-toast'
 import Loader from './components/subComponents/Loader'
 import StreamVideoProvider from './providers/StreamClientProvider'

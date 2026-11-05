@@ -68,18 +68,17 @@ const MeetingRoom = () => {
   };
 
   return (
-    <section className="meeting-room relative h-dvh w-full overflow-hidden bg-[#020605] text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(82,227,172,.12),transparent_40%)]" />
+    <section className="meeting-room relative h-dvh w-full overflow-hidden bg-background text-white">
 
-      <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-2 p-3 sm:p-5">
-        <div className="liquid-glass flex items-center gap-3 rounded-full px-4 py-2">
+      <header className="meeting-topbar absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-2 p-3 sm:p-5">
+        <div className="matte-panel flex items-center gap-3 rounded-full px-4 py-2">
           <BrandLogo className="hidden w-20 md:block"/>
           <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-40"/><span className="relative h-2.5 w-2.5 rounded-full bg-primary"/></span>
           <div className="relative hidden sm:block"><p className="text-xs font-medium text-white/90">Meeting in progress</p><p className="text-[10px] text-white/40">{participants.length} participant{participants.length === 1 ? "" : "s"}</p></div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2" role="group" aria-label="Meeting view and participants">
           <DropdownMenu>
-            <DropdownMenuTrigger aria-label={`Change layout: ${labels[layout]}`} className="glass-control flex h-10 items-center gap-1.5 rounded-xl px-2.5 text-xs text-white/75 focus-visible:outline-2 focus-visible:outline-primary">
+            <DropdownMenuTrigger aria-label={`Change layout: ${labels[layout]}`} className="surface-control flex h-10 items-center gap-1.5 rounded-xl px-2.5 text-xs text-white/75 focus-visible:outline-2 focus-visible:outline-primary">
               <LayoutGrid size={17}/><span className="hidden md:inline">{labels[layout]}</span><ChevronDown size={13}/>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" sideOffset={8} className="rounded-2xl border border-white/10 bg-[#0b1714] p-1 text-text-primary shadow-2xl">
@@ -91,27 +90,27 @@ const MeetingRoom = () => {
             </DropdownMenuContent>
           </DropdownMenu>
           <span className="meeting-stats-control"><CallStatsButton /></span>
-          <button onClick={() => setShowParticipants(value => !value)} className={cn("glass-control flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white/75", showParticipants && "border-primary/30 bg-primary/15 text-primary")} aria-label="Toggle participants" aria-expanded={showParticipants}>
+          <button onClick={() => setShowParticipants(value => !value)} className={cn("surface-control flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white/75", showParticipants && "border-primary/30 bg-primary/15 text-primary")} aria-label="Toggle participants" aria-expanded={showParticipants}>
             {showParticipants ? <PanelRight size={17}/> : <Users size={17}/>}
           </button>
-          <button onClick={copyCode} className="glass-control flex h-10 items-center gap-2 rounded-xl px-3 text-xs text-white/65" aria-label="Copy joining link"><Copy size={14}/><span className="hidden sm:block">Copy invite</span></button>
+          <button onClick={copyCode} className="surface-control flex h-10 items-center gap-2 rounded-xl px-3 text-xs text-white/65" aria-label="Copy joining link"><Copy size={14}/><span className="hidden sm:block">Copy invite</span></button>
         </div>
       </header>
 
-      <div className="relative flex h-full w-full items-center justify-center px-2 pb-24 pt-18 sm:px-5 sm:pb-28">
+      <div className="meeting-stage relative flex h-full w-full items-center justify-center">
         <div className={cn("h-full min-w-0 flex-1 transition-[padding] duration-300", showParticipants && "lg:pr-[330px]")}>
           <div className="h-full overflow-hidden rounded-[24px] border border-white/[.07] bg-white/[.018] p-1 sm:rounded-[30px] sm:p-2">
             {callLayout}
           </div>
         </div>
-        <aside className={cn("liquid-glass absolute bottom-24 right-3 top-18 z-20 w-[min(330px,calc(100%-24px))] overflow-hidden rounded-[26px] sm:right-5 sm:top-20", showParticipants ? "block" : "hidden")}>
+        <aside className={cn("matte-panel meeting-participants", showParticipants ? "block" : "hidden")}>
           <CallParticipantsList onClose={() => setShowParticipants(false)} />
         </aside>
       </div>
 
-      <div className="meeting-control-dock liquid-glass" role="group" aria-label="Call controls">
+      <div className="meeting-control-dock matte-panel" role="group" aria-label="Call controls">
         <CustomCallControls />
-        <span className="mx-1 h-7 w-px shrink-0 bg-white/10" />
+        <span className="meeting-dock-divider mx-1 h-7 w-px shrink-0 bg-white/10" />
         <EndCallButton />
       </div>
     </section>

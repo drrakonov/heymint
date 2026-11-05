@@ -21,7 +21,7 @@ export default function PasswordInput({value, onChange, required, autoComplete, 
           autoComplete={autoComplete}
           minLength={minLength}
           type={showPassword ? "text" : "password"}
-          className="glass-input w-full px-4 py-2 pr-11"
+          className="surface-input w-full px-4 py-2 pr-11"
           placeholder="Password"
           value={value}
           onChange={onChange}

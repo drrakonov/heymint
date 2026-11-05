@@ -24,7 +24,7 @@ export const GreenButton = ({
   const variantStyles = {
     primary: "mint-button",
     secondary: "bg-green-100 text-green-800 hover:bg-green-200",
-    ghost: "glass-control text-text-primary",
+    ghost: "surface-control text-text-primary",
   };
 
   const handleClick = () => {

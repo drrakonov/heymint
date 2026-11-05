@@ -38,10 +38,10 @@ export default function Signup() {
     <span className="eyebrow">Make room for more</span>
     <h1 className="mt-3 text-4xl font-semibold tracking-tight">Start something good.</h1>
     <p className="mt-3 text-sm leading-6 text-text-secondary">Create your account. Bring your next conversation to HeyMint.</p>
-    <button type="button" onClick={handleGoogleAuth} className="glass-control mt-8 flex h-12 w-full items-center justify-center gap-3 rounded-xl text-sm font-medium"><img src={google} alt="" className="h-5 w-5"/> Continue with Google</button>
+    <button type="button" onClick={handleGoogleAuth} className="surface-control mt-8 flex h-12 w-full items-center justify-center gap-3 rounded-xl text-sm font-medium"><img src={google} alt="" className="h-5 w-5"/> Continue with Google</button>
     <div className="my-6 flex items-center gap-4 text-[11px] text-text-secondary"><span className="h-px flex-1 bg-white/10"/>or use your email<span className="h-px flex-1 bg-white/10"/></div>
     <form onSubmit={submit} className="space-y-5">
-      <div><label htmlFor="signup-email" className="mb-2 block text-sm font-medium">Email address</label><input id="signup-email" type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" className="glass-input w-full px-4 py-3 text-sm"/></div>
+      <div><label htmlFor="signup-email" className="mb-2 block text-sm font-medium">Email address</label><input id="signup-email" type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" className="surface-input w-full px-4 py-3 text-sm"/></div>
       <div><label htmlFor="password" className="mb-2 block text-sm font-medium">Create a password</label><PasswordInput value={password} onChange={e=>setPassword(e.target.value)} required minLength={6} autoComplete="new-password"/><p className="mt-2 text-xs text-text-secondary">Use at least 6 characters.</p></div>
       <button type="submit" disabled={isSubmitting} className="mint-button flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold disabled:opacity-50">{isSubmitting ? "Sending code…" : <>Continue with email <ArrowRight size={16}/></>}</button>
     </form>

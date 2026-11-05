@@ -11,7 +11,7 @@ const ProfileLogo = () => {
 
   return (
     <button
-      className="glass-control rounded-full p-1 transition-shadow focus:outline-none"
+      className="surface-control rounded-full p-1 transition-shadow focus:outline-none"
       onClick={() => navigate("/dashboard/profile")}
       aria-label="View Profile"
       type="button"

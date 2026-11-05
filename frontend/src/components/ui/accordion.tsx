@@ -17,7 +17,7 @@ function AccordionItem({
   return (
     <AccordionPrimitive.Item
       data-slot="accordion-item"
-      className={cn("liquid-glass overflow-hidden rounded-[20px] px-5 transition-all duration-300 data-[state=open]:border-primary/20", className)}
+      className={cn("matte-panel overflow-hidden rounded-[20px] px-5 transition-all duration-300 data-[state=open]:border-primary/20", className)}
       {...props}
     />
   )

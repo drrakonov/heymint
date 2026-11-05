@@ -32,33 +32,41 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN,
   credentials: true
 }));
-app.post(
-  "/api/webhooks/stream",
-  (req, res, next) => {
+
+
+app.post("/api/webhooks/stream", (req, res, next) => {
     const requestId = randomUUID();
     res.locals.meetingTraceId = requestId;
+
     const startedAt = Date.now();
+
     meetingTrace("webhook.received", {
       requestId,
       signaturePresent: typeof req.headers["x-signature"] === "string",
       contentType: req.get("content-type"),
     });
+
     res.on("finish", () => meetingTrace("webhook.responded", {
       requestId, status: res.statusCode, durationMs: Date.now() - startedAt,
     }));
+
     next();
   },
+
   express.raw({ type: "application/json" }),
   handleStreamWebhook
+
 );
+
 app.use(express.json({
   limit: "20kb"
 }));
+
 app.use(cookieParser());
 app.use(passport.initialize());
 
 
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.send('Server is running...🚀')
 })
 

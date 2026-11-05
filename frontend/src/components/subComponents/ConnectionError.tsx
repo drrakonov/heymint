@@ -7,7 +7,7 @@ export default function ConnectionError({ message, onRetry, onExit }: {
       <p className="mt-4 text-sm leading-6 text-text-secondary">{message}</p>
       <div className="mt-6 flex justify-center gap-3">
         {onRetry && <button className="mint-button rounded-xl px-5 py-3" onClick={onRetry}>Try again</button>}
-        <button className="glass-control rounded-xl px-5 py-3" onClick={onExit}>Go back</button>
+        <button className="surface-control rounded-xl px-5 py-3" onClick={onExit}>Go back</button>
       </div>
     </div>
   </div>;

@@ -14,7 +14,7 @@ const CopyClipboardBtn = ({ meetingCode }: { meetingCode: string }) => {
     }
 
     return (
-        <button onClick={handleCopyToClipBoard} className="glass-control flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-text-secondary hover:text-primary" aria-label="Copy joining link" title="Copy joining link">
+        <button onClick={handleCopyToClipBoard} className="surface-control flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-text-secondary hover:text-primary" aria-label="Copy joining link" title="Copy joining link">
             <ClipboardList size={15} />
         </button>
     )

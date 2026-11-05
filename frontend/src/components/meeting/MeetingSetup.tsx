@@ -122,17 +122,17 @@ const MeetingSetup = ({ setIsSetUpComplete, isMeetingProtected }: {
             <BrandLogo className="mb-6 w-28"/>
             <div className="mb-6 flex w-full max-w-5xl items-center justify-between gap-4">
                 <button onClick={()=>navigate('/dashboard/meetings')} className="flex items-center gap-2 text-xs text-text-secondary hover:text-white"><ArrowLeft size={15}/> Back to meetings</button>
-                <button onClick={copyInviteLink} className="glass-control flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs text-primary"><Copy size={14}/> Copy invite</button>
+                <button onClick={copyInviteLink} className="surface-control flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs text-primary"><Copy size={14}/> Copy invite</button>
             </div>
-            <div className="workspace-panel grid w-full max-w-5xl items-center gap-6 p-5 sm:p-8 lg:grid-cols-[1.4fr_1fr] lg:gap-10">
+            <div className="workspace-panel grid min-w-0 w-full max-w-5xl items-center gap-6 p-5 sm:p-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-10">
                 <div className="min-w-0">
                     <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/20">
                         {isCamToggleOn ? <div className="text-center"><span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-3xl font-medium text-primary">{user?.name?.charAt(0).toUpperCase() || 'H'}</span><p className="mt-4 text-sm">{user?.name}</p><p className="mt-1 text-xs text-text-secondary">Camera is off</p></div> : <VideoPreview className="absolute inset-0 !h-full !w-full object-cover"/>}
                     </div>
                     <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                        <label className="glass-control flex items-center gap-2 rounded-xl px-3 py-3 text-xs"><MicOff size={14}/><span>Mic off</span><Switch disabled={isJoining} checked={isMicToggleOn} onCheckedChange={setIsMicToggleOn}/></label>
-                        <label className="glass-control flex items-center gap-2 rounded-xl px-3 py-3 text-xs"><VideoOff size={14}/><span>Camera off</span><Switch disabled={isJoining} checked={isCamToggleOn} onCheckedChange={setIsCamToggleOn}/></label>
-                        <div className="glass-control flex min-h-11 items-center rounded-xl"><DeviceSettings/></div>
+                        <label className="surface-control flex items-center gap-2 rounded-xl px-3 py-3 text-xs"><MicOff size={14}/><span>Mic off</span><Switch disabled={isJoining} checked={isMicToggleOn} onCheckedChange={setIsMicToggleOn}/></label>
+                        <label className="surface-control flex items-center gap-2 rounded-xl px-3 py-3 text-xs"><VideoOff size={14}/><span>Camera off</span><Switch disabled={isJoining} checked={isCamToggleOn} onCheckedChange={setIsCamToggleOn}/></label>
+                        <div className="surface-control flex min-h-11 items-center rounded-xl"><DeviceSettings/></div>
                     </div>
                 </div>
                 <div className="min-w-0 py-3">

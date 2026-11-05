@@ -1,5 +1,49 @@
 #root { min-height: 100vh; }
-.str-video { --str-video__primary-color:#72f2bf; --str-video__background-color1:#06100e; --str-video__text-color1:#f4fbf8; }
+/* SDK tokens cover the room, waiting room, and detached device/reaction menus.
+   Keep primary button fills dark enough for Stream's white icons and labels. */
+.str-video,
+.str-video__portal,
+.str-video__menu-container {
+  --str-video__brand-color1: #51dcb0;
+  --str-video__brand-color2: #a4e7ce;
+  --str-video__brand-color3: #38cfa0;
+  --str-video__primary-color: #51dcb0;
+  --str-video__secondary-color: #a4e7ce;
+  --str-video__base-color1: #edf7f2;
+  --str-video__base-color2: #a9b4af;
+  --str-video__base-color3: #58635e;
+  --str-video__base-color4: #101413;
+  --str-video__base-color5: #111715;
+  --str-video__base-color6: #202925;
+  --str-video__base-color7: #161d19;
+  --str-video__background-color0: #090d0b;
+  --str-video__background-color1: #161d19;
+  --str-video__background-color2: #202925;
+  --str-video__background-color4: #111715;
+  --str-video__background-color5: #26332c;
+  --str-video__text-color1: #edf7f2;
+  --str-video__text-color2: #a9b4af;
+  --str-video__text-color3: #929e97;
+  --str-video__text-color4: #edf7f2;
+  --str-video__button-default-base: #26332c;
+  --str-video__button-default-hover: #34483d;
+  --str-video__button-default-pressed: #18251e;
+  --str-video__button-default-active: #264e40;
+  --str-video__button-default-disabled: #252c28;
+  --str-video__button-primary-base: #26332c;
+  --str-video__button-primary-hover: #315e4b;
+  --str-video__button-primary-pressed: #1e4032;
+  --str-video__button-primary-active: #24634b;
+  --str-video__button-secondary-base: #26332c;
+  --str-video__info-color: #51dcb0;
+  --str-video__info-color--accent: #38cfa0;
+  --str-video__overlay-color: rgba(16, 20, 18, .85);
+}
+
+.str-video__device-settings { font-family: inherit; }
+.str-video__avatar--initials-fallback { color: #08271d; }
+.str-video :focus-visible { outline-color: #51dcb0; }
+.str-video input { accent-color: #51dcb0; }
 
 /* Keep Stream's split device controls intact; only size their actual buttons. */
 .meeting-control-dock {
@@ -50,7 +94,7 @@
   min-width: 44px;
   padding: 0;
   border-radius: 11px;
-  color: #f4fbf8;
+  color: #edf7f2;
 }
 
 .meeting-room .str-video__composite-button .str-video__composite-button__button-group .str-video__menu-toggle-button {
@@ -96,17 +140,30 @@
   background: transparent;
 }
 
+/* Reserve space for persistent controls instead of covering video tiles. */
+.meeting-stage { padding: 86px 16px 112px; }
+.meeting-participants { position: absolute; z-index: 30; top: 86px; bottom: 112px; right: 16px; width: min(314px, calc(100% - 32px)); overflow: auto; }
+.meeting-topbar button { min-height: 44px; }
+.meeting-topbar button[aria-label="Toggle participants"] { min-width: 44px; }
+.meeting-room .meeting-stats-control .str-video__composite-button__button-group .str-video__composite-button__button { width: 44px; min-width: 44px; height: 44px; }
 @media (max-width: 639px) {
-  .meeting-control-dock { gap: 4px; padding: 8px; border-radius: 20px; }
-  .meeting-room .meeting-media-controls { gap: 4px; }
-  .meeting-room .meeting-media-controls .str-video__composite-button__button-group .str-video__composite-button__button {
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-  }
-  .meeting-room .meeting-media-controls .str-video__composite-button__button-group .str-video__menu-toggle-button {
-    width: 22px;
-    min-width: 22px;
-    height: 40px;
-  }
+  .meeting-control-dock { gap: 6px; padding: 8px; border-radius: 18px; }
+  .meeting-room .meeting-media-controls { gap: 6px; }
+  .meeting-stage { padding: 76px 8px calc(100px + env(safe-area-inset-bottom)); }
+  .meeting-participants { top: 76px; bottom: calc(100px + env(safe-area-inset-bottom)); right: 8px; width: calc(100% - 16px); }
 }
+@media (max-width: 419px) {
+  .meeting-room .meeting-media-controls { display: grid; grid-template-columns: repeat(2, max-content); }
+  .meeting-stage { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
+  .meeting-participants { bottom: calc(150px + env(safe-area-inset-bottom)); }
+  .meeting-dock-divider { height: 76px; }
+}
+
+/* Match Stream menus and participant panels to the same solid surfaces. */
+.meeting-room .str-video__composite-button__button-group { border-radius: 12px; box-shadow: none; }
+.str-video__menu-container { max-width: calc(100vw - 24px); background: #202925; border: 1px solid #304c40; border-radius: 16px; }
+.meeting-participants { padding: 12px; }
+.meeting-participants .str-video__participant-list { height: 100%; min-width: 0; }
+.meeting-participants .str-video__search-input__container { min-width: 0; width: 100%; }
+.meeting-participants input { min-width: 0; width: 100%; }
+.meeting-participants .str-video__participant-list-header__close-button { display: grid; place-items: center; width: 44px; height: 44px; }

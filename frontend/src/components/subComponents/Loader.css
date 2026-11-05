@@ -1,0 +1,19 @@
+/* The loading signal is decorative; it never implies measured progress. */
+.heymint-loader { display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; min-height:70vh; gap:16px; padding:40px 20px; background:#101b18; }
+.heymint-loader__signal { position:relative; display:grid; place-items:center; width:180px; height:208px; margin-bottom:8px; }
+.heymint-loader__ring { position:absolute; top:27px; width:110px; height:110px; border:1px solid #51dcb030; border-radius:50%; animation:mint-signal-expand 3s ease-out infinite; }
+.heymint-loader__ring--outer { animation-delay:-1.5s; }
+.heymint-loader__seed { position:absolute; top:46px; display:grid; place-items:center; width:72px; height:72px; border:1px solid #51dcb04d; border-radius:23px; background:#1a2c25; transform:rotate(-8deg); }
+.heymint-loader__seed img { width:42px; height:42px; transform:rotate(8deg); }
+.heymint-loader__orbit { position:absolute; top:12px; width:140px; height:140px; border:1px dashed #51dcb01a; border-radius:50%; animation:mint-signal-orbit 7s linear infinite; }
+.heymint-loader__orbit i { position:absolute; top:-3px; left:calc(50% - 3px); width:6px; height:6px; border-radius:50%; background:#7ce8c5; }
+.heymint-loader__wave { position:absolute; bottom:0; height:36px; display:flex; align-items:center; gap:5px; }
+.heymint-loader__wave i { display:block; width:3px; border-radius:3px; background:#51dcb0; animation:mint-signal-wave 1.1s ease-in-out infinite alternate; transform-origin:center; }
+.heymint-loader__label { margin:0; font-size:12px; letter-spacing:.04em; color:#a2bcb0; }
+@keyframes mint-signal-expand { from { transform:scale(.72); opacity:.8; } to { transform:scale(1.6); opacity:0; } }
+@keyframes mint-signal-orbit { to { transform:rotate(360deg); } }
+@keyframes mint-signal-wave { from { transform:scaleY(.35); opacity:.4; } to { transform:scaleY(1); opacity:1; } }
+@media(prefers-reduced-motion:reduce) {
+  .heymint-loader__ring,.heymint-loader__orbit,.heymint-loader__wave i { animation:none; }
+  .heymint-loader__ring--outer { transform:scale(1.4); opacity:.35; }
+}

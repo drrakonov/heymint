@@ -15,13 +15,13 @@ export default function Profile() {
   const [loggingOut, setLoggingOut] = useState(false);
   return <div className="page-shell">
     <PageHeader eyebrow="Your account" title="Make yourself at home." description="Your identity, your workspace, your conversations."/>
-    <div className="grid items-start gap-6 lg:grid-cols-[1.6fr_1fr]">
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
       <div className="space-y-6">
         <section className="workspace-panel">
           <div className="account-banner"><span className="absolute left-6 top-5 flex items-center gap-2 text-[10px] font-medium uppercase tracking-[.18em] text-primary/70"><ShieldCheck size={13}/> Personal workspace</span></div>
           <div className="relative px-6 pb-6">
             <Avatar className="-mt-9 h-20 w-20 rounded-2xl border-4 border-[#102019] bg-[#1b3025]"><AvatarImage src={avatarList[avatar]}/><AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback></Avatar>
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-4"><div className="min-w-0"><h2 className="break-words text-2xl font-semibold tracking-tight">{user?.name}</h2><p className="mt-1 break-all text-sm text-text-secondary">{user?.email}</p></div><Link to="/dashboard/profile-update" className="workspace-action glass-control"><Edit3 size={15}/> Edit profile</Link></div>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-4"><div className="min-w-0"><h2 className="break-words text-2xl font-semibold tracking-tight">{user?.name}</h2><p className="mt-1 break-all text-sm text-text-secondary">{user?.email}</p></div><Link to="/dashboard/profile-update" className="workspace-action surface-control"><Edit3 size={15}/> Edit profile</Link></div>
           </div>
         </section>
         <section className="workspace-panel">
