@@ -3,3 +3,4 @@
 .aws/
 .agent/
 .agents/
+*.tsbuildinfo
