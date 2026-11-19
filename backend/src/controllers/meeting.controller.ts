@@ -505,14 +505,20 @@ export const endMeeting = async (req: Request, res: Response): Promise<any> => {
     const meetingCode = String(req.params.meetingCode || "");
     try {
         const meeting = await prisma.meeting.findUnique({ where: { meetingCode } });
+
         if (!meeting || meeting.isDeleted) return res.status(404).json({ success: false, message: "Meeting not found" });
+
         if (meeting.createdById !== (req.user as { id: string }).id) {
             return res.status(403).json({ success: false, message: "Only the host can end the meeting for everyone" });
         }
+
         if (meeting.isComplete) return res.json({ success: true });
+        
         const call = client.video.call("default", meetingCode);
         const current = await call.get();
+        
         if (!current.call.ended_at) await call.end();
+        
         await prisma.meeting.update({ where: { id: meeting.id }, data: { isComplete: true } });
         meetingTrace("meeting.completed", { meetingCode, source: "end_request" });
         return res.json({ success: true, message: "Meeting ended" });
