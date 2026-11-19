@@ -117,14 +117,19 @@ function transcriptSource(id: string, segments: ChunkSegment[]): ChatSource {
 
 export function buildChatSources(summary: string | undefined, chunks: RetrievedChunk[]): ChatSource[] {
     const sources: ChatSource[] = [];
+
     // Keep a whole summary or omit it; do not send a sliced JSON summary.
     if (summary?.trim() && summary !== "Empty" && estimateTokens(summary) <= MAX_SUMMARY_TOKENS) {
         sources.push({ id: "S1", kind: "summary", label: "Meeting summary", excerpt: summary });
     }
+
     const seen = new Set<string>();
     let origin: number | undefined;
+
+
     for (const chunk of chunks.slice(0, 5)) {
         const parsed = storedSegmentsSchema.safeParse(chunk.segments);
+
         // Legacy/invalid metadata must never produce guessed citation timestamps.
         if (!parsed.success) continue;
         const ordered = parsed.data.slice().sort((a, b) => a.startMs - b.startMs
@@ -134,14 +139,18 @@ export function buildChatSources(summary: string | undefined, chunks: RetrievedC
         if (ordered.some(s => Date.parse(s.startedAt) - s.startMs !== chunkOrigin)
             || (origin !== undefined && chunkOrigin !== origin)) continue;
         origin = chunkOrigin;
+
         const selected: ChunkSegment[] = [];
         const id = `T${sources.filter(s => s.kind === "transcript").length + 1}`;
         const selectedKeys = new Set<string>();
         let estimatedCost = estimateTokens(JSON.stringify(sources)) + 64;
+
         for (const segment of ordered) {
             const key = `${segment.segmentId}:${segment.partIndex}`;
+
             if (seen.has(key) || selectedKeys.has(key)) continue;
             // Count each line once rather than repeatedly tokenizing the entire growing prompt.
+
             const cost = estimateTokens(JSON.stringify(segmentLine(segment)))
                 + estimateTokens(JSON.stringify(segment.speakerName || "Unknown speaker")) + 16;
             if (estimatedCost + cost > MAX_CONTEXT_TOKENS) break;
@@ -153,6 +162,7 @@ export function buildChatSources(summary: string | undefined, chunks: RetrievedC
         while (selected.length && estimateTokens(JSON.stringify([...sources, transcriptSource(id, selected)])) > MAX_CONTEXT_TOKENS) {
             selected.pop();
         }
+
         if (selected.length) {
             sources.push(transcriptSource(id, selected));
             selected.forEach(segment => seen.add(`${segment.segmentId}:${segment.partIndex}`));

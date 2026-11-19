@@ -155,10 +155,13 @@ const formatElapsedTime = (milliseconds: number) => {
 export const processJob = async (job: TranscriptionJobRow) => {
     const trace = { jobId: job.id, meetingId: job.meetingId, sessionId: job.sessionId, attempt: job.attempts };
     meetingTrace("worker.download_started", trace);
+
     const rawTranscript = await downloadTranscript(job.transcriptionUrl);
     meetingTrace("worker.download_finished", { ...trace, characters: rawTranscript.length });
+    
     const segments = await parseTranscript(job, rawTranscript);
     meetingTrace("worker.transcript_parsed", { ...trace, segments: segments.length });
+    
     await renewLease(job);
     if (!segments.length) {
         const completed = await prisma.transcriptionJob.updateMany({
